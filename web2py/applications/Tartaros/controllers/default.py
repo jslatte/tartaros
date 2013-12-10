@@ -214,6 +214,31 @@ class TestManager():
             self.handle_exception(self.log, e, operation)
             return result
 
+    def update_test_case_procedure_table(self):
+        """ Update the test case procedure table on test case selection
+        @return: a TBODY() containing the update table data to replace inside the procedure TABLE().
+        """
+
+        operation = inspect.stack()[0][3]
+        result = TABLE()
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # determine test case procedure
+            steps = db(db.test_cases.id == request.vars.test_case_selection).select()[0].procedure
+
+            # build updated test case procedure table (body)
+            tbody_proc = self.build_procedure_table(steps=steps)['table']
+
+            # compile results
+            result = tbody_proc
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        return result
+
     def build_tmanager_ts_dropdown_object(self, select_type=None, options=None):
         """
         @param select_type: the selection type of drop-down list (e.g., module, feature, etc.).
@@ -378,14 +403,17 @@ class TestManager():
                 # build ajax statement
                 self.log.trace("... building AJAX statement ...")
                 ajax_s = ''
+                # add update test case class statement
                 ajax_s += "jQuery(td_test_case_class_val).remove(); " \
                           "ajax('update_test_case_class_field', ['%s_selection'], 'td_test_case_class');" %\
                           object_types['test case']
+                # add update test case minimum version statement
                 ajax_s += "jQuery(td_test_case_minver_val).remove(); " \
                           "ajax('update_test_case_minver_field', ['%s_selection'], 'td_test_case_minver');" %\
                           object_types['test case']
-                ajax_s += "jQuery(td_proc_step_1_val).remove(); " \
-                          "ajax('update_proc_steps', ['%s_selection'], 'td_proc_step');" %\
+                # add update test case procedure statement
+                ajax_s += "jQuery(tbody_proc).remove(); " \
+                          "ajax('update_test_case_procedure_table', ['%s_selection'], 't_proc');" %\
                           object_types['test case']
 
             # unknown drop-down objects
@@ -551,7 +579,6 @@ class TestManager():
             self.handle_exception(self.log, e, operation)
             return False
 
-
     def build_procedure_table(self, steps=None):
         """ Build the test case procedure table.
         @param steps: a list of the procedure steps.
@@ -596,13 +623,11 @@ class TestManager():
             result['table'] = proc_table
             result['body'] = proc_table_body
 
-            # return
-            return result
-
         except BaseException, e:
             self.handle_exception(self.log, e, operation)
-            return False
 
+        # return
+        return result
 
     def build_tmanager_form(self):
         """ Build the Test Manager form.
@@ -783,3 +808,6 @@ def update_test_case_class_field():
 
 def update_test_case_minver_field():
     return tmanager.update_test_case_minver_field()
+
+def update_test_case_procedure_table():
+    return tmanager.update_test_case_procedure_table()
