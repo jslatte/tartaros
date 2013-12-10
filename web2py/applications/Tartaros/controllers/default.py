@@ -98,7 +98,7 @@ class TestManager():
                 # determine object type
                 obj_type = 'test case'
 
-                # determine test options for selection ('0' given if the field should be cleared
+                # determine test case options for selection ('0' given if the field should be cleared
                 #   due to a parent selection being updated or reset)
                 if str(request.vars.test_selection) == '0':
                     options = []
@@ -114,7 +114,7 @@ class TestManager():
 
             if obj_type is not None and options is not None:
                 # define new selection object
-                selection = self.build_tmanager_dropdown_object(obj_type, options)['select']
+                selection = self.build_tmanager_ts_dropdown_object(obj_type, options)['select']
 
                 # compile return data
                 result = selection
@@ -127,7 +127,94 @@ class TestManager():
             self.handle_exception(self.log, e, operation)
             return False
 
-    def build_tmanager_dropdown_object(self, select_type=None, options=None):
+    def update_test_results_id_field(self):
+        """ Update the test results id field (if test dropdown changed).
+        @return: LABEL() containing test results id for selected test.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = LABEL("No test results ID found for selected test.")
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # determine test results id for selected test
+            test_results_id = db(db.tests.id ==
+                                 request.vars.test_selection).select(db.tests.ALL)[0].results_id
+
+            # compile result
+            result = LABEL("%s" % test_results_id, _id='td_test_results_id')
+
+            # return
+            self.log.trace("... DONE %s." % operation.replace('_', ' '))
+            return result
+
+        except IndexError:
+            return result
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+            return result
+
+    def update_test_case_class_field(self):
+        """ Update the test case class field (if test case dropdown changed).
+        @return: LABEL() containing test case class for selected test case.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = LABEL("No class found for selected test case.")
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # determine test case class for selected test case
+            test_case_class = db(db.test_cases.id ==
+                                 request.vars.test_case_selection).select(db.test_cases.ALL)[0].test_class
+
+            # compile result
+            result = LABEL("%s" % test_case_class, _id='td_test_case_class')
+
+            # return
+            self.log.trace("... DONE %s." % operation.replace('_', ' '))
+            return result
+
+        except IndexError:
+            return result
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+            return result
+
+    def update_test_case_minver_field(self):
+        """ Update the test case minimum version field (if test case dropdown changed).
+        @return: LABEL() containing test case minimum version for selected test case.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = LABEL("No minimum version found for selected test case.")
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # determine test case class for selected test case
+            test_case_minver = db(db.test_cases.id ==
+                                  request.vars.test_case_selection).select(db.test_cases.ALL)[0].min_version
+
+            # compile result
+            result = LABEL("%s" % test_case_minver, _id='td_test_case_minver')
+
+            # return
+            self.log.trace("... DONE %s." % operation.replace('_', ' '))
+            return result
+
+        except IndexError:
+            return result
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+            return result
+
+    def build_tmanager_ts_dropdown_object(self, select_type=None, options=None):
         """
         @param select_type: the selection type of drop-down list (e.g., module, feature, etc.).
         @param options: the options for the drop-down list.
@@ -269,26 +356,36 @@ class TestManager():
                 # build ajax statement
                 self.log.trace("... building AJAX statement ...")
                 ajax_s = ajax_s_template % ("['%s_selection']" % obj_type, object_types['test case'])
+                # add test results id update statement
+                ajax_s += "jQuery(td_test_results_id_val).remove(); " \
+                          "ajax('update_test_results_id_field', ['%s_selection'], 'td_test_results_id');" %\
+                          object_types['test']
+                ajax_s += "jQuery(td_test_case_class_val).remove(); " \
+                          "ajax('update_test_case_class_field', ['%s_selection'], 'td_test_case_class');" %\
+                          object_types['test case']
+                ajax_s += "jQuery(td_test_case_minver_val).remove(); " \
+                          "ajax('update_test_case_minver_field', ['%s_selection'], 'td_test_case_minver');" %\
+                          object_types['test case']
 
             # test case drop-down objects
             elif obj_type == object_types['test case']:
-                # input data
-                #input_data = "['%s']" % obj_type
-
-                # event target
-                #on_change_event_target = object_types['test case']
-
                 # build the options list for the selection object
                 selections = [OPTION(options[i].name, _value=str(options[i].id))
                               for i in range(len(options))]
 
                 # build jQuery statement
                 self.log.trace("... building jQuery statement ...")
-                jquery_s = ''#jquery_s_template % object_types['test case']
+                jquery_s = ''
 
                 # build ajax statement
                 self.log.trace("... building AJAX statement ...")
-                ajax_s = ''#ajax_s_template % ("['%s']" % obj_type, object_types['test case'])
+                ajax_s = ''
+                ajax_s += "jQuery(td_test_case_class_val).remove(); " \
+                          "ajax('update_test_case_class_field', ['%s_selection'], 'td_test_case_class');" %\
+                          object_types['test case']
+                ajax_s += "jQuery(td_test_case_minver_val).remove(); " \
+                          "ajax('update_test_case_minver_field', ['%s_selection'], 'td_test_case_minver');" %\
+                          object_types['test case']
 
             # unknown drop-down objects
             else:
@@ -414,7 +511,7 @@ class TestManager():
 
     def update_tmanager_selection(self):
         """ Update the Test Manager selection drop down (and refresh update cell).
-        @return:
+        @return: test manager TABLE() (to fully update form).
         """
 
         operation = inspect.stack()[0][3]
@@ -454,7 +551,10 @@ class TestManager():
             return False
 
     def build_tmanager_form(self):
-        """
+        """ Build the Test Manager form.
+        @return: a dict containing:
+            'form' - the FORM() object.
+            'table' - the TABLE() object (within the FORM())
         """
 
         operation = inspect.stack()[0][3]
@@ -472,17 +572,33 @@ class TestManager():
             tests = []
             test_cases = []
 
-            # build dropdown objects
-            tr_module_selection = self.build_tmanager_dropdown_object('module', modules)['object']
-            tr_feature_selection = self.build_tmanager_dropdown_object('feature', features)['object']
-            tr_user_story_selection = self.build_tmanager_dropdown_object('user story', user_stories)['object']
-            tr_test_selection = self.build_tmanager_dropdown_object('test', tests)['object']
-            tr_test_case_selection = self.build_tmanager_dropdown_object('test case', test_cases)['object']
+            # build test suite/case dropdown objects
+            tr_module_selection = self.build_tmanager_ts_dropdown_object('module', modules)['object']
+            tr_feature_selection = self.build_tmanager_ts_dropdown_object('feature', features)['object']
+            tr_user_story_selection = self.build_tmanager_ts_dropdown_object('user story', user_stories)['object']
+            tr_test_selection = self.build_tmanager_ts_dropdown_object('test', tests)['object']
+            tr_test_case_selection = self.build_tmanager_ts_dropdown_object('test case', test_cases)['object']
+
+            # build test attribute objects
+            tr_test_results_id = TR(
+                TD(LABEL("TEST RESULTS ID:")),
+                TD(LABEL("No test selected.", _id='td_test_results_id_val'), _id='td_test_results_id')
+            )
+            tr_test_case_class = TR(
+                TD(LABEL("TEST CASE CLASS:")),
+                TD(LABEL("No test case selected.", _id='td_test_case_class_val'), _id='td_test_case_class')
+            )
+            tr_test_case_minver = TR(
+                TD(LABEL("MINIMUM VERSION:")),
+                TD(LABEL("No test case selected.", _id='td_test_case_minver_val'), _id='td_test_case_minver')
+            )
 
             # build tmanager form
             tmanager_table = TABLE(TBODY(tr_module_selection, tr_feature_selection,
                                          tr_user_story_selection, tr_test_selection,
-                                         tr_test_case_selection), _id='tmanager_form_table')
+                                         tr_test_case_selection), tr_test_results_id,
+                                         tr_test_case_class, tr_test_case_minver,
+                                   _id='tmanager_form_table')
             tmanager_form = FORM(tmanager_table, _id='tmanager_form')
 
             # compile results
@@ -579,8 +695,8 @@ def build_tmanager_form():
     return tmanager.build_tmanager_form()
 
 
-def build_tmanager_dropdown_object():
-    return tmanager.build_tmanager_dropdown_object()['select']
+def build_tmanager_ts_dropdown_object():
+    return tmanager.build_tmanager_ts_dropdown_object()['select']
 
 
 def update_tmanager_form():
@@ -593,3 +709,15 @@ def enable_tmanager_selection_update():
 
 def update_tmanager_selection():
     return tmanager.update_tmanager_selection()
+
+
+def update_test_results_id_field():
+    return tmanager.update_test_results_id_field()
+
+
+def update_test_case_class_field():
+    return tmanager.update_test_case_class_field()
+
+
+def update_test_case_minver_field():
+    return tmanager.update_test_case_minver_field()
