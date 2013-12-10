@@ -703,4 +703,12 @@ def run_dvr_simulation_test():
 
 #log.trace("SELECT * FROM ConnectionLog WHERE csTimeStamp > %d and csTimeStamp < %d" %(utc.convert_date_string_to_db_time(start)['db time'], utc.convert_date_string_to_db_time(end)['db time']))
 
-database.connect_to_database()
+l = [
+    ['a', 2, 3],
+    ['b', 3, 1],
+    ['c', 1, 2]
+]
+
+l.sort(key=lambda x: x[1])
+
+print l

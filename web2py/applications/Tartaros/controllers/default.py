@@ -45,6 +45,13 @@ class TestManager():
         # inherit exception handler
         self.handle_exception = exception_handler
 
+        # define class attributes
+        self.tables = {'module':     db.modules,
+                       'feature':    db.features,
+                       'user story': db.user_stories,
+                       'test':       db.tests,
+                       'test case':  db.test_cases}
+
     def update_tmanager_form(self):
         """ Update the tmanager form (when an item is selected from a drop-down list).
         @return: a SELECT() object to replace the previous drop-down list.
@@ -120,7 +127,7 @@ class TestManager():
             self.handle_exception(self.log, e, operation)
             return False
 
-    def build_tmanager_dropdown_object(self, select_type, options):
+    def build_tmanager_dropdown_object(self, select_type=None, options=None):
         """
         @param select_type: the selection type of drop-down list (e.g., module, feature, etc.).
         @param options: the options for the drop-down list.
@@ -134,6 +141,16 @@ class TestManager():
         try:
             self.log.trace("%s: (type='%s') ..." % (operation.replace('_', ' '), select_type))
             result = {'object': TR(), 'select': SELECT()}
+
+            # determine select type (if None)
+            if select_type is None:
+                select_type = request.vars.type
+
+            # determine options (if None)
+            if options is None:
+                options = db().select(self.tables[select_type].ALL)
+
+                log.trace(options)
 
             # determine object type (by dict)
             object_types = OrderedDict([
@@ -353,11 +370,7 @@ class TestManager():
 
             if int(raw_val) > 0:
                 # determine value from database
-                tables = {'module':     db.modules,
-                          'feature':    db.features,
-                          'user story': db.user_stories,
-                          'test':       db.tests,
-                          'test case':  db.test_cases}
+                tables = self.tables
                 entry = db(tables[request.vars.type].id == raw_val).select(tables[request.vars.type].ALL)[0]
                 if request.vars.type != 'user story':
                     val = entry.name
@@ -375,15 +388,15 @@ class TestManager():
 
             # define update button
             update_bttn_addr = "%s_bttn" % div_update_addr
-            update_bttn_script = "jQuery(%s).remove(); " \
-                                 "jQuery(this).remove(); " \
-                                 "ajax('update_tmanager_selection?" \
+            update_bttn_script = "ajax('update_tmanager_selection?" \
                                  "field=%s" \
                                  "&selectaddr=%s" \
-                                 "&type=%s', " \
-                                 "['%s'], '%s');" \
-                                 % (update_field_addr, update_field_addr, request.vars.selectaddr, request.vars.type,
-                                    update_field_addr, request.vars.target)
+                                 "&type=%s" \
+                                 "&id=%s', " \
+                                 "['%s'], 'tmanager_form'); " \
+                                 "jQuery(tmanager_form_table).remove();" \
+                                 % (update_field_addr, request.vars.selectaddr, request.vars.type,
+                                    raw_val, update_field_addr)
             update_bttn = INPUT(_id="%s" % update_bttn_addr, _name="%s" % update_bttn_addr,
                                 _type="button", _value="Update", _onclick=update_bttn_script,
                                 _class="btn")
@@ -413,34 +426,70 @@ class TestManager():
             # SELECT() object id
             select_addr = request.vars.selectaddr
 
-            # define edit/update field components
-            update_button_addr = 'td_%s_update_button' % select_addr
-            div_update_addr = 'td_%s_update_div' % select_addr
-            td_update_addr = 'td_%s_update' % select_addr
-            update_button_script = "jQuery(this).remove(); " \
-                                   "ajax('enable_tmanager_selection_update?" \
-                                   "src=%s" \
-                                   "&target=%s" \
-                                   "&selectaddr=%s" \
-                                   "&type=%s', " \
-                                   "['%s'], '%s'); " \
-                                   % (select_addr, td_update_addr, select_addr, request.vars.type,
-                                      select_addr, td_update_addr)
-            div_update = DIV(INPUT(_type='button', _value='Update',
-                                   _id=update_button_addr,
-                                   _name=update_button_addr,
-                                   _onclick=update_button_script,
-                                   _class="btn"),
-                             _name=div_update_addr,
-                             _id=div_update_addr)
+            # field value
+            input_val = eval("request.vars.%s" % request.vars.field)
 
-            td_update = TD(div_update, _name=td_update_addr, _id=td_update_addr)
+            # update field in database
+            log.trace("Updating %s table: changing %s %s to %s ..." % (request.vars.type, request.vars.type,
+                                                                       request.vars.id, input_val))
+            if request.vars.type in self.tables.keys():
+                db(self.tables[request.vars.type].id
+                   == request.vars.id).update(name=input_val)
+            else:
+                response.flash("Failed to update entry.")
+                val = "N/A"
+
+            # rebuild table row
+            tmanager_form_table = self.build_tmanager_form()['table']
 
             # compile return data
-            result = div_update
+            result = tmanager_form_table
 
             # return
             self.log.trace("... DONE %s." % operation.replace('_', ' '))
+            return result
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+            return False
+
+    def build_tmanager_form(self):
+        """
+        """
+
+        operation = inspect.stack()[0][3]
+        result = {'form': FORM(), 'table': TABLE()}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # build default options for each field
+            #   modules and features are dependent on submodule (default to show all available)
+            #   all other fields show options dependent on module and feature selected
+            modules = db().select(db.modules.ALL)
+            features = db().select(db.features.ALL)
+            user_stories = []
+            tests = []
+            test_cases = []
+
+            # build dropdown objects
+            tr_module_selection = self.build_tmanager_dropdown_object('module', modules)['object']
+            tr_feature_selection = self.build_tmanager_dropdown_object('feature', features)['object']
+            tr_user_story_selection = self.build_tmanager_dropdown_object('user story', user_stories)['object']
+            tr_test_selection = self.build_tmanager_dropdown_object('test', tests)['object']
+            tr_test_case_selection = self.build_tmanager_dropdown_object('test case', test_cases)['object']
+
+            # build tmanager form
+            tmanager_table = TABLE(TBODY(tr_module_selection, tr_feature_selection,
+                                         tr_user_story_selection, tr_test_selection,
+                                         tr_test_case_selection), _id='tmanager_form_table')
+            tmanager_form = FORM(tmanager_table, _id='tmanager_form')
+
+            # compile results
+            result['table'] = tmanager_table
+            result['form'] = tmanager_form
+
+            # return
             return result
 
         except BaseException, e:
@@ -466,26 +515,8 @@ def index():
     @return: dict tmanager_form containing the initial Test Manager form.
     """
 
-    # build default options for each field
-    #   modules and features are dependent on submodule (default to show all available)
-    #   all other fields show options dependent on module and feature selected
-    modules = db().select(db.modules.ALL)
-    features = db().select(db.features.ALL)
-    user_stories = []
-    tests = []
-    test_cases = []
-
-    # build drop-down object(s)
-    tr_module_selection = tmanager.build_tmanager_dropdown_object('module', modules)['object']
-    tr_feature_selection = tmanager.build_tmanager_dropdown_object('feature', features)['object']
-    tr_user_story_selection = tmanager.build_tmanager_dropdown_object('user story', user_stories)['object']
-    tr_test_selection = tmanager.build_tmanager_dropdown_object('test', tests)['object']
-    tr_test_case_selection = tmanager.build_tmanager_dropdown_object('test case', test_cases)['object']
-
     # build tmanager form
-    tmanager_form = FORM((TABLE(TBODY(tr_module_selection, tr_feature_selection,
-                                      tr_user_story_selection, tr_test_selection,
-                                      tr_test_case_selection))))
+    tmanager_form = build_tmanager_form()['form']
 
     return dict(tmanager_form=tmanager_form)
 
@@ -542,6 +573,14 @@ def data():
       LOAD('default','data.load',args='tables',ajax=True,user_signature=True)
     """
     return dict(form=crud())
+
+
+def build_tmanager_form():
+    return tmanager.build_tmanager_form()
+
+
+def build_tmanager_dropdown_object():
+    return tmanager.build_tmanager_dropdown_object()['select']
 
 
 def update_tmanager_form():
