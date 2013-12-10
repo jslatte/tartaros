@@ -237,8 +237,6 @@ class TestManager():
             if options is None:
                 options = db().select(self.tables[select_type].ALL)
 
-                log.trace(options)
-
             # determine object type (by dict)
             object_types = OrderedDict([
                 ('module', 'module'),
@@ -385,6 +383,9 @@ class TestManager():
                           object_types['test case']
                 ajax_s += "jQuery(td_test_case_minver_val).remove(); " \
                           "ajax('update_test_case_minver_field', ['%s_selection'], 'td_test_case_minver');" %\
+                          object_types['test case']
+                ajax_s += "jQuery(td_proc_step_1_val).remove(); " \
+                          "ajax('update_proc_steps', ['%s_selection'], 'td_proc_step');" %\
                           object_types['test case']
 
             # unknown drop-down objects
@@ -550,6 +551,59 @@ class TestManager():
             self.handle_exception(self.log, e, operation)
             return False
 
+
+    def build_procedure_table(self, steps=None):
+        """ Build the test case procedure table.
+        @param steps: a list of the procedure steps.
+        @return: a dict containing:
+            'body' - the TBODY() containing the data.
+            'table' - the TABLE() containing everything.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = {'table': TABLE(), 'body': TBODY()}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # determine the steps for the table
+            if steps is None:
+                steps = [
+                    {'id': 0, 'step': 'No test case selected.'}
+                ]
+            else:
+                # translate the procedure list string into an actual list
+                raw_steps = eval('[%s]' % steps)
+
+                # build a list of step data dicts using the ids in the procedure list
+                steps = []
+                for step_id in raw_steps:
+                    step_desc = db(db.procedure_steps.id == step_id).select()[0].name
+                    steps.append({'id': step_id, 'step': step_desc})
+
+            # build the table
+            proc_table_body = TBODY(
+                [TR(TD(), TD(LABEL(steps[i]['step'], _id='td_proc_step_%d' % i), _id='td_proc_step_%d' % i),
+                    _id='tr_proc_step_%d' % i) for i in range(0, len(steps))],
+                _id='tbody_proc'
+            ),
+            proc_table = TABLE(
+                proc_table_body,
+                _id='t_proc'
+            )
+
+            # compile results
+            result['table'] = proc_table
+            result['body'] = proc_table_body
+
+            # return
+            return result
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+            return False
+
+
     def build_tmanager_form(self):
         """ Build the Test Manager form.
         @return: a dict containing:
@@ -593,13 +647,21 @@ class TestManager():
                 TD(LABEL("No test case selected.", _id='td_test_case_minver_val'), _id='td_test_case_minver')
             )
 
+            # build test case procedure objects
+            t_proc = DIV(HR(),
+                         H3("Test Case Procedure"),
+                         self.build_procedure_table()['table'],
+                         _id='div_test_case_procedure'
+            )
+
             # build tmanager form
-            tmanager_table = TABLE(TBODY(tr_module_selection, tr_feature_selection,
-                                         tr_user_story_selection, tr_test_selection,
-                                         tr_test_case_selection), tr_test_results_id,
-                                         tr_test_case_class, tr_test_case_minver,
-                                   _id='tmanager_form_table')
-            tmanager_form = FORM(tmanager_table, _id='tmanager_form')
+            tmanager_table = TABLE(
+                TBODY(
+                    tr_module_selection, tr_feature_selection, tr_user_story_selection, tr_test_selection,
+                    tr_test_case_selection, tr_test_results_id, tr_test_case_class, tr_test_case_minver
+                ),
+                _id='tmanager_form_table')
+            tmanager_form = FORM(tmanager_table, t_proc, _id='tmanager_form')
 
             # compile results
             result['table'] = tmanager_table

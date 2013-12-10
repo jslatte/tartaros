@@ -49,3 +49,11 @@ db.define_table('test_cases',
 db.define_table('user_types',
                 Field('name', unique=True, required=True),
 )
+
+# table: procedure steps
+db.define_table('procedure_steps',
+                Field('name', type='string', unique=True, required=True),
+                Field('function_id', type='integer', unique=False, required=True),
+                Field('arguments', type='string', unique=False, required=False),
+                Field('verification', type='string', unique=False, required=True)
+)
