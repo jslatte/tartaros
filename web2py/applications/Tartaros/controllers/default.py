@@ -226,7 +226,12 @@ class TestManager():
             self.log.trace("%s ..." % operation.replace('_', ' '))
 
             # determine test case procedure
-            steps = db(db.test_cases.id == request.vars.test_case_selection).select()[0].procedure
+            try:
+                steps = db(db.test_cases.id == request.vars.test_case_selection).select()[0].procedure
+
+            except IndexError:
+                log.trace("Cannot determine procedure. No test case selected.")
+                steps=None
 
             # build updated test case procedure table (body)
             tbody_proc = self.build_procedure_table(steps=steps)['table']
@@ -238,6 +243,47 @@ class TestManager():
             self.handle_exception(self.log, e, operation)
 
         return result
+
+    def update_tmanager_selection(self):
+        """ Update the Test Manager selection drop down (and refresh update cell).
+        @return: test manager TABLE() (to fully update form).
+        """
+
+        operation = inspect.stack()[0][3]
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+            result = DIV()
+
+            # SELECT() object id
+            select_addr = request.vars.selectaddr
+
+            # field value
+            input_val = eval("request.vars.%s" % request.vars.field)
+
+            # update field in database
+            log.trace("Updating %s table: changing %s %s to %s ..." % (request.vars.type, request.vars.type,
+                                                                       request.vars.id, input_val))
+            if request.vars.type in self.tables.keys():
+                db(self.tables[request.vars.type].id
+                   == request.vars.id).update(name=input_val)
+            else:
+                response.flash("Failed to update entry.")
+                val = "N/A"
+
+            # rebuild table row
+            tmanager_form_table = self.build_tmanager_form()['table']
+
+            # compile return data
+            result = tmanager_form_table
+
+            # return
+            self.log.trace("... DONE %s." % operation.replace('_', ' '))
+            return result
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+            return False
 
     def build_tmanager_ts_dropdown_object(self, select_type=None, options=None):
         """
@@ -453,6 +499,14 @@ class TestManager():
 
             td_update = TD(div_update, _name=td_update_addr, _id=td_update_addr)
 
+            # define the "Add New" button
+            butt_add_ts_entry_addr = 'td_%s_add_ts_entry_button' % select_addr
+            div_add_ts_entry_addr = 'td_%s_add_ts_entry_div'
+            td_add_ts_entry_addr = 'td_%s_add_ts_entry'
+            butt_add_script = "ajax('enable_ts_add', [], ''); " \
+                              "jQuery(this).remove();"
+            add_button = INPUT(_type='button', _value='+', _id=butt_add_ts_entry_addr)
+
             # build drop-down object components based on object-specific data determined above.
             #   All objects should return a label, select, table data cell for the label, table
             #   data cell for the select, and a table row containing both data cells.
@@ -468,108 +522,6 @@ class TestManager():
             # compile return data
             result['object'] = tr_selection
             result['select'] = selection
-
-            # return
-            self.log.trace("... DONE %s." % operation.replace('_', ' '))
-            return result
-
-        except BaseException, e:
-            self.handle_exception(self.log, e, operation)
-            return False
-
-    def enable_tmanager_selection_update(self):
-        """ Enable the edit field for a Test Manager selection drop-down (test suite).
-        @return: edit field and update button.
-        """
-
-        operation = inspect.stack()[0][3]
-
-        try:
-            self.log.trace("%s ..." % operation.replace('_', ' '))
-            result = DIV()
-
-            # define this objects address (name, id)
-            div_update_addr = 'td_%s_update_div' % request.vars.selectaddr
-
-            # determine selected value
-            raw_val = eval('request.vars.%s' % request.vars.src)
-
-            if int(raw_val) > 0:
-                # determine value from database
-                tables = self.tables
-                entry = db(tables[request.vars.type].id == raw_val).select(tables[request.vars.type].ALL)[0]
-                if request.vars.type != 'user story':
-                    val = entry.name
-                else:
-                    val = entry.action
-            else:
-                # value is blank
-                val = ''
-
-
-            # define update field
-            update_field_addr = "%s_field" % div_update_addr
-            update_field = INPUT(_id="%s" % update_field_addr, _name="%s" % update_field_addr,
-                                 _class="string", _type="text", _value=val)
-
-            # define update button
-            update_bttn_addr = "%s_bttn" % div_update_addr
-            update_bttn_script = "ajax('update_tmanager_selection?" \
-                                 "field=%s" \
-                                 "&selectaddr=%s" \
-                                 "&type=%s" \
-                                 "&id=%s', " \
-                                 "['%s'], 'tmanager_form'); " \
-                                 "jQuery(tmanager_form_table).remove();" \
-                                 % (update_field_addr, request.vars.selectaddr, request.vars.type,
-                                    raw_val, update_field_addr)
-            update_bttn = INPUT(_id="%s" % update_bttn_addr, _name="%s" % update_bttn_addr,
-                                _type="button", _value="Update", _onclick=update_bttn_script,
-                                _class="btn")
-
-            # compile return data
-            result = DIV(update_field, update_bttn, _name=div_update_addr, _id=div_update_addr)
-
-            # return
-            self.log.trace("... DONE %s." % operation.replace('_', ' '))
-            return result
-
-        except BaseException, e:
-            self.handle_exception(self.log, e, operation)
-            return False
-
-    def update_tmanager_selection(self):
-        """ Update the Test Manager selection drop down (and refresh update cell).
-        @return: test manager TABLE() (to fully update form).
-        """
-
-        operation = inspect.stack()[0][3]
-
-        try:
-            self.log.trace("%s ..." % operation.replace('_', ' '))
-            result = DIV()
-
-            # SELECT() object id
-            select_addr = request.vars.selectaddr
-
-            # field value
-            input_val = eval("request.vars.%s" % request.vars.field)
-
-            # update field in database
-            log.trace("Updating %s table: changing %s %s to %s ..." % (request.vars.type, request.vars.type,
-                                                                       request.vars.id, input_val))
-            if request.vars.type in self.tables.keys():
-                db(self.tables[request.vars.type].id
-                   == request.vars.id).update(name=input_val)
-            else:
-                response.flash("Failed to update entry.")
-                val = "N/A"
-
-            # rebuild table row
-            tmanager_form_table = self.build_tmanager_form()['table']
-
-            # compile return data
-            result = tmanager_form_table
 
             # return
             self.log.trace("... DONE %s." % operation.replace('_', ' '))
@@ -698,6 +650,66 @@ class TestManager():
         except BaseException, e:
             self.handle_exception(self.log, e, operation)
             return False
+
+    def enable_tmanager_selection_update(self):
+        """ Enable the edit field for a Test Manager selection drop-down (test suite).
+        @return: edit field and update button.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = DIV()
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # define this objects address (name, id)
+            div_update_addr = 'td_%s_update_div' % request.vars.selectaddr
+
+            # determine selected value
+            raw_val = eval('request.vars.%s' % request.vars.src)
+
+            if int(raw_val) > 0:
+                # determine value from database
+                tables = self.tables
+                entry = db(tables[request.vars.type].id == raw_val).select(tables[request.vars.type].ALL)[0]
+                if request.vars.type != 'user story':
+                    val = entry.name
+                else:
+                    val = entry.action
+            else:
+                # value is blank
+                val = ''
+
+
+            # define update field
+            update_field_addr = "%s_field" % div_update_addr
+            update_field = INPUT(_id="%s" % update_field_addr, _name="%s" % update_field_addr,
+                                 _class="string", _type="text", _value=val)
+
+            # define update button
+            update_bttn_addr = "%s_bttn" % div_update_addr
+            update_bttn_script = "ajax('update_tmanager_selection?" \
+                                 "field=%s" \
+                                 "&selectaddr=%s" \
+                                 "&type=%s" \
+                                 "&id=%s', " \
+                                 "['%s'], 'tmanager_form'); " \
+                                 "jQuery(tmanager_form_table).remove();" \
+                                 % (update_field_addr, request.vars.selectaddr, request.vars.type,
+                                    raw_val, update_field_addr)
+            update_bttn = INPUT(_id="%s" % update_bttn_addr, _name="%s" % update_bttn_addr,
+                                _type="button", _value="Update", _onclick=update_bttn_script,
+                                _class="btn")
+
+            # compile return data
+            result = DIV(update_field, update_bttn, _name=div_update_addr, _id=div_update_addr)
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
 
 
 ####################################################################################################
