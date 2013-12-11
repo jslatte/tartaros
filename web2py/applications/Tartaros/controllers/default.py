@@ -52,6 +52,26 @@ class TestManager():
                        'test':       db.tests,
                        'test case':  db.test_cases}
 
+    def TEMPLATE(self):
+        """
+        """
+
+        operation = inspect.stack()[0][3]
+        result = None
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # compile results
+            result = None
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
     def update_tmanager_form(self):
         """ Update the tmanager form (when an item is selected from a drop-down list).
         @return: a SELECT() object to replace the previous drop-down list.
@@ -246,7 +266,7 @@ class TestManager():
 
     def update_tmanager_selection(self):
         """ Update the Test Manager selection drop down (and refresh update cell).
-        @return: test manager TABLE() (to fully update form).
+        @return: test manager DIV() (to fully update form).
         """
 
         operation = inspect.stack()[0][3]
@@ -272,10 +292,10 @@ class TestManager():
                 val = "N/A"
 
             # rebuild table row
-            tmanager_form_table = self.build_tmanager_form()['table']
+            div_tmanager = self.build_tmanager_form()['div']
 
             # compile return data
-            result = tmanager_form_table
+            result = div_tmanager
 
             # return
             self.log.trace("... DONE %s." % operation.replace('_', ' '))
@@ -284,6 +304,127 @@ class TestManager():
         except BaseException, e:
             self.handle_exception(self.log, e, operation)
             return False
+
+    def build_td_add_ts_entry(self, select_addr):
+        """ Build the add new test suite (selection) entry object.
+        @param select_addr: the HTML id of the test suite selection object (for adding new entries to it).
+        @return: a dict containing:
+            'div' - the DIV() container for the button.
+            'td' - the TD() containing the DIV().
+        """
+
+        operation = inspect.stack()[0][3]
+        result = {'div': DIV(), 'td': TD()}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # determine the suite type (e.g., module, feature, test case, etc.)
+            suite_type = select_addr.replace('_selection', '').replace('_', '')
+
+            # define the "Add New" button
+            btn_add_ts_entry_addr = 'td_%s_add_ts_entry_btn' % select_addr
+            div_add_ts_entry_addr = 'td_%s_add_ts_entry_div' % select_addr
+            td_add_ts_entry_addr = 'td_%s_add_ts_entry' % select_addr
+            btn_add_script = "ajax('enable_ts_add?selectaddr=%(selectaddr)s&container=%(container)s&type=%(type)s', " \
+                             "%(values)s, '%(target)s'); " \
+                             "jQuery(%(div addr)s).remove();" % {'selectaddr': select_addr,
+                                                                 'container': td_add_ts_entry_addr,
+                                                                 'type': suite_type,
+                                                                 'values': "['module_selection', 'feature_selection',"
+                                                                           "'user_story_selection', 'test_selection',"
+                                                                           "'test_case_selection']",
+                                                                 'target': td_add_ts_entry_addr,
+                                                                 'div addr': div_add_ts_entry_addr}
+            btn_add_ts_entry = INPUT(_type='button', _value='+', _id=btn_add_ts_entry_addr, _class='btn',
+                                     _onclick=btn_add_script)
+            div_add_ts_entry = DIV(btn_add_ts_entry, _id=div_add_ts_entry_addr)
+            td_add_ts_entry = TD(div_add_ts_entry, _id=td_add_ts_entry_addr)
+
+            # compile results
+            result['div'] = div_add_ts_entry
+            result['td'] = td_add_ts_entry
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
+    def build_td_confirm_add_ts_entry(self, select_addr, container, suite_type):
+        """ Build the add new test suite (selection) entry input and confirm/cancel object.
+        @param select_addr: the HTML id of the test suite selection object (for adding new entries to it).
+        @param container: the TD() container object for the original add button (used to get here).
+        @param suite_type: the type of suite object (e.g., module, feature, test case, etc.).
+        @return: a dict containing:
+            'div' - the DIV() container for the button.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = {'div': DIV(), 'td': TD()}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # define the add new entry confirmation object addresses (ids)
+            inp_new_name_addr = 'inp_new_%s_name' % suite_type
+            inp_new_action_addr = 'inp_new_%s_action' % suite_type
+            inp_new_user_type_addr = 'inp_new_%s_user_type' % suite_type
+            inp_new_results_id_addr = 'inp_new_%s_results_id' % suite_type
+            btn_cnf_add_ts_entry_addr = 'td_%s_cnf_add_ts_entry_btn' % select_addr
+            btn_cnc_add_ts_entry_addr = 'td_%s_cnc_add_ts_entry_btn' % select_addr
+            div_cnf_add_ts_entry_addr = 'td_%s_cnf_add_ts_entry_div' % select_addr
+
+            # build inputs (to be included based on type of suite to be added)
+            inp_new_name_label = LABEL("Name:")
+            inp_new_name = INPUT(_id=inp_new_name_addr, _name=inp_new_name_addr,
+                                 _class="string", _type="text")
+            inp_new_action_label = LABEL("Action:")
+            inp_new_action = INPUT(_id=inp_new_action_addr, _name=inp_new_action_addr,
+                                   _class="string", _type="text")
+            inp_new_user_type_label = LABEL("User Type:")
+            options = db().select(db.user_types.ALL)
+            inp_new_user_type = SELECT(_id=inp_new_user_type_addr, _name=inp_new_user_type_addr,
+                                       *[OPTION(options[i].name, _value=str(options[i].id))
+                                         for i in range(len(options))])
+            inp_new_results_id_label = LABEL("Test Results ID")
+            inp_new_results_id = INPUT(_id=inp_new_results_id_addr, _name=inp_new_results_id_addr,
+                                       _class="string", _type="text")
+
+            # build add new entry confirmation button
+            btn_cnf_add_ts_entry_script = "ajax('%(function)s?type=%(type)s', %(values)s, '%(target)s');" \
+                                          "jQuery(%(remove)s).remove();" % {'function': 'add_ts_entry',
+                                                                            'type': request.vars.type,
+                                                                            'values': "['%s']" % inp_new_name,
+                                                                            'target': 'tmanager_form',
+                                                                            'remove': 'div_tmanager'}
+            btn_cnf_add_ts_entry = INPUT(_id=btn_cnf_add_ts_entry_addr, _type='button', _value='Add', _class='btn',
+                                         _onclick=btn_cnf_add_ts_entry_script)
+
+            # build add new entry cancel button
+            btn_cnc_add_ts_entry_script = "ajax('%(function)s?selectaddr=%(selectaddr)s', %(values)s, '%(target)s');" \
+                                          "jQuery(%(div addr)s).remove();" % {'function': 'cancel_add_ts_entry',
+                                                                              'selectaddr': select_addr,
+                                                                              'values': '[]',
+                                                                              'target': container,
+                                                                              'div addr': div_cnf_add_ts_entry_addr}
+            btn_cnc_add_ts_entry = INPUT(_id=btn_cnc_add_ts_entry_addr, _type='button', _value='Cancel', _class='btn',
+                                         _onclick=btn_cnc_add_ts_entry_script)
+
+            # build entire object
+            div_cnf_add_ts_entry = DIV(inp_new_name, btn_cnf_add_ts_entry, btn_cnc_add_ts_entry,
+                                       _id=div_cnf_add_ts_entry_addr)
+
+            # compile results
+            result['div'] = div_cnf_add_ts_entry
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
 
     def build_tmanager_ts_dropdown_object(self, select_type=None, options=None):
         """
@@ -500,12 +641,8 @@ class TestManager():
             td_update = TD(div_update, _name=td_update_addr, _id=td_update_addr)
 
             # define the "Add New" button
-            butt_add_ts_entry_addr = 'td_%s_add_ts_entry_button' % select_addr
-            div_add_ts_entry_addr = 'td_%s_add_ts_entry_div'
-            td_add_ts_entry_addr = 'td_%s_add_ts_entry'
-            butt_add_script = "ajax('enable_ts_add', [], ''); " \
-                              "jQuery(this).remove();"
-            add_button = INPUT(_type='button', _value='+', _id=butt_add_ts_entry_addr)
+            td_add_ts_entry = self.build_td_add_ts_entry(select_addr)['td']
+
 
             # build drop-down object components based on object-specific data determined above.
             #   All objects should return a label, select, table data cell for the label, table
@@ -517,7 +654,8 @@ class TestManager():
                                *[selections])
             td_selection_label = TD(selection_label, _id='td_%s_selection_label' % name)
             td_selection = TD(selection, _id='td_%s_selection' % name)
-            tr_selection = TR(td_selection_label, td_selection, td_update, _id='tr_%s_selection' % name)
+            tr_selection = TR(td_selection_label, td_selection, td_update, td_add_ts_entry,
+                              _id='tr_%s_selection' % name)
 
             # compile return data
             result['object'] = tr_selection
@@ -585,7 +723,10 @@ class TestManager():
         """ Build the Test Manager form.
         @return: a dict containing:
             'form' - the FORM() object.
-            'table' - the TABLE() object (within the FORM())
+            'table' - the TABLE() object (within the FORM()).
+            'div' - the DIV() object containing the tmanager table.
+            't_proc' - the procedures table object.
+            't_attributes - the test attributes table object.
         """
 
         operation = inspect.stack()[0][3]
@@ -623,6 +764,8 @@ class TestManager():
                 TD(LABEL("MINIMUM VERSION:")),
                 TD(LABEL("No test case selected.", _id='td_test_case_minver_val'), _id='td_test_case_minver')
             )
+            t_attributes = TABLE(tr_test_results_id, tr_test_case_class, tr_test_case_minver,
+                                 _id='t_attributes')
 
             # build test case procedure objects
             t_proc = DIV(HR(),
@@ -635,14 +778,19 @@ class TestManager():
             tmanager_table = TABLE(
                 TBODY(
                     tr_module_selection, tr_feature_selection, tr_user_story_selection, tr_test_selection,
-                    tr_test_case_selection, tr_test_results_id, tr_test_case_class, tr_test_case_minver
+                    tr_test_case_selection
                 ),
                 _id='tmanager_form_table')
-            tmanager_form = FORM(tmanager_table, t_proc, _id='tmanager_form')
+
+            div_tmanager = DIV(tmanager_table, t_attributes, t_proc, _id='div_tmanager')
+            tmanager_form = FORM(div_tmanager, _id='tmanager_form')
 
             # compile results
             result['table'] = tmanager_table
             result['form'] = tmanager_form
+            result['div'] = div_tmanager
+            result['t_proc'] = t_proc
+            result['t_attributes'] = t_attributes
 
             # return
             return result
@@ -650,6 +798,117 @@ class TestManager():
         except BaseException, e:
             self.handle_exception(self.log, e, operation)
             return False
+
+    def enable_ts_add(self):
+        """ Enable the add new entry field for a Test Manager selection drop-down (test suite).
+        @return: DIV() containing the add new entry field and confirmation/cancel buttons
+        """
+
+        operation = inspect.stack()[0][3]
+        result = DIV()
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # build enable add new entry field
+            div_cnf_add_new_ts_entry = self.build_td_confirm_add_ts_entry(request.vars.selectaddr,
+                                                                          request.vars.container,
+                                                                          request.vars.type)['div']
+
+            # compile results
+            result = div_cnf_add_new_ts_entry
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
+    def add_ts_entry(self):
+        """ Add a new entry to the given test suite selection drop down (using input).
+        @return: a DIV() containing the rebuilt tmanager form data.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = TABLE()
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+            self.log.trace(str(request.vars))
+
+            # update the test suite in database by type
+            if request.vars.type == 'module':
+                db.modules.insert(
+                    name=request.vars.inp_new_module_name,
+                    submodule_id=2  # hard-coded to ViM (hestia)
+                )
+            elif request.vars.type == 'feature':
+                db.features.insert(
+                    name=request.vars.inp_new_feature_name,
+                    submodule_id=2  # hard-coded to ViM (hestia)
+                )
+            elif request.vars.type == 'user story':
+                db.user_stories.insert(
+                    action=request.vars.inp_new_user_story_action,
+                    user_type=request.vars.inp_new_user_story_user_type,
+                    feature_id=request.vars.feature_selection,
+                    module_id=request.vars.module_selection
+                )
+            elif request.vars.type == 'test':
+                db.tests.insert(
+                    name=request.vars.inp_new_test_name,
+                    user_story_id=request.vars.user_story_selection,
+                    results_id=request.vars.inp_new_test_results_id
+                )
+            elif request.vars.type == 'test case':
+                db.test_cases.insert(
+                    name=request.vars.inp_new_test_case_name,
+                    test_id=request.vars.test_selection,
+                    procedure='',
+                    min_version='1',
+                    test_class=5,
+                    active=1,
+                )
+            else:
+                log.error("Invalid test suite type %s specifed." % request.vars.type)
+
+            # rebuild Test Manager form
+            div_tmanager = self.build_tmanager_form()['div']
+
+            # compile results
+            result = div_tmanager
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
+    def cancel_add_ts_entry(self):
+        """ Cancel adding a new test suite selection entry.
+        @return: a DIV() containing the original add new ts entry button.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = DIV()
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # rebuild add new ts entry button
+            div_add_ts_entry = self.build_td_add_ts_entry(request.vars.selectaddr)['div']
+
+            # compile results
+            result = div_add_ts_entry
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
 
     def enable_tmanager_selection_update(self):
         """ Enable the edit field for a Test Manager selection drop-down (test suite).
@@ -802,10 +1061,6 @@ def update_tmanager_form():
     return tmanager.update_tmanager_form()
 
 
-def enable_tmanager_selection_update():
-    return tmanager.enable_tmanager_selection_update()
-
-
 def update_tmanager_selection():
     return tmanager.update_tmanager_selection()
 
@@ -821,5 +1076,21 @@ def update_test_case_class_field():
 def update_test_case_minver_field():
     return tmanager.update_test_case_minver_field()
 
+
 def update_test_case_procedure_table():
     return tmanager.update_test_case_procedure_table()
+
+
+def enable_tmanager_selection_update():
+    return tmanager.enable_tmanager_selection_update()
+
+
+def enable_ts_add():
+    return tmanager.enable_ts_add()
+
+
+def cancel_add_ts_entry():
+    return tmanager.cancel_add_ts_entry()
+
+def add_ts_entry():
+    return tmanager.add_ts_entry()
