@@ -270,10 +270,10 @@ class TestManager():
         """
 
         operation = inspect.stack()[0][3]
+        result = DIV()
 
         try:
             self.log.trace("%s ..." % operation.replace('_', ' '))
-            result = DIV()
             log.trace(str(request.vars))
 
             # SELECT() object id
@@ -298,21 +298,18 @@ class TestManager():
                 response.flash("Failed to update entry.")
                 val = "N/A"
 
-            # rebuild table row
-            #div_tmanager = self.build_tmanager_form()['div']
+            # rebuild selection
             select = self.build_tmanager_ts_dropdown_object(select_addr.replace('_selection', '').replace('_', ' '))['select']
 
             # compile return data
-            #result = div_tmanager
             result = select
-
-            # return
-            self.log.trace("... DONE %s." % operation.replace('_', ' '))
-            return result
 
         except BaseException, e:
             self.handle_exception(self.log, e, operation)
-            return False
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
 
     def build_td_add_ts_entry(self, select_addr):
         """ Build the add new test suite (selection) entry object.
@@ -385,6 +382,7 @@ class TestManager():
             btn_cnf_add_ts_entry_addr = 'td_%s_cnf_add_ts_entry_btn' % select_addr
             btn_cnc_add_ts_entry_addr = 'td_%s_cnc_add_ts_entry_btn' % select_addr
             div_cnf_add_ts_entry_addr = 'td_%s_cnf_add_ts_entry_div' % select_addr
+            td_cnf_add_ts_entry_addr = 'td_%s_add_ts_entry' % select_addr
 
             # build inputs (to be included based on type of suite to be added)
             inp_new_name_label = LABEL("Name:")
@@ -415,8 +413,15 @@ class TestManager():
                                                                                       "'inp_new_user_story_user_type',"
                                                                                       "'inp_new_test_results_id']"
                                                                                       % inp_new_name_addr,
-                                                                            'target': 'tmanager_form',
-                                                                            'remove': 'div_tmanager'}
+                                                                            'target': 'td_%s' % select_addr,
+                                                                            'remove': '%s' % select_addr}
+            btn_cnf_add_ts_entry_script += "ajax('%(function)s?selectaddr=%(selectaddr)s', %(vars)s, '%(target)s');" \
+                                           "jQuery(%(remove obj)s).remove();" \
+                                           % {'function':    'restore_ts_add_new_cell',
+                                              'selectaddr':  select_addr,
+                                              'vars':        '[]',
+                                              'target':      '%s' % td_cnf_add_ts_entry_addr,
+                                              'remove obj':  div_cnf_add_ts_entry_addr}
             btn_cnf_add_ts_entry = INPUT(_id=btn_cnf_add_ts_entry_addr, _type='button', _value='Add', _class='btn',
                                          _onclick=btn_cnf_add_ts_entry_script)
 
@@ -923,11 +928,11 @@ class TestManager():
             else:
                 log.error("Invalid test suite type %s specifed." % request.vars.type)
 
-            # rebuild Test Manager form
-            div_tmanager = self.build_tmanager_form()['div']
+            # rebuild TS select object
+            select = self.build_tmanager_ts_dropdown_object(request.vars.type.replace('_', ' '))['select']
 
             # compile results
-            result = div_tmanager
+            result = select
 
         except BaseException, e:
             self.handle_exception(self.log, e, operation)
@@ -1189,3 +1194,7 @@ def add_ts_entry():
 
 def restore_ts_update_cell():
     return tmanager.build_tmanager_ts_dropdown_object(request.vars.type)['update cell']
+
+
+def restore_ts_add_new_cell():
+    return tmanager.build_td_add_ts_entry(request.vars.selectaddr)['div']
