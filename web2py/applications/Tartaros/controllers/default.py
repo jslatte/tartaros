@@ -274,17 +274,24 @@ class TestManager():
         try:
             self.log.trace("%s ..." % operation.replace('_', ' '))
             result = DIV()
+            log.trace(str(request.vars))
 
             # SELECT() object id
             select_addr = request.vars.selectaddr
 
             # field value
             input_val = eval("request.vars.%s" % request.vars.field)
+            user_type = eval("request.vars.%s_user_type" % request.vars.field)
 
             # update field in database
             log.trace("Updating %s table: changing %s %s to %s ..." % (request.vars.type, request.vars.type,
                                                                        request.vars.id, input_val))
-            if request.vars.type in self.tables.keys():
+            if request.vars.type == "user story":
+                db(self.tables[request.vars.type].id
+                   == request.vars.id).update(action=input_val)
+                db(self.tables[request.vars.type].id
+                   == request.vars.id).update(user_type=user_type)
+            elif request.vars.type in self.tables.keys():
                 db(self.tables[request.vars.type].id
                    == request.vars.id).update(name=input_val)
             else:
@@ -381,10 +388,10 @@ class TestManager():
             inp_new_name_label = LABEL("Name:")
             inp_new_name = INPUT(_id=inp_new_name_addr, _name=inp_new_name_addr,
                                  _class="string", _type="text")
-            inp_new_action_label = LABEL("Action:")
+            inp_new_action_label = LABEL(" will ")
             inp_new_action = INPUT(_id=inp_new_action_addr, _name=inp_new_action_addr,
                                    _class="string", _type="text")
-            inp_new_user_type_label = LABEL("User Type:")
+            inp_new_user_type_label = LABEL("A/The ")
             options = db().select(db.user_types.ALL)
             inp_new_user_type = SELECT(_id=inp_new_user_type_addr, _name=inp_new_user_type_addr,
                                        *[OPTION(options[i].name, _value=str(options[i].id))
@@ -962,6 +969,13 @@ class TestManager():
 
 
             # define update field
+            update_user_type_field_label = LABEL("A/The ")
+            update_user_type_field_addr = "%s_field_user_type" % div_update_addr
+            options = db().select(db.user_types.ALL)
+            update_user_type_field = SELECT(_id=update_user_type_field_addr, _name=update_user_type_field_addr,
+                                   *[OPTION(options[i].name, _value=str(options[i].id))
+                                     for i in range(len(options))])
+            update_action_field_label = LABEL(" will ")
             update_field_addr = "%s_field" % div_update_addr
             update_field = INPUT(_id="%s" % update_field_addr, _name="%s" % update_field_addr,
                                  _class="string", _type="text", _value=val)
@@ -973,16 +987,24 @@ class TestManager():
                                  "&selectaddr=%s" \
                                  "&type=%s" \
                                  "&id=%s', " \
-                                 "['%s'], 'tmanager_form'); " \
+                                 "['%s', '%s'], 'tmanager_form'); " \
                                  "jQuery(tmanager_form_table).remove();" \
                                  % (update_field_addr, request.vars.selectaddr, request.vars.type,
-                                    raw_val, update_field_addr)
+                                    raw_val, update_field_addr, update_user_type_field_addr)
             update_bttn = INPUT(_id="%s" % update_bttn_addr, _name="%s" % update_bttn_addr,
                                 _type="button", _value="Update", _onclick=update_bttn_script,
                                 _class="btn")
 
             # compile return data
-            result = DIV(update_field, update_bttn, _name=div_update_addr, _id=div_update_addr)
+            if request.vars.type == 'user story':
+                div_update = DIV(update_user_type_field_label, update_user_type_field,
+                                 update_action_field_label, update_field, update_bttn,
+                                 _name=div_update_addr, _id=div_update_addr)
+            else:
+                div_update = DIV(update_field, update_bttn, _name=div_update_addr, _id=div_update_addr)
+
+            # compile results
+            result = div_update
 
         except BaseException, e:
             self.handle_exception(self.log, e, operation)
