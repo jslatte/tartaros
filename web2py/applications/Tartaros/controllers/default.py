@@ -320,7 +320,7 @@ class TestManager():
             self.log.trace("%s ..." % operation.replace('_', ' '))
 
             # determine the suite type (e.g., module, feature, test case, etc.)
-            suite_type = select_addr.replace('_selection', '').replace('_', '')
+            suite_type = select_addr.replace('_selection', '')
 
             # define the "Add New" button
             btn_add_ts_entry_addr = 'td_%s_add_ts_entry_btn' % select_addr
@@ -366,12 +366,13 @@ class TestManager():
 
         try:
             self.log.trace("%s ..." % operation.replace('_', ' '))
+            log.trace(suite_type)
 
             # define the add new entry confirmation object addresses (ids)
             inp_new_name_addr = 'inp_new_%s_name' % suite_type
-            inp_new_action_addr = 'inp_new_%s_action' % suite_type
-            inp_new_user_type_addr = 'inp_new_%s_user_type' % suite_type
-            inp_new_results_id_addr = 'inp_new_%s_results_id' % suite_type
+            inp_new_action_addr = 'inp_new_user_story_action'
+            inp_new_user_type_addr = 'inp_new_user_story_user_type'
+            inp_new_results_id_addr = 'inp_new_test_results_id'
             btn_cnf_add_ts_entry_addr = 'td_%s_cnf_add_ts_entry_btn' % select_addr
             btn_cnc_add_ts_entry_addr = 'td_%s_cnc_add_ts_entry_btn' % select_addr
             div_cnf_add_ts_entry_addr = 'td_%s_cnf_add_ts_entry_div' % select_addr
@@ -395,8 +396,16 @@ class TestManager():
             # build add new entry confirmation button
             btn_cnf_add_ts_entry_script = "ajax('%(function)s?type=%(type)s', %(values)s, '%(target)s');" \
                                           "jQuery(%(remove)s).remove();" % {'function': 'add_ts_entry',
-                                                                            'type': request.vars.type,
-                                                                            'values': "['%s']" % inp_new_name,
+                                                                            'type': suite_type,
+                                                                            'values': "['%s', 'module_selection',"
+                                                                                      "'feature_selection', "
+                                                                                      "'user_story_selection',"
+                                                                                      "'test_selection',"
+                                                                                      "'test_case_selection',"
+                                                                                      "'inp_new_user_story_action',"
+                                                                                      "'inp_new_user_story_user_type',"
+                                                                                      "'inp_new_test_results_id']"
+                                                                                      % inp_new_name_addr,
                                                                             'target': 'tmanager_form',
                                                                             'remove': 'div_tmanager'}
             btn_cnf_add_ts_entry = INPUT(_id=btn_cnf_add_ts_entry_addr, _type='button', _value='Add', _class='btn',
@@ -412,9 +421,21 @@ class TestManager():
             btn_cnc_add_ts_entry = INPUT(_id=btn_cnc_add_ts_entry_addr, _type='button', _value='Cancel', _class='btn',
                                          _onclick=btn_cnc_add_ts_entry_script)
 
-            # build entire object
-            div_cnf_add_ts_entry = DIV(inp_new_name, btn_cnf_add_ts_entry, btn_cnc_add_ts_entry,
+            # build entire object (by input type)
+            if request.vars.type == "user_story":
+                div_cnf_add_ts_entry = DIV(inp_new_user_type_label, inp_new_user_type,
+                                           inp_new_action_label, inp_new_action,
+                                           btn_cnf_add_ts_entry, btn_cnc_add_ts_entry,
                                        _id=div_cnf_add_ts_entry_addr)
+            elif request.vars.type == "test":
+                div_cnf_add_ts_entry = DIV(inp_new_name_label, inp_new_name,
+                                           inp_new_results_id_label, inp_new_results_id,
+                                           btn_cnf_add_ts_entry, btn_cnc_add_ts_entry,
+                                           _id=div_cnf_add_ts_entry_addr)
+            else:
+                div_cnf_add_ts_entry = DIV(inp_new_name_label, inp_new_name,
+                                           btn_cnf_add_ts_entry, btn_cnc_add_ts_entry,
+                                           _id=div_cnf_add_ts_entry_addr)
 
             # compile results
             result['div'] = div_cnf_add_ts_entry
@@ -848,7 +869,7 @@ class TestManager():
                     name=request.vars.inp_new_feature_name,
                     submodule_id=2  # hard-coded to ViM (hestia)
                 )
-            elif request.vars.type == 'user story':
+            elif request.vars.type == 'user_story':
                 db.user_stories.insert(
                     action=request.vars.inp_new_user_story_action,
                     user_type=request.vars.inp_new_user_story_user_type,
@@ -861,7 +882,7 @@ class TestManager():
                     user_story_id=request.vars.user_story_selection,
                     results_id=request.vars.inp_new_test_results_id
                 )
-            elif request.vars.type == 'test case':
+            elif request.vars.type == 'test_case':
                 db.test_cases.insert(
                     name=request.vars.inp_new_test_case_name,
                     test_id=request.vars.test_selection,
