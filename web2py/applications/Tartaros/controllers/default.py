@@ -419,7 +419,7 @@ class TestManager():
                                            "jQuery(%(remove obj)s).remove();" \
                                            % {'function':    'restore_ts_add_new_cell',
                                               'selectaddr':  select_addr,
-                                              'vars':        '[]',
+                                              'vars':        "[]",
                                               'target':      '%s' % td_cnf_add_ts_entry_addr,
                                               'remove obj':  div_cnf_add_ts_entry_addr}
             btn_cnf_add_ts_entry = INPUT(_id=btn_cnf_add_ts_entry_addr, _type='button', _value='Add', _class='btn',
@@ -482,7 +482,33 @@ class TestManager():
 
             # determine options (if None)
             if options is None:
-                options = db().select(self.tables[select_type].ALL)
+
+                # regenerate selections with only items within parent suite (if possible)
+                if select_type == 'module' or select_type == 'feature':
+                    options = db().select(self.tables[select_type].ALL)
+
+                elif select_type == 'user story' \
+                    and (request.vars.module_selection is not None and str(request.vars.module_selection) != '0') \
+                    and (request.vars.feature_selection is not None and str(request.vars.module_selection) != '0'):
+                    # determine user story options for selection
+                    options = db(db.user_stories.module_id == request.vars.module_selection).select(db.user_stories.ALL)
+
+                    # filter by selected feature
+                    options.exclude(lambda entry: str(entry.feature_id) != str(request.vars.feature_selection))
+
+                elif select_type == 'test' \
+                    and (request.vars.user_story_selection is not None and str(request.vars.user_story_selection) != '0'):
+
+                    options =  db(db.tests.user_story_id == request.vars.user_story_selection).select(db.tests.ALL)
+
+                elif select_type == 'test case' \
+                    and (request.vars.test_selection is not None and str(request.vars.test_selection) != '0'):
+
+                    options = db(db.test_cases.test_id == request.vars.test_selection).select(db.test_cases.ALL)
+
+                # otherwise, default to grabbing all items from db table
+                else:
+                    options = []
 
             # determine object type (by dict)
             object_types = OrderedDict([
@@ -661,10 +687,10 @@ class TestManager():
                                    "&target=%s" \
                                    "&selectaddr=%s" \
                                    "&type=%s', " \
-                                   "['%s'], " \
+                                   "['module_selection', 'feature_selection', 'user_story_selection'," \
+                                   "'test_selection', 'test_case_selection'], " \
                                    "'%s'); " \
-                                   % (select_addr, td_update_addr, select_addr, select_type,
-                                      select_addr, td_update_addr)
+                                   % (select_addr, td_update_addr, select_addr, select_type, td_update_addr)
             div_update = DIV(INPUT(_type='button', _value='Update',
                                    _id=update_button_addr,
                                    _name=update_button_addr,
@@ -920,7 +946,7 @@ class TestManager():
                 db.test_cases.insert(
                     name=request.vars.inp_new_test_case_name,
                     test_id=request.vars.test_selection,
-                    procedure='',
+                    procedure='4',
                     min_version='1',
                     test_class=5,
                     active=1,
