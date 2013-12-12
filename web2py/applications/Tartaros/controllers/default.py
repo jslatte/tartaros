@@ -299,10 +299,12 @@ class TestManager():
                 val = "N/A"
 
             # rebuild table row
-            div_tmanager = self.build_tmanager_form()['div']
+            #div_tmanager = self.build_tmanager_form()['div']
+            select = self.build_tmanager_ts_dropdown_object(select_addr.replace('_selection', '').replace('_', ' '))['select']
 
             # compile return data
-            result = div_tmanager
+            #result = div_tmanager
+            result = select
 
             # return
             self.log.trace("... DONE %s." % operation.replace('_', ' '))
@@ -430,17 +432,17 @@ class TestManager():
 
             # build entire object (by input type)
             if request.vars.type == "user_story":
-                div_cnf_add_ts_entry = DIV(inp_new_user_type_label, inp_new_user_type,
+                div_cnf_add_ts_entry = FORM(inp_new_user_type_label, inp_new_user_type,
                                            inp_new_action_label, inp_new_action,
                                            btn_cnf_add_ts_entry, btn_cnc_add_ts_entry,
                                        _id=div_cnf_add_ts_entry_addr)
             elif request.vars.type == "test":
-                div_cnf_add_ts_entry = DIV(inp_new_name_label, inp_new_name,
+                div_cnf_add_ts_entry = FORM(inp_new_name_label, inp_new_name,
                                            inp_new_results_id_label, inp_new_results_id,
                                            btn_cnf_add_ts_entry, btn_cnc_add_ts_entry,
                                            _id=div_cnf_add_ts_entry_addr)
             else:
-                div_cnf_add_ts_entry = DIV(inp_new_name_label, inp_new_name,
+                div_cnf_add_ts_entry = FORM(inp_new_name_label, inp_new_name,
                                            btn_cnf_add_ts_entry, btn_cnc_add_ts_entry,
                                            _id=div_cnf_add_ts_entry_addr)
 
@@ -688,14 +690,14 @@ class TestManager():
             # compile return data
             result['object'] = tr_selection
             result['select'] = selection
-
-            # return
-            self.log.trace("... DONE %s." % operation.replace('_', ' '))
-            return result
+            result['update cell'] = div_update
 
         except BaseException, e:
             self.handle_exception(self.log, e, operation)
-            return False
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
 
     def build_procedure_table(self, steps=None):
         """ Build the test case procedure table.
@@ -853,6 +855,26 @@ class TestManager():
         self.log.trace("... DONE %s." % operation.replace('_', ' '))
         return result
 
+    def TEMPLATE(self):
+        """
+        """
+
+        operation = inspect.stack()[0][3]
+        result = None
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # compile results
+            result = None
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
     def add_ts_entry(self):
         """ Add a new entry to the given test suite selection drop down (using input).
         @return: a DIV() containing the rebuilt tmanager form data.
@@ -987,21 +1009,29 @@ class TestManager():
                                  "&selectaddr=%s" \
                                  "&type=%s" \
                                  "&id=%s', " \
-                                 "['%s', '%s'], 'tmanager_form'); " \
-                                 "jQuery(tmanager_form_table).remove();" \
+                                 "['%s', '%s'], 'td_%s'); " \
+                                 "jQuery(%s).remove();" \
                                  % (update_field_addr, request.vars.selectaddr, request.vars.type,
-                                    raw_val, update_field_addr, update_user_type_field_addr)
+                                    raw_val, update_field_addr, update_user_type_field_addr,
+                                    request.vars.selectaddr, request.vars.selectaddr)
+            update_bttn_script += "ajax('%(function)s?type=%(type)s', %(vars)s, '%(target)s');" \
+                                  "jQuery(%(remove obj)s).remove();" \
+                                  % {'function':    'restore_ts_update_cell',
+                                     'type':        request.vars.type,
+                                     'vars':        '[]',
+                                     'target':      'td_%s_update' % request.vars.selectaddr,
+                                     'remove obj':  div_update_addr}
             update_bttn = INPUT(_id="%s" % update_bttn_addr, _name="%s" % update_bttn_addr,
                                 _type="button", _value="Update", _onclick=update_bttn_script,
                                 _class="btn")
 
             # compile return data
             if request.vars.type == 'user story':
-                div_update = DIV(update_user_type_field_label, update_user_type_field,
+                div_update = FORM(update_user_type_field_label, update_user_type_field,
                                  update_action_field_label, update_field, update_bttn,
                                  _name=div_update_addr, _id=div_update_addr)
             else:
-                div_update = DIV(update_field, update_bttn, _name=div_update_addr, _id=div_update_addr)
+                div_update = FORM(update_field, update_bttn, _name=div_update_addr, _id=div_update_addr)
 
             # compile results
             result = div_update
@@ -1034,6 +1064,23 @@ def index():
 
     # build tmanager form
     tmanager_form = build_tmanager_form()['form']
+
+    # handle add crafting material form submission
+    if tmanager_form.process(keepvalues=True).accepted:
+        # insert record into database
+        try:
+            pass
+
+            #response.flash = ''
+
+        except BaseException:
+            response.flash = 'Failed to submit.'
+
+    elif tmanager_form.errors:
+        response.flash = 'Failed to submit due to errors.'
+
+    else:
+        pass
 
     return dict(tmanager_form=tmanager_form)
 
@@ -1135,5 +1182,10 @@ def enable_ts_add():
 def cancel_add_ts_entry():
     return tmanager.cancel_add_ts_entry()
 
+
 def add_ts_entry():
     return tmanager.add_ts_entry()
+
+
+def restore_ts_update_cell():
+    return tmanager.build_tmanager_ts_dropdown_object(request.vars.type)['update cell']
