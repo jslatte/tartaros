@@ -165,16 +165,15 @@ class TestManager():
             # compile result
             result = LABEL("%s" % test_results_id, _id='td_test_results_id')
 
-            # return
-            self.log.trace("... DONE %s." % operation.replace('_', ' '))
-            return result
-
         except IndexError:
-            return result
+            result = LABEL("No test selected.")
 
         except BaseException, e:
             self.handle_exception(self.log, e, operation)
-            return result
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
 
     def update_test_case_class_field(self):
         """ Update the test case class field (if test case dropdown changed).
@@ -194,16 +193,15 @@ class TestManager():
             # compile result
             result = LABEL("%s" % test_case_class, _id='td_test_case_class')
 
-            # return
-            self.log.trace("... DONE %s." % operation.replace('_', ' '))
-            return result
-
         except IndexError:
-            return result
+            result = LABEL("No test case selected.")
 
         except BaseException, e:
             self.handle_exception(self.log, e, operation)
-            return result
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
 
     def update_test_case_minver_field(self):
         """ Update the test case minimum version field (if test case dropdown changed).
@@ -223,16 +221,15 @@ class TestManager():
             # compile result
             result = LABEL("%s" % test_case_minver, _id='td_test_case_minver')
 
-            # return
-            self.log.trace("... DONE %s." % operation.replace('_', ' '))
-            return result
-
         except IndexError:
-            return result
+            result = LABEL("No test case selected.")
 
         except BaseException, e:
             self.handle_exception(self.log, e, operation)
-            return result
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
 
     def update_test_case_procedure_table(self):
         """ Update the test case procedure table on test case selection
@@ -525,6 +522,18 @@ class TestManager():
             ajax_s_template = "ajax('update_tmanager_form', %s, 'td_%s_selection'); "
             ajax_s_template2 = "ajax('update_tmanager_form?%s_selection=0', %s, 'td_%s_selection'); "
             jquery_s_template = "jQuery(%s_selection).remove(); "
+            update_tproc_script = "jQuery(tbody_proc).remove(); " \
+                                  "ajax('update_test_case_procedure_table', ['%s_selection'], 't_proc');" %\
+                                  object_types['test case']
+            update_test_results_id_script = "jQuery(td_test_results_id_val).remove(); " \
+                                            "ajax('update_test_results_id_field', " \
+                                            "['%s_selection'], 'td_test_results_id');" %object_types['test']
+            update_test_case_class_script = "jQuery(td_test_case_class_val).remove(); " \
+                                            "ajax('update_test_case_class_field', " \
+                                            "['%s_selection'], 'td_test_case_class');" % object_types['test case']
+            update_test_case_minver_script= "jQuery(td_test_case_minver_val).remove(); " \
+                                            "ajax('update_test_case_minver_field', " \
+                                            "['%s_selection'], 'td_test_case_minver');" % object_types['test case']
 
             # customize drop-down variables based on type
             self.log.trace("... building %s drop-down object ..." % obj_type)
@@ -568,6 +577,14 @@ class TestManager():
                                               "['%s_selection']" % object_types['test'],
                                               object_types['test case'])
 
+                # add update test attributes statements
+                ajax_s += update_test_results_id_script
+                ajax_s += update_test_case_class_script
+                ajax_s += update_test_case_minver_script
+
+                # add update test case procedure statement (will clear)
+                ajax_s += update_tproc_script
+
             # user story drop-down objects
             elif obj_type == object_types['user story']:
                 # input data
@@ -608,6 +625,14 @@ class TestManager():
                                               "['%s_selection']" % object_types['test'],
                                               object_types['test case'])
 
+                # add update test attributes statements
+                ajax_s += update_test_results_id_script
+                ajax_s += update_test_case_class_script
+                ajax_s += update_test_case_minver_script
+
+                # add update test case procedure statement (will clear)
+                ajax_s += update_tproc_script
+
             # test drop-down objects
             elif obj_type == object_types['test']:
                 # input data
@@ -627,16 +652,14 @@ class TestManager():
                 # build ajax statement
                 self.log.trace("... building AJAX statement ...")
                 ajax_s = ajax_s_template % ("['%s_selection']" % obj_type, object_types['test case'])
-                # add test results id update statement
-                ajax_s += "jQuery(td_test_results_id_val).remove(); " \
-                          "ajax('update_test_results_id_field', ['%s_selection'], 'td_test_results_id');" %\
-                          object_types['test']
-                ajax_s += "jQuery(td_test_case_class_val).remove(); " \
-                          "ajax('update_test_case_class_field', ['%s_selection'], 'td_test_case_class');" %\
-                          object_types['test case']
-                ajax_s += "jQuery(td_test_case_minver_val).remove(); " \
-                          "ajax('update_test_case_minver_field', ['%s_selection'], 'td_test_case_minver');" %\
-                          object_types['test case']
+
+                # add update test attributes statements
+                ajax_s += update_test_results_id_script
+                ajax_s += update_test_case_class_script
+                ajax_s += update_test_case_minver_script
+
+                # add update test case procedure statement (will clear)
+                ajax_s += update_tproc_script
 
             # test case drop-down objects
             elif obj_type == object_types['test case']:
@@ -651,18 +674,13 @@ class TestManager():
                 # build ajax statement
                 self.log.trace("... building AJAX statement ...")
                 ajax_s = ''
-                # add update test case class statement
-                ajax_s += "jQuery(td_test_case_class_val).remove(); " \
-                          "ajax('update_test_case_class_field', ['%s_selection'], 'td_test_case_class');" %\
-                          object_types['test case']
-                # add update test case minimum version statement
-                ajax_s += "jQuery(td_test_case_minver_val).remove(); " \
-                          "ajax('update_test_case_minver_field', ['%s_selection'], 'td_test_case_minver');" %\
-                          object_types['test case']
+
+                # add update test attributes statements
+                ajax_s += update_test_case_class_script
+                ajax_s += update_test_case_minver_script
+
                 # add update test case procedure statement
-                ajax_s += "jQuery(tbody_proc).remove(); " \
-                          "ajax('update_test_case_procedure_table', ['%s_selection'], 't_proc');" %\
-                          object_types['test case']
+                ajax_s += update_tproc_script
 
             # unknown drop-down objects
             else:
@@ -734,12 +752,12 @@ class TestManager():
         """ Build the test case procedure table.
         @param steps: a list of the procedure steps.
         @return: a dict containing:
-            'body' - the TBODY() containing the data.
+            'div' - the DIV() containing the table.
             'table' - the TABLE() containing everything.
         """
 
         operation = inspect.stack()[0][3]
-        result = {'table': TABLE(), 'body': TBODY()}
+        result = {'table': TABLE(), 'form': FORM()}
 
         try:
             self.log.trace("%s ..." % operation.replace('_', ' '))
@@ -769,10 +787,15 @@ class TestManager():
                 proc_table_body,
                 _id='t_proc'
             )
+            proc_div = DIV(
+                H3("Test Case Procedure"),
+                proc_table,
+                _id='div_test_case_procedure'
+            )
 
             # compile results
             result['table'] = proc_table
-            result['body'] = proc_table_body
+            result['div'] = proc_div
 
         except BaseException, e:
             self.handle_exception(self.log, e, operation)
@@ -829,11 +852,7 @@ class TestManager():
                                  _id='t_attributes')
 
             # build test case procedure objects
-            t_proc = DIV(HR(),
-                         H3("Test Case Procedure"),
-                         self.build_procedure_table()['table'],
-                         _id='div_test_case_procedure'
-            )
+            t_proc = self.build_procedure_table()['div']
 
             # build tmanager form
             tmanager_table = TABLE(
@@ -843,7 +862,7 @@ class TestManager():
                 ),
                 _id='tmanager_form_table')
 
-            div_tmanager = DIV(tmanager_table, t_attributes, t_proc, _id='div_tmanager')
+            div_tmanager = DIV(tmanager_table, t_attributes, HR(), t_proc, _id='div_tmanager')
             tmanager_form = FORM(div_tmanager, _id='tmanager_form')
 
             # compile results
