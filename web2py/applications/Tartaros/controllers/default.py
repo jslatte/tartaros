@@ -147,82 +147,20 @@ class TestManager():
             self.handle_exception(self.log, e, operation)
             return False
 
-    def update_test_results_id_field(self):
-        """ Update the test results id field (if test dropdown changed).
+    def update_test_attribute_field(self, field):
+        """ Update the test attribute field (if test dropdown changed).
+        @param field: the field to update (e.g., 'test results id', 'test case class', 'test case minimum version').
         @return: LABEL() containing test results id for selected test.
         """
 
         operation = inspect.stack()[0][3]
-        result = LABEL("No test results ID found for selected test.")
+        result = LABEL()
 
         try:
             self.log.trace("%s ..." % operation.replace('_', ' '))
 
             # determine test results id for selected test
-            test_results_id = db(db.tests.id ==
-                                 request.vars.test_selection).select(db.tests.ALL)[0].results_id
-
-            # compile result
-            result = LABEL("%s" % test_results_id, _id='td_test_results_id')
-
-        except IndexError:
-            result = LABEL("No test selected.")
-
-        except BaseException, e:
-            self.handle_exception(self.log, e, operation)
-
-        # return
-        self.log.trace("... DONE %s." % operation.replace('_', ' '))
-        return result
-
-    def update_test_case_class_field(self):
-        """ Update the test case class field (if test case dropdown changed).
-        @return: LABEL() containing test case class for selected test case.
-        """
-
-        operation = inspect.stack()[0][3]
-        result = LABEL("No class found for selected test case.")
-
-        try:
-            self.log.trace("%s ..." % operation.replace('_', ' '))
-
-            # determine test case class for selected test case
-            test_case_class = db(db.test_cases.id ==
-                                 request.vars.test_case_selection).select(db.test_cases.ALL)[0].test_class
-
-            # compile result
-            result = LABEL("%s" % test_case_class, _id='td_test_case_class')
-
-        except IndexError:
-            result = LABEL("No test case selected.")
-
-        except BaseException, e:
-            self.handle_exception(self.log, e, operation)
-
-        # return
-        self.log.trace("... DONE %s." % operation.replace('_', ' '))
-        return result
-
-    def update_test_case_minver_field(self):
-        """ Update the test case minimum version field (if test case dropdown changed).
-        @return: LABEL() containing test case minimum version for selected test case.
-        """
-
-        operation = inspect.stack()[0][3]
-        result = LABEL("No minimum version found for selected test case.")
-
-        try:
-            self.log.trace("%s ..." % operation.replace('_', ' '))
-
-            # determine test case class for selected test case
-            test_case_minver = db(db.test_cases.id ==
-                                  request.vars.test_case_selection).select(db.test_cases.ALL)[0].min_version
-
-            # compile result
-            result = LABEL("%s" % test_case_minver, _id='td_test_case_minver')
-
-        except IndexError:
-            result = LABEL("No test case selected.")
+            result = self.build_test_attribute_field(field)['div']
 
         except BaseException, e:
             self.handle_exception(self.log, e, operation)
@@ -369,7 +307,6 @@ class TestManager():
 
         try:
             self.log.trace("%s ..." % operation.replace('_', ' '))
-            log.trace(suite_type)
 
             # define the add new entry confirmation object addresses (ids)
             inp_new_name_addr = 'inp_new_%s_name' % suite_type
@@ -458,6 +395,158 @@ class TestManager():
         self.log.trace("... DONE %s." % operation.replace('_', ' '))
         return result
 
+    def build_test_attribute_field(self, field):
+        """ Build the table cell for a test/test case attribute (e.g., test results id, test class, etc.).
+        @param field: the field to create (e.g., 'test results id', 'test case class', 'test case minimum version').
+        @return: a dict containing:
+            'tr' - the TR() object.
+            'td' - the TD() object.
+            'div' - a subcontainter DIV() with the cell data.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = {'td': TD(), 'div': DIV(), 'tr': TR()}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # determine value of field
+            try:
+                if field == 'test results id':
+                    val = db(db.tests.id == request.vars.test_selection).select()[0].results_id
+
+                elif field == 'test case class':
+                    val = db(db.test_cases.id == request.vars.test_case_selection).select()[0].test_class
+
+                elif field == 'test case minimum version':
+                    val = db(db.test_cases.id == request.vars.test_case_selection).select()[0].min_version
+
+                elif field == 'test case active':
+                    active = db(db.test_cases.id == request.vars.test_case_selection).select()[0].active
+                    if str(active) == '1':
+                        val = "Yes"
+                    else:
+                        val = "No"
+
+                else:
+                    val = "N/A"
+
+            except IndexError or TypeError:
+                if field == 'test results id':
+                    val = "No test selected."
+                else:
+                    val = "No test case selected."
+
+            # determine field label by field type
+            field_label = field.replace('test ', '').replace('case ', '').upper() + ":"
+
+            # determine object ids by field type
+            obj_id = field.lower().replace(' ', '_')
+            test_attribute_val_addr = '%s_val' % obj_id
+            div_test_attribute_val_addr = 'div_%s_val' % obj_id
+            td_test_attribute_val_addr = 'td_%s_val' % obj_id
+            tr_test_attribute_addr = 'tr_%s' % obj_id
+
+            # build the object
+            test_attribute_val = LABEL(val,
+                                       _id=test_attribute_val_addr, _name=test_attribute_val_addr)
+            div_test_attribute_val = DIV(test_attribute_val,
+                                         _id=div_test_attribute_val_addr)
+            td_test_attribute_val = TD(div_test_attribute_val,
+                                       _id=td_test_attribute_val_addr)
+            td_test_attribute_label = TD(LABEL(field_label))
+            tr_test_attribute = TR(
+                td_test_attribute_label,
+                td_test_attribute_val,
+                _id=tr_test_attribute_addr
+            )
+
+            # compile results
+            result['tr'] = tr_test_attribute
+            result['td'] = td_test_attribute_val
+            result['div'] = div_test_attribute_val
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
+    def build_td_edit_test_attributes(self):
+        """ Build the edit test attribute entry input and confirm/cancel object.
+        @return: a dict containing:
+            'form' - the FORM() container for the edit field and buttons.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = {'form': FORM()}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # define the add new entry confirmation object addresses (ids)
+            inp_new_name_addr = 'inp_new_%s_name' % suite_type
+            btn_cnf_add_ts_entry_addr = 'td_%s_cnf_add_ts_entry_btn' % select_addr
+            btn_cnc_add_ts_entry_addr = 'td_%s_cnc_add_ts_entry_btn' % select_addr
+            div_cnf_add_ts_entry_addr = 'td_%s_cnf_add_ts_entry_div' % select_addr
+            td_cnf_add_ts_entry_addr = 'td_%s_add_ts_entry' % select_addr
+
+            # build inputs (to be included based on type of suite to be added)
+            inp_new_name_label = LABEL("Name:")
+            inp_new_name = INPUT(_id=inp_new_name_addr, _name=inp_new_name_addr,
+                                 _class="string", _type="text")
+
+            # build add new entry confirmation button
+            btn_cnf_add_ts_entry_script = "ajax('%(function)s?type=%(type)s', %(values)s, '%(target)s');" \
+                                          "jQuery(%(remove)s).remove();" % {'function': 'add_ts_entry',
+                                                                            'type': suite_type,
+                                                                            'values': "['%s', 'module_selection',"
+                                                                                      "'feature_selection', "
+                                                                                      "'user_story_selection',"
+                                                                                      "'test_selection',"
+                                                                                      "'test_case_selection',"
+                                                                                      "'inp_new_user_story_action',"
+                                                                                      "'inp_new_user_story_user_type',"
+                                                                                      "'inp_new_test_results_id']"
+                                                                                      % inp_new_name_addr,
+                                                                            'target': 'td_%s' % select_addr,
+                                                                            'remove': '%s' % select_addr}
+            btn_cnf_add_ts_entry_script += "ajax('%(function)s?selectaddr=%(selectaddr)s', %(vars)s, '%(target)s');" \
+                                           "jQuery(%(remove obj)s).remove();" \
+                                           % {'function':    'restore_ts_add_new_cell',
+                                              'selectaddr':  select_addr,
+                                              'vars':        "[]",
+                                              'target':      '%s' % td_cnf_add_ts_entry_addr,
+                                              'remove obj':  div_cnf_add_ts_entry_addr}
+            btn_cnf_add_ts_entry = INPUT(_id=btn_cnf_add_ts_entry_addr, _type='button', _value='Add', _class='btn',
+                                         _onclick=btn_cnf_add_ts_entry_script)
+
+            # build add new entry cancel button
+            btn_cnc_add_ts_entry_script = "ajax('%(function)s?selectaddr=%(selectaddr)s', %(values)s, '%(target)s');" \
+                                          "jQuery(%(div addr)s).remove();" % {'function': 'cancel_add_ts_entry',
+                                                                              'selectaddr': select_addr,
+                                                                              'values': '[]',
+                                                                              'target': container,
+                                                                              'div addr': div_cnf_add_ts_entry_addr}
+            btn_cnc_add_ts_entry = INPUT(_id=btn_cnc_add_ts_entry_addr, _type='button', _value='Cancel', _class='btn',
+                                         _onclick=btn_cnc_add_ts_entry_script)
+
+            # build entire object
+            f_cnf_add_ts_entry = FORM(inp_new_name_label, inp_new_name,
+                                      btn_cnf_add_ts_entry, btn_cnc_add_ts_entry,
+                                      _id=div_cnf_add_ts_entry_addr)
+
+            # compile results
+            result['form'] = f_cnf_add_ts_entry
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
     def build_tmanager_ts_dropdown_object(self, select_type=None, options=None):
         """
         @param select_type: the selection type of drop-down list (e.g., module, feature, etc.).
@@ -525,15 +614,20 @@ class TestManager():
             update_tproc_script = "jQuery(tbody_proc).remove(); " \
                                   "ajax('update_test_case_procedure_table', ['%s_selection'], 't_proc');" %\
                                   object_types['test case']
-            update_test_results_id_script = "jQuery(td_test_results_id_val).remove(); " \
+            update_test_results_id_script = "jQuery(div_test_results_id_val).remove(); " \
                                             "ajax('update_test_results_id_field', " \
-                                            "['%s_selection'], 'td_test_results_id');" %object_types['test']
-            update_test_case_class_script = "jQuery(td_test_case_class_val).remove(); " \
+                                            "['%s_selection'], 'td_test_results_id_val');" %object_types['test']
+            update_test_case_class_script = "jQuery(div_test_case_class_val).remove(); " \
                                             "ajax('update_test_case_class_field', " \
-                                            "['%s_selection'], 'td_test_case_class');" % object_types['test case']
-            update_test_case_minver_script= "jQuery(td_test_case_minver_val).remove(); " \
-                                            "ajax('update_test_case_minver_field', " \
-                                            "['%s_selection'], 'td_test_case_minver');" % object_types['test case']
+                                            "['%s_selection'], 'td_test_case_class_val');" % object_types['test case']
+            update_test_case_minver_script = "jQuery(div_test_case_minimum_version_val).remove(); " \
+                                             "ajax('update_test_case_minver_field', " \
+                                             "['%s_selection'], 'td_test_case_minimum_version_val');" \
+                                             % object_types['test case']
+            update_test_case_active_script = "jQuery(div_test_case_active_val).remove(); " \
+                                             "ajax('update_test_case_active_field', " \
+                                             "['%s_selection'], 'td_test_case_active_val');" \
+                                             % object_types['test case']
 
             # customize drop-down variables based on type
             self.log.trace("... building %s drop-down object ..." % obj_type)
@@ -581,6 +675,7 @@ class TestManager():
                 ajax_s += update_test_results_id_script
                 ajax_s += update_test_case_class_script
                 ajax_s += update_test_case_minver_script
+                ajax_s += update_test_case_active_script
 
                 # add update test case procedure statement (will clear)
                 ajax_s += update_tproc_script
@@ -629,6 +724,7 @@ class TestManager():
                 ajax_s += update_test_results_id_script
                 ajax_s += update_test_case_class_script
                 ajax_s += update_test_case_minver_script
+                ajax_s += update_test_case_active_script
 
                 # add update test case procedure statement (will clear)
                 ajax_s += update_tproc_script
@@ -657,6 +753,7 @@ class TestManager():
                 ajax_s += update_test_results_id_script
                 ajax_s += update_test_case_class_script
                 ajax_s += update_test_case_minver_script
+                ajax_s += update_test_case_active_script
 
                 # add update test case procedure statement (will clear)
                 ajax_s += update_tproc_script
@@ -678,6 +775,7 @@ class TestManager():
                 # add update test attributes statements
                 ajax_s += update_test_case_class_script
                 ajax_s += update_test_case_minver_script
+                ajax_s += update_test_case_active_script
 
                 # add update test case procedure statement
                 ajax_s += update_tproc_script
@@ -836,19 +934,11 @@ class TestManager():
             tr_test_case_selection = self.build_tmanager_ts_dropdown_object('test case', test_cases)['object']
 
             # build test attribute objects
-            tr_test_results_id = TR(
-                TD(LABEL("TEST RESULTS ID:")),
-                TD(LABEL("No test selected.", _id='td_test_results_id_val'), _id='td_test_results_id')
-            )
-            tr_test_case_class = TR(
-                TD(LABEL("TEST CASE CLASS:")),
-                TD(LABEL("No test case selected.", _id='td_test_case_class_val'), _id='td_test_case_class')
-            )
-            tr_test_case_minver = TR(
-                TD(LABEL("MINIMUM VERSION:")),
-                TD(LABEL("No test case selected.", _id='td_test_case_minver_val'), _id='td_test_case_minver')
-            )
-            t_attributes = TABLE(tr_test_results_id, tr_test_case_class, tr_test_case_minver,
+            tr_test_results_id = self.build_test_attribute_field('test results id')['tr']
+            tr_test_case_class = self.build_test_attribute_field('test case class')['tr']
+            tr_test_case_minver = self.build_test_attribute_field('test case minimum version')['tr']
+            tr_test_case_active = self.build_test_attribute_field('test case active')['tr']
+            t_attributes = TABLE(tr_test_results_id, tr_test_case_class, tr_test_case_minver, tr_test_case_active,
                                  _id='t_attributes')
 
             # build test case procedure objects
@@ -1206,15 +1296,19 @@ def update_tmanager_selection():
 
 
 def update_test_results_id_field():
-    return tmanager.update_test_results_id_field()
+    return tmanager.update_test_attribute_field('test results id')
 
 
 def update_test_case_class_field():
-    return tmanager.update_test_case_class_field()
+    return tmanager.update_test_attribute_field('test case class')
 
 
 def update_test_case_minver_field():
-    return tmanager.update_test_case_minver_field()
+    return tmanager.update_test_attribute_field('test case minimum version')
+
+
+def update_test_case_active_field():
+    return tmanager.update_test_attribute_field('test case active')
 
 
 def update_test_case_procedure_table():
