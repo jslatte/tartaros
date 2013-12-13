@@ -473,6 +473,72 @@ class TestManager():
         self.log.trace("... DONE %s." % operation.replace('_', ' '))
         return result
 
+    def build_edit_test_attribute_field(self, field, c_value=None):
+        """ Build the edit field cell for a test/test case attribute (e.g., test results id, test class, etc.).
+        @param field: the field to create (e.g., 'test results id', 'test case class', 'test case minimum version').
+        @param c_value: the value in the field when clicking to edit
+        @return: a dict containing:
+            'form' - a subcontainter FORM() with the cell data.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = {'form': FORM()}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # determine object ids by field type
+            obj_id = field.lower().replace(' ', '_')
+            test_attribute_val_addr = '%s_edit_val' % obj_id
+            div_test_attribute_val_addr = 'div_%s_edit_val' % obj_id
+
+            # build the input field
+            if field == 'test case active':
+                test_attribute_edit = SELECT(*[OPTION('Yes', _value='1'), OPTION('No', _value='0')],
+                                             _id=test_attribute_val_addr, _name=test_attribute_val_addr)
+            else:
+                test_attribute_edit = LABEL(c_value, _id=test_attribute_val_addr, _name=test_attribute_val_addr)
+
+            # build confirmation button
+            btn_cnf_script = "ajax('%(function)s', %(values)s, '%(target)s');" \
+                             "jQuery(%(remove)s).remove();" \
+                             % {'function': '',
+                                'values': "[]",
+                                'target': 'td_%s',
+                                'remove': '%s'}
+            btn_cnf_script += "ajax('%(function)s', %(values)s, '%(target)s');" \
+                              "jQuery(%(remove)s).remove();" \
+                              % {'function': '',
+                                 'values': "[]",
+                                 'target': 'td_%s',
+                                 'remove': '%s'}
+            btn_cnf = INPUT(_type='button', _value='Update', _class='btn',
+                            _onclick=btn_cnf_script)
+
+            # build cancel button
+            btn_cnc_script = "ajax('%(function)s', %(values)s, '%(target)s');" \
+                             "jQuery(%(remove)s).remove();"\
+                             % {'function': '',
+                                'values': '[]',
+                                'target': '',
+                                'remove': ''}
+            btn_cnc = INPUT(_type='button', _value='Cancel', _class='btn',
+                            _onclick=btn_cnc_script)
+
+            # build form
+            f_test_attribute_edit = FORM(test_attribute_edit, btn_cnf, btn_cnc,
+                                         _id=div_test_attribute_val_addr)
+
+            # compile results
+            result['form'] = f_test_attribute_edit
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
     def build_td_edit_test_attributes(self):
         """ Build the edit test attribute entry input and confirm/cancel object.
         @return: a dict containing:
@@ -995,8 +1061,9 @@ class TestManager():
         self.log.trace("... DONE %s." % operation.replace('_', ' '))
         return result
 
-    def TEMPLATE(self):
-        """
+    def enable_test_attribute_edit(self, field):
+        """ Enable editing the value for a test/test case attribute (e.g., test results id, test class, etc.).
+        @param field: the field to create (e.g., 'test results id', 'test case class', 'test case minimum version').
         """
 
         operation = inspect.stack()[0][3]
