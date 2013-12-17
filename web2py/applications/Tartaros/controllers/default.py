@@ -555,80 +555,6 @@ class TestManager():
         self.log.trace("... DONE %s." % operation.replace('_', ' '))
         return result
 
-    def build_td_edit_test_attributes(self):
-        """ Build the edit test attribute entry input and confirm/cancel object.
-        @return: a dict containing:
-            'form' - the FORM() container for the edit field and buttons.
-        """
-
-        operation = inspect.stack()[0][3]
-        result = {'form': FORM()}
-
-        try:
-            self.log.trace("%s ..." % operation.replace('_', ' '))
-
-            # define the add new entry confirmation object addresses (ids)
-            inp_new_name_addr = 'inp_new_%s_name' % suite_type
-            btn_cnf_add_ts_entry_addr = 'td_%s_cnf_add_ts_entry_btn' % select_addr
-            btn_cnc_add_ts_entry_addr = 'td_%s_cnc_add_ts_entry_btn' % select_addr
-            div_cnf_add_ts_entry_addr = 'td_%s_cnf_add_ts_entry_div' % select_addr
-            td_cnf_add_ts_entry_addr = 'td_%s_add_ts_entry' % select_addr
-
-            # build inputs (to be included based on type of suite to be added)
-            inp_new_name_label = LABEL("Name:")
-            inp_new_name = INPUT(_id=inp_new_name_addr, _name=inp_new_name_addr,
-                                 _class="string", _type="text")
-
-            # build add new entry confirmation button
-            btn_cnf_add_ts_entry_script = "ajax('%(function)s?type=%(type)s', %(values)s, '%(target)s');" \
-                                          "jQuery(%(remove)s).remove();" % {'function': 'add_ts_entry',
-                                                                            'type': suite_type,
-                                                                            'values': "['%s', 'module_selection',"
-                                                                                      "'feature_selection', "
-                                                                                      "'user_story_selection',"
-                                                                                      "'test_selection',"
-                                                                                      "'test_case_selection',"
-                                                                                      "'inp_new_user_story_action',"
-                                                                                      "'inp_new_user_story_user_type',"
-                                                                                      "'inp_new_test_results_id']"
-                                                                                      % inp_new_name_addr,
-                                                                            'target': 'td_%s' % select_addr,
-                                                                            'remove': '%s' % select_addr}
-            btn_cnf_add_ts_entry_script += "ajax('%(function)s?selectaddr=%(selectaddr)s', %(vars)s, '%(target)s');" \
-                                           "jQuery(%(remove obj)s).remove();" \
-                                           % {'function':    'restore_ts_add_new_cell',
-                                              'selectaddr':  select_addr,
-                                              'vars':        "[]",
-                                              'target':      '%s' % td_cnf_add_ts_entry_addr,
-                                              'remove obj':  div_cnf_add_ts_entry_addr}
-            btn_cnf_add_ts_entry = INPUT(_id=btn_cnf_add_ts_entry_addr, _type='button', _value='Add', _class='btn',
-                                         _onclick=btn_cnf_add_ts_entry_script)
-
-            # build add new entry cancel button
-            btn_cnc_add_ts_entry_script = "ajax('%(function)s?selectaddr=%(selectaddr)s', %(values)s, '%(target)s');" \
-                                          "jQuery(%(div addr)s).remove();" % {'function': 'cancel_add_ts_entry',
-                                                                              'selectaddr': select_addr,
-                                                                              'values': '[]',
-                                                                              'target': container,
-                                                                              'div addr': div_cnf_add_ts_entry_addr}
-            btn_cnc_add_ts_entry = INPUT(_id=btn_cnc_add_ts_entry_addr, _type='button', _value='Cancel', _class='btn',
-                                         _onclick=btn_cnc_add_ts_entry_script)
-
-            # build entire object
-            f_cnf_add_ts_entry = FORM(inp_new_name_label, inp_new_name,
-                                      btn_cnf_add_ts_entry, btn_cnc_add_ts_entry,
-                                      _id=div_cnf_add_ts_entry_addr)
-
-            # compile results
-            result['form'] = f_cnf_add_ts_entry
-
-        except BaseException, e:
-            self.handle_exception(self.log, e, operation)
-
-        # return
-        self.log.trace("... DONE %s." % operation.replace('_', ' '))
-        return result
-
     def build_tmanager_ts_dropdown_object(self, select_type=None, options=None):
         """
         @param select_type: the selection type of drop-down list (e.g., module, feature, etc.).
@@ -928,6 +854,62 @@ class TestManager():
         self.log.trace("... DONE %s." % operation.replace('_', ' '))
         return result
 
+    def build_add_procedure_step_button(self, row):
+        """ Build an add procedure step button.
+        @param row: the row number in which the button will be created.
+        @return: a dict containing:
+            'button' - the add procedure step button.
+            'div' - the div containing the button.
+            'td' - the table cell containing the div.
+            'tr' - the table row containing the cell.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = {'button': INPUT(_type='button'), 'div': DIV(), 'td': TD(), 'tr': TR()}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # determine object ids by row
+            add_proc_button_addr = 'proc_step_%s_add_btn' % row
+            div_add_proc_button_addr = 'div_proc_step_%s' % row
+            td_add_proc_button_addr = 'td_proc_step_%s' % row
+            tr_add_proc_button_addr = 'tr_proc_step_%s' % row
+
+            # build the onclick script
+            script = "ajax('%(function)s', %(values)s, '%(target)s');" \
+                     "jQuery(%(remove)s).remove();" \
+                     % {'function': 'enable_add_proc_step?row=%s' % row,
+                        'values': "[]",
+                        'target': '%s' % td_add_proc_button_addr,
+                        'remove': '%s' % div_add_proc_button_addr}
+
+            # build the object
+            add_proc_button = INPUT(_type='button', _value="Add New Step",
+                                    _id=add_proc_button_addr, _name=add_proc_button_addr,
+                                    _onclick=script)
+            div_add_proc_button = DIV(add_proc_button,
+                                      _id=div_add_proc_button_addr)
+            td_add_proc_button = TD(div_add_proc_button,
+                                    _id=td_add_proc_button_addr)
+            tr_add_proc_button = TR(
+                TD(),
+                td_add_proc_button,
+                _id=tr_add_proc_button_addr
+            )
+
+            # compile results
+            result['tr'] = tr_add_proc_button
+            result['td'] = td_add_proc_button
+            result['div'] = div_add_proc_button
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
     def build_procedure_table(self, steps=None):
         """ Build the test case procedure table.
         @param steps: a list of the procedure steps.
@@ -947,9 +929,16 @@ class TestManager():
                 steps = [
                     {'id': 0, 'step': 'No test case selected.'}
                 ]
+
+                # add proc step flag
+                add_proc_step = False
+
             else:
                 # translate the procedure list string into an actual list
                 raw_steps = eval('[%s]' % steps)
+
+                # add proc step flag
+                add_proc_step = True
 
                 # build a list of step data dicts using the ids in the procedure list
                 steps = []
@@ -957,10 +946,20 @@ class TestManager():
                     step_desc = db(db.procedure_steps.id == step_id).select()[0].name
                     steps.append({'id': step_id, 'step': step_desc})
 
+            # build the table rows
+            rows = []
+            for i in range(0, len(steps)):
+                row = TR(TD(), TD(LABEL(steps[i]['step'], _id='td_proc_step_%d' % i), _id='td_proc_step_%d' % i),
+                         _id='tr_proc_step_%d' % i)
+                rows.append(row)
+            if add_proc_step:
+                # build add procedure step button row
+                add_proc_step_row = self.build_add_procedure_step_button(len(steps))['tr']
+                rows.append(add_proc_step_row)
+
             # build the table
             proc_table_body = TBODY(
-                [TR(TD(), TD(LABEL(steps[i]['step'], _id='td_proc_step_%d' % i), _id='td_proc_step_%d' % i),
-                    _id='tr_proc_step_%d' % i) for i in range(0, len(steps))],
+                rows,
                 _id='tbody_proc'
             ),
             proc_table = TABLE(
