@@ -447,9 +447,18 @@ class TestManager():
             td_test_attribute_val_addr = 'td_%s_val' % obj_id
             tr_test_attribute_addr = 'tr_%s' % obj_id
 
+            # build the onclick script
+            script = "ajax('%(function)s', %(values)s, '%(target)s');" \
+                     "jQuery(%(remove)s).remove();" \
+                     % {'function': 'enable_%s_edit' % obj_id,
+                        'values': "['%s']" % test_attribute_val_addr,
+                        'target': '%s' % td_test_attribute_val_addr,
+                        'remove': '%s' % div_test_attribute_val_addr}
+
             # build the object
             test_attribute_val = LABEL(val,
-                                       _id=test_attribute_val_addr, _name=test_attribute_val_addr)
+                                       _id=test_attribute_val_addr, _name=test_attribute_val_addr,
+                                       _onclick=script)
             div_test_attribute_val = DIV(test_attribute_val,
                                          _id=div_test_attribute_val_addr)
             td_test_attribute_val = TD(div_test_attribute_val,
@@ -475,7 +484,7 @@ class TestManager():
 
     def build_edit_test_attribute_field(self, field, c_value=None):
         """ Build the edit field cell for a test/test case attribute (e.g., test results id, test class, etc.).
-        @param field: the field to create (e.g., 'test results id', 'test case class', 'test case minimum version').
+        @param field: the field to edit (e.g., 'test results id', 'test case class', 'test case minimum version').
         @param c_value: the value in the field when clicking to edit
         @return: a dict containing:
             'form' - a subcontainter FORM() with the cell data.
@@ -486,42 +495,49 @@ class TestManager():
 
         try:
             self.log.trace("%s ..." % operation.replace('_', ' '))
+            self.log.warn(request.vars)
 
             # determine object ids by field type
             obj_id = field.lower().replace(' ', '_')
             test_attribute_val_addr = '%s_edit_val' % obj_id
             div_test_attribute_val_addr = 'div_%s_edit_val' % obj_id
+            td_test_attribute_val_addr = 'td_%s_val' % obj_id
 
             # build the input field
             if field == 'test case active':
                 test_attribute_edit = SELECT(*[OPTION('Yes', _value='1'), OPTION('No', _value='0')],
                                              _id=test_attribute_val_addr, _name=test_attribute_val_addr)
+            elif field == 'test case class':
+                test_attribute_edit = SELECT(*[
+                    OPTION('0', _value='0'),
+                    OPTION('1', _value='1'),
+                    OPTION('2', _value='2'),
+                    OPTION('3', _value='3'),
+                    OPTION('4', _value='4'),
+                    OPTION('5', _value='5'),
+                ],
+                                            _id=test_attribute_val_addr, _name=test_attribute_val_addr)
             else:
-                test_attribute_edit = LABEL(c_value, _id=test_attribute_val_addr, _name=test_attribute_val_addr)
+                test_attribute_edit = INPUT(_class="string", _type="text", _value=c_value,
+                                            _id=test_attribute_val_addr, _name=test_attribute_val_addr)
 
             # build confirmation button
             btn_cnf_script = "ajax('%(function)s', %(values)s, '%(target)s');" \
-                             "jQuery(%(remove)s).remove();" \
-                             % {'function': '',
-                                'values': "[]",
-                                'target': 'td_%s',
-                                'remove': '%s'}
-            btn_cnf_script += "ajax('%(function)s', %(values)s, '%(target)s');" \
-                              "jQuery(%(remove)s).remove();" \
-                              % {'function': '',
-                                 'values': "[]",
-                                 'target': 'td_%s',
-                                 'remove': '%s'}
+                             % {'function': 'edit_%s_field' % obj_id,
+                                'values': "['%s', 'test_selection', 'test_case_selection']" % test_attribute_val_addr,
+                                'target': ''}
+            restore_script = "jQuery(%(remove)s).remove();" \
+                             "ajax('%(function)s', %(values)s, '%(target)s');" \
+                             % {'function': 'restore_%s_field' % obj_id,
+                                'values': "['test_selection', 'test_case_selection']",
+                                'target': '%s' % td_test_attribute_val_addr,
+                                'remove': '%s' % div_test_attribute_val_addr}
+            btn_cnf_script += restore_script
             btn_cnf = INPUT(_type='button', _value='Update', _class='btn',
                             _onclick=btn_cnf_script)
 
             # build cancel button
-            btn_cnc_script = "ajax('%(function)s', %(values)s, '%(target)s');" \
-                             "jQuery(%(remove)s).remove();"\
-                             % {'function': '',
-                                'values': '[]',
-                                'target': '',
-                                'remove': ''}
+            btn_cnc_script = restore_script
             btn_cnc = INPUT(_type='button', _value='Cancel', _class='btn',
                             _onclick=btn_cnc_script)
 
@@ -1061,19 +1077,34 @@ class TestManager():
         self.log.trace("... DONE %s." % operation.replace('_', ' '))
         return result
 
-    def enable_test_attribute_edit(self, field):
-        """ Enable editing the value for a test/test case attribute (e.g., test results id, test class, etc.).
-        @param field: the field to create (e.g., 'test results id', 'test case class', 'test case minimum version').
+    def edit_test_attribute_field(self, field, value, parent_suite_id):
+        """ Add a new entry to the given test suite selection drop down (using input).
+        @param field: the field to edit (e.g., 'test results id', 'test case class', 'test case minimum version').
+        @param value: the value with which to update the field.
+        @param parent_suite_id: the id of the parent suite (test or test case).
+        @return: a DIV() containing the rebuilt tmanager form data.
         """
 
         operation = inspect.stack()[0][3]
-        result = None
+        result = DIV()
 
         try:
             self.log.trace("%s ..." % operation.replace('_', ' '))
 
+            # update the test attribute for the test/case in database by field
+            if field == 'test results id':
+                db(db.tests.id == parent_suite_id).update(results_id=value)
+            elif field == 'test case class':
+                db(db.test_cases.id == parent_suite_id).update(test_class=value)
+            elif field == 'test case minimum version':
+                db(db.test_cases.id == parent_suite_id).update(min_version=value)
+            elif field == 'test case active':
+                db(db.test_cases.id == parent_suite_id).update(active=value)
+            else:
+                log.error("Invalid field %s specifed." % field)
+
             # compile results
-            result = None
+            result = self.build_test_attribute_field(field)['div']
 
         except BaseException, e:
             self.handle_exception(self.log, e, operation)
@@ -1092,7 +1123,6 @@ class TestManager():
 
         try:
             self.log.trace("%s ..." % operation.replace('_', ' '))
-            self.log.trace(str(request.vars))
 
             # update the test suite in database by type
             if request.vars.type == 'module':
@@ -1404,3 +1434,63 @@ def restore_ts_update_cell():
 
 def restore_ts_add_new_cell():
     return tmanager.build_td_add_ts_entry(request.vars.selectaddr)['div']
+
+
+def restore_test_results_id_field():
+    return tmanager.build_test_attribute_field('test results id')['div']
+
+
+def restore_test_case_class_field():
+    return tmanager.build_test_attribute_field('test case class')['div']
+
+
+def restore_test_case_minimum_version_field():
+    return tmanager.build_test_attribute_field('test case minimum version')['div']
+
+
+def restore_test_case_active_field():
+    return tmanager.build_test_attribute_field('test case active')['div']
+
+
+def edit_test_results_id_field():
+    return tmanager.edit_test_attribute_field('test results id',
+                                              request.vars.test_results_id_edit_val,
+                                              request.vars.test_selection)['div']
+
+
+def edit_test_case_class_field():
+    return tmanager.edit_test_attribute_field('test case class',
+                                              request.vars.test_case_class_edit_val,
+                                              request.vars.test_case_selection)['div']
+
+
+def edit_test_case_minimum_version_field():
+    return tmanager.edit_test_attribute_field('test case minimum version',
+                                              request.vars.test_case_minimum_version_edit_val,
+                                              request.vars.test_case_selection)['div']
+
+
+def edit_test_case_active_field():
+    return tmanager.edit_test_attribute_field('test case active',
+                                              request.vars.test_case_active_edit_val,
+                                              request.vars.test_case_selection)['div']
+
+
+def enable_test_results_id_edit():
+    return tmanager.build_edit_test_attribute_field('test results id',
+                                                    c_value=request.vars.test_results_id_val)['form']
+
+
+def enable_test_case_class_edit():
+    return tmanager.build_edit_test_attribute_field('test case class',
+                                                    c_value=request.vars.test_case_class_val)['form']
+
+
+def enable_test_case_minimum_version_edit():
+    return tmanager.build_edit_test_attribute_field('test case minimum version',
+                                                    c_value=request.vars.test_case_minimum_version_val)['form']
+
+
+def enable_test_case_active_edit():
+    return tmanager.build_edit_test_attribute_field('test case active',
+                                                    c_value=request.vars.test_case_active_val)['form']
