@@ -15,6 +15,7 @@ from logger import Logger
 from exceptionhandler import ExceptionHandler
 import inspect
 from collections import OrderedDict
+from time import sleep
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -238,6 +239,32 @@ class TestManager():
 
             # compile return data
             result = select
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
+    def add_procedure_step_to_test_case(self, step_id, test_case_id):
+        """ Add a procedure step to a test case.
+        @param step_id: the id of the procedure step to add.
+        @param test_case_id: the id of the test case to which to add the procedure step.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = None
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # get the current procedure for the test case
+            procedure = db(db.test_cases.id == test_case_id).select()[0].procedure
+
+            # update the procedure for the test case
+            procedure += ',%s' % step_id
+            db(db.test_cases.id == test_case_id).update(procedure=procedure)
 
         except BaseException, e:
             self.handle_exception(self.log, e, operation)
@@ -846,6 +873,69 @@ class TestManager():
             result['object'] = tr_selection
             result['select'] = selection
             result['update cell'] = div_update
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
+    def build_add_procedure_step_form(self, row):
+        """ Build the add procedure step field form (for adding a new step to test case procedure).
+        @param row: the row number in which the button will be created.
+        @return: a dict containing:
+            'form' - the add procedure step form.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = {'form': FORM()}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # determine object ids by row
+            sel_add_proc_step_addr = 'sel_add_proc_step'
+            f_add_proc_step_addr = 'f_add_proc_step_%s' % row
+            td_add_proc_addr = 'td_proc_step_%s' % row
+            t_proc_addr = 't_proc'
+            div_proc_addr = 'div_test_case_procedure'
+
+            # determine options for procedure steps select
+            options = db().select(db.procedure_steps.ALL)
+            selections = [OPTION(options[i].name, _value=str(options[i].id))
+                          for i in range(len(options))]
+
+            # build the input field
+            sel_add_proc_step = SELECT(*selections, _id=sel_add_proc_step_addr, _name=sel_add_proc_step_addr)
+
+            # build confirmation button
+            btn_cnf_script = "ajax('%(function)s', %(values)s, '%(target)s');" \
+                             "jQuery(%(remove)s).remove();" \
+                             % {'function': 'add_procedure_step_to_test_case',
+                                'values': "['%s', 'test_case_selection']" % sel_add_proc_step_addr,
+                                'target': '%s' % div_proc_addr,
+                                'remove': '%s' % t_proc_addr}
+            restore_script = "jQuery(%(remove)s).remove();" \
+                             "ajax('%(function)s', %(values)s, '%(target)s');" \
+                             % {'function': 'rebuild_test_case_procedure_table',
+                                'values': "['test_case_selection']",
+                                'target': '%s' % div_proc_addr,
+                                'remove': '%s' % t_proc_addr}
+            btn_cnf = INPUT(_type='button', _value='Add', _class='btn',
+                            _onclick=btn_cnf_script)
+
+            # build cancel button
+            btn_cnc_script = restore_script
+            btn_cnc = INPUT(_type='button', _value='Cancel', _class='btn',
+                            _onclick=btn_cnc_script)
+
+            # build form
+            f_add_proc_step = FORM(sel_add_proc_step, btn_cnf, btn_cnc,
+                                   _id=f_add_proc_step_addr)
+
+            # compile results
+            result['form'] = f_add_proc_step
 
         except BaseException, e:
             self.handle_exception(self.log, e, operation)
@@ -1493,3 +1583,18 @@ def enable_test_case_minimum_version_edit():
 def enable_test_case_active_edit():
     return tmanager.build_edit_test_attribute_field('test case active',
                                                     c_value=request.vars.test_case_active_val)['form']
+
+
+def enable_add_proc_step():
+    return tmanager.build_add_procedure_step_form(request.vars.row)['form']
+
+
+def add_procedure_step_to_test_case():
+    tmanager.add_procedure_step_to_test_case(request.vars.sel_add_proc_step, request.vars.test_case_selection)
+    steps = db(db.test_cases.id == request.vars.test_case_selection).select()[0].procedure
+    return tmanager.build_procedure_table(steps)['table']
+
+
+def rebuild_test_case_procedure_table():
+    steps = db(db.test_cases.id == request.vars.test_case_selection).select()[0].procedure
+    return tmanager.build_procedure_table(steps)['table']
