@@ -273,11 +273,12 @@ class TestManager():
         self.log.trace("... DONE %s." % operation.replace('_', ' '))
         return result
 
-    def change_procedure_step_for_test_case(self, row, step_id, test_case_id):
+    def modify_procedure_step_for_test_case(self, row, test_case_id, action, step_id=None):
         """ Add a procedure step to a test case.
         @param row: the row for which the procedure step is being changed.
         @param step_id: the id of the procedure step to add.
         @param test_case_id: the id of the test case to which to add the procedure step.
+        @param action: the action to perform ('change', 'delete').
         """
 
         operation = inspect.stack()[0][3]
@@ -292,8 +293,12 @@ class TestManager():
             # translate the procedure into a list of steps that corresponds to the rows
             proc_steps = procedure.split(',')
 
-            # change the procedure step
-            proc_steps[int(row)] = step_id
+            if action == 'change' and step_id is not None:
+                # change the procedure step
+                proc_steps[int(row)] = step_id
+
+            if action == 'delete':
+                del proc_steps[int(row)]
 
             # rebuild the procedure string
             procedure = ''
@@ -1130,14 +1135,14 @@ class TestManager():
             e_script = "ajax('%(function)s', %(values)s, '%(target)s');" \
                        "jQuery(%(remove)s).remove();" \
                        % {'function': 'enable_change_proc_step?row=%s' % row,
-                          'values': "[]",
+                          'values': "['test_case_selection']",
                           'target': '%s' % td_mod_buttons_addr,
                           'remove': '%s' % div_mod_buttons_addr}
 
             d_script = "ajax('%(function)s', %(values)s, '%(target)s');" \
                        "jQuery(%(remove)s).remove();" \
                        % {'function': 'delete_proc_step?row=%s' % row,
-                          'values': "[]",
+                          'values': "['test_case_selection']",
                           'target': '%s' % div_proc_addr,
                           'remove': '%s' % t_proc_addr}
 
@@ -1147,7 +1152,7 @@ class TestManager():
                                      _onclick=e_script)
 
             del_proc_button = INPUT(_type='button', _value="Delete",
-                                    _id=edit_proc_button_addr, _name=edit_proc_button_addr,
+                                    _id=del_proc_button_addr, _name=del_proc_button_addr,
                                     _onclick=d_script)
 
             div_mod_buttons = DIV(edit_proc_button, del_proc_button, _id=div_mod_buttons_addr)
@@ -1775,7 +1780,14 @@ def enable_change_proc_step():
 
 
 def change_procedure_step_for_test_case():
-    tmanager.change_procedure_step_for_test_case(request.vars.row, request.vars.sel_edit_proc_step,
-                                                 request.vars.test_case_selection)
+    tmanager.modify_procedure_step_for_test_case(request.vars.row, request.vars.test_case_selection,
+                                                 'change', request.vars.sel_edit_proc_step)
+    steps = db(db.test_cases.id == request.vars.test_case_selection).select()[0].procedure
+    return tmanager.build_procedure_table(steps)['table']
+
+
+def delete_proc_step():
+    tmanager.modify_procedure_step_for_test_case(request.vars.row, request.vars.test_case_selection,
+                                                 'delete')
     steps = db(db.test_cases.id == request.vars.test_case_selection).select()[0].procedure
     return tmanager.build_procedure_table(steps)['table']
