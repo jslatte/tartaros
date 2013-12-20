@@ -990,11 +990,11 @@ class TestManager():
         self.log.trace("... DONE %s." % operation.replace('_', ' '))
         return result
 
-    def build_edit_procedure_step_form(self, row):
-        """ Build the edit procedure step field form (for editing step in the test case procedure).
-        @param row: the row number of the step to edit.
+    def build_change_procedure_step_form(self, row):
+        """ Build the change procedure step field form (for changing step in the test case procedure).
+        @param row: the row number of the step to change.
         @return: a dict containing:
-            'form' - the edit procedure step form.
+            'form' - the change procedure step form.
         """
 
         operation = inspect.stack()[0][3]
@@ -1053,6 +1053,71 @@ class TestManager():
         self.log.trace("... DONE %s." % operation.replace('_', ' '))
         return result
 
+    def build_edit_procedure_step_form(self, row, step_id):
+        """ Build the edit procedure step field form (for editing step in the test case procedure).
+        @param row: the row number of the step to edit.
+        @param step_id: the id of the step to edit.
+        @return: a dict containing:
+            'form' - the edit procedure step form.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = {'form': FORM()}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # determine object ids by row
+            lbl_desc_addr = 'inp_edit_proc_step_%s_lbl' % row
+            inp_desc_addr = 'inp_edit_proc_step_%s_val' % row
+            f_edit_proc_step_addr = 'f_edit_proc_step_%s' % row
+            td_proc_addr = 'td_proc_step_%s' % row
+            t_proc_addr = 't_proc'
+            div_proc_addr = 'div_test_case_procedure'
+
+            # return step from database
+            proc_step = db(db.procedure_steps.id == step_id).select()[0]
+
+            # build the input fields
+            lbl_desc = LABEL("Description", _id=lbl_desc_addr)
+            inp_desc = INPUT(_value=proc_step.name, _id=inp_desc_addr, _name=inp_desc_addr,
+                             _class="string", _type="text")
+
+            # build confirmation button
+            btn_cnf_script = "ajax('%(function)s', %(values)s, '%(target)s');" \
+                             "jQuery(%(remove)s).remove();" \
+                             % {'function': 'change_procedure_step_for_test_case?row=%s' % row,
+                                'values': "['%s', 'test_case_selection']" % inp_desc,
+                                'target': '%s' % div_proc_addr,
+                                'remove': '%s' % t_proc_addr}
+            restore_script = "jQuery(%(remove)s).remove();" \
+                             "ajax('%(function)s', %(values)s, '%(target)s');" \
+                             % {'function': 'rebuild_test_case_procedure_table',
+                                'values': "['test_case_selection']",
+                                'target': '%s' % div_proc_addr,
+                                'remove': '%s' % t_proc_addr}
+            btn_cnf = INPUT(_type='button', _value='Change', _class='btn',
+                            _onclick=btn_cnf_script)
+
+            # build cancel button
+            btn_cnc_script = restore_script
+            btn_cnc = INPUT(_type='button', _value='Cancel', _class='btn',
+                            _onclick=btn_cnc_script)
+
+            # build form
+            f_edit_proc_step = FORM(lbl_desc, inp_desc, btn_cnf, btn_cnc,
+                                    _id=f_edit_proc_step_addr)
+
+            # compile results
+            result['form'] = f_edit_proc_step
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
     def build_add_procedure_step_button(self, row):
         """ Build an add procedure step button.
         @param row: the row number in which the button will be created.
@@ -1084,7 +1149,7 @@ class TestManager():
                         'remove': '%s' % div_add_proc_button_addr}
 
             # build the object
-            add_proc_button = INPUT(_type='button', _value="Add New Step",
+            add_proc_button = INPUT(_type='button', _value="Add New Step", _class='btn',
                                     _id=add_proc_button_addr, _name=add_proc_button_addr,
                                     _onclick=script)
             div_add_proc_button = DIV(add_proc_button,
@@ -1124,15 +1189,16 @@ class TestManager():
             self.log.trace("%s ..." % operation.replace('_', ' '))
 
             # determine object ids by row
-            edit_proc_button_addr = 'btn_proc_step_%s_edit' % row
+            change_proc_button_addr = 'btn_proc_step_%s_change' % row
             del_proc_button_addr = 'btn_proc_step_%s_del' % row
+            edit_proc_button_addr = 'btn_proc_step_%s_edit' % row
             div_mod_buttons_addr = 'div_proc_step_%s_mod_buttons' % row
             td_mod_buttons_addr = 'td_proc_step_%s_mod_buttons' % row
             t_proc_addr = 't_proc'
             div_proc_addr = 'div_test_case_procedure'
 
             # build the onclick scripts
-            e_script = "ajax('%(function)s', %(values)s, '%(target)s');" \
+            c_script = "ajax('%(function)s', %(values)s, '%(target)s');" \
                        "jQuery(%(remove)s).remove();" \
                        % {'function': 'enable_change_proc_step?row=%s' % row,
                           'values': "['test_case_selection']",
@@ -1146,16 +1212,28 @@ class TestManager():
                           'target': '%s' % div_proc_addr,
                           'remove': '%s' % t_proc_addr}
 
-            # build the object
-            edit_proc_button = INPUT(_type='button', _value="Edit",
-                                     _id=edit_proc_button_addr, _name=edit_proc_button_addr,
-                                     _onclick=e_script)
+            e_script = "ajax('%(function)s', %(values)s, '%(target)s');" \
+                       "jQuery(%(remove)s).remove();" \
+                       % {'function': 'enable_edit_proc_step?row=%s' % row,
+                          'values': "['td_proc_step_%s_val']" % row,
+                          'target': '%s' % td_mod_buttons_addr,
+                          'remove': '%s' % div_mod_buttons_addr}
 
-            del_proc_button = INPUT(_type='button', _value="Delete",
+            # build the object
+            change_proc_button = INPUT(_type='button', _value="Change", _class='btn',
+                                     _id=change_proc_button_addr, _name=change_proc_button_addr,
+                                     _onclick=c_script)
+
+            del_proc_button = INPUT(_type='button', _value="Delete", _class='btn',
                                     _id=del_proc_button_addr, _name=del_proc_button_addr,
                                     _onclick=d_script)
 
-            div_mod_buttons = DIV(edit_proc_button, del_proc_button, _id=div_mod_buttons_addr)
+            edit_proc_button = INPUT(_type='button', _value="Edit", _class='btn',
+                                     _id=edit_proc_button_addr, _name=edit_proc_button_addr,
+                                     _onclick=e_script)
+
+            div_mod_buttons = DIV(change_proc_button, del_proc_button, edit_proc_button,
+                                  _id=div_mod_buttons_addr)
             td_mod_buttons = TD(div_mod_buttons, _id=td_mod_buttons_addr)
 
             # compile results
@@ -1209,10 +1287,12 @@ class TestManager():
             rows = []
             for i in range(0, len(steps)):
                 if steps[i]['step'] == 'No test case selected.':
-                    row = TR(TD(), TD(LABEL(steps[i]['step'], _id='td_proc_step_%d' % i), _id='td_proc_step_%d' % i),
+                    row = TR(TD(), TD(LABEL(steps[i]['step'], _id='td_proc_step_%d_val' % i),
+                                      _id='td_proc_step_%d' % i),
                              _id='tr_proc_step_%d' % i)
                 else:
-                    row = TR(TD(), TD(LABEL(steps[i]['step'], _id='td_proc_step_%d_val' % i),
+                    row = TR(TD(), TD(LABEL(steps[i]['step'], _id='td_proc_step_%d_val' % i,
+                                            _name='td_proc_step_%d_val' % i, _value=steps[i]['id']),
                                       _id='td_proc_step_%d' % i),
                              self.build_modify_procedure_step_buttons(i)['td'],
                              _id='tr_proc_step_%d' % i)
@@ -1546,11 +1626,79 @@ class TestManager():
 
 
 ####################################################################################################
+# Step Manager #####################################################################################
+####################################################################################################
+####################################################################################################
+
+
+class StepManager():
+    """ A library of functions to be used by the Step Manager app.
+    """
+
+    def __init__(self, log, exception_handler):
+        """
+        @param log: an initialized Logger() to inherit.
+        @param exception_handler: an un-initialized ExceptionHandler() to inherit.
+        """
+
+        # inherit logger (initialized instance)
+        self.log = log
+
+        # inherit exception handler
+        self.handle_exception = exception_handler
+
+    def TEMPLATE(self):
+        """
+        """
+
+        operation = inspect.stack()[0][3]
+        result = None
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # compile results
+            result = None
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
+    def build_smanager_form(self):
+        """ Build the Steps Manager form.
+        @return: a dict containing:
+            'form' - the FORM() object.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = {'form': FORM()}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            #
+
+            # compile results
+            result['form'] = FORM()
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
+
+####################################################################################################
 # Classes ##########################################################################################
 ####################################################################################################
 ####################################################################################################
 
 tmanager = TestManager(log, ExceptionHandler)
+#smanager = StepManager(log, ExceptionHandler)
 
 ####################################################################################################
 # Default Controller ###############################################################################
@@ -1565,6 +1713,9 @@ def index():
 
     # build tmanager form
     tmanager_form = build_tmanager_form()['form']
+
+    # build smanager form
+    #smanager_form = smanager.build_smanager_form()['form']
 
     # handle add crafting material form submission
     if tmanager_form.process(keepvalues=True).accepted:
@@ -1776,7 +1927,7 @@ def rebuild_test_case_procedure_table():
 
 
 def enable_change_proc_step():
-    return tmanager.build_edit_procedure_step_form(request.vars.row)['form']
+    return tmanager.build_change_procedure_step_form(request.vars.row)['form']
 
 
 def change_procedure_step_for_test_case():
@@ -1791,3 +1942,9 @@ def delete_proc_step():
                                                  'delete')
     steps = db(db.test_cases.id == request.vars.test_case_selection).select()[0].procedure
     return tmanager.build_procedure_table(steps)['table']
+
+def enable_edit_proc_step():
+    step_id = eval("request.vars.td_proc_step_%s_val" % request.vars.row)
+    print(request.vars)
+    print(step_id)
+    return tmanager.build_edit_procedure_step_form(request.vars.row, step_id)['form']
