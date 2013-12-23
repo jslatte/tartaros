@@ -57,3 +57,8 @@ db.define_table('procedure_steps',
                 Field('arguments', type='string', unique=False, required=False),
                 Field('verification', type='string', unique=False, required=True)
 )
+
+# table: functions
+db.define_table('functions',
+                Field('function', type='string', unique=True, required=True),
+                Field('submodule_id', type='integer', unique=False, required=True))
