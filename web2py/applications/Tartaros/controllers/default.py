@@ -350,6 +350,35 @@ class TestManager():
         self.log.trace("... DONE %s." % operation.replace('_', ' '))
         return result
 
+    def add_new_procedure_step(self, name, funct, args, vrf):
+        """ Add new procedure step.
+        @param name: the name of the step.
+        @param funct: the function id of the step.
+        @param args: the arguments of the step.
+        @param vrf: the verification status of the step.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = None
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # insert new procedure step into database
+            db.procedure_steps.insert(
+                name=name,
+                function_id=funct,
+                arguments=args,
+                verification=vrf
+            )
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
     def build_td_add_ts_entry(self, select_addr):
         """ Build the add new test suite (selection) entry object.
         @param select_addr: the HTML id of the test suite selection object (for adding new entries to it).
@@ -1085,10 +1114,11 @@ class TestManager():
         self.log.trace("... DONE %s." % operation.replace('_', ' '))
         return result
 
-    def build_edit_procedure_step_form(self, row, test_case_id):
+    def build_edit_procedure_step_form(self, row, test_case_id, create=False):
         """ Build the edit procedure step field form (for editing step in the test case procedure).
         @param row: the row number of the step to edit.
         @param test_case_id: the id of the test case currently being edited.
+        @param create: whether a new procedure step is being created or not.
         @return: a dict containing:
             'form' - the edit procedure step form.
         """
@@ -1109,17 +1139,27 @@ class TestManager():
             t_proc_addr = 't_proc'
             div_proc_addr = 'div_test_case_procedure'
 
-            # determine step id
-            procedure = db(db.test_cases.id == test_case_id).select()[0].procedure
-            proc_steps = procedure.split(',')
-            step_id = proc_steps[int(row)]
+            if not create:
+                # determine step id
+                procedure = db(db.test_cases.id == test_case_id).select()[0].procedure
+                proc_steps = procedure.split(',')
+                step_id = proc_steps[int(row)]
 
-            # return step from database
-            proc_step = db(db.procedure_steps.id == step_id).select()[0]
+                # return step from database
+                proc_step = db(db.procedure_steps.id == step_id).select()[0]
+
+                # determine canned values for fields
+                desc = proc_step.name
+                args = proc_step.arguments
+
+            else:
+                # determine canned values for fields
+                desc = ''
+                args = ''
 
             # build the input fields
             lbl_desc = LABEL("Description")
-            inp_desc = INPUT(_value=proc_step.name, _id=inp_desc_addr, _name=inp_desc_addr,
+            inp_desc = INPUT(_value=desc, _id=inp_desc_addr, _name=inp_desc_addr,
                              _class="string", _type="text")
 
             # function
@@ -1127,8 +1167,9 @@ class TestManager():
             # build list of function options
             funct_options = []
             # append current function as a duplicate first option
-            funct_options.append(OPTION(db(db.functions.id == proc_step.function_id).select()[0].function,
-                                        _value=db(db.functions.id == proc_step.function_id).select()[0].id))
+            if not create:
+                funct_options.append(OPTION(db(db.functions.id == proc_step.function_id).select()[0].function,
+                                            _value=db(db.functions.id == proc_step.function_id).select()[0].id))
             # build sorted list of functions
             functions = db().select(db.functions.ALL)
             functions = functions.sort(lambda x: x.function)
@@ -1136,29 +1177,37 @@ class TestManager():
             for option in functions:
                 funct_options.append(OPTION(option.function, _value=option.id))
             # define select object for functions
-            sel_funct = SELECT(_value=proc_step.arguments, _id=inp_funct_addr, _name=inp_funct_addr,
+            sel_funct = SELECT(_id=inp_funct_addr, _name=inp_funct_addr,
                                *[funct_options])
 
             lbl_args = LABEL("Arguments")
-            inp_args = INPUT(_value=proc_step.arguments, _id=inp_args_addr, _name=inp_args_addr,
+            inp_args = INPUT(_value=args, _id=inp_args_addr, _name=inp_args_addr,
                              _class="string", _type="text")
 
             # verification step status
             lbl_vrf = LABEL("Verification Step?")
             vrf_options = []
-            if proc_step.verification == "True":
-                vrf_options.append(OPTION('Yes', _value='True'))
-                vrf_options.append(OPTION('No', _value='False'))
+            if not create:
+                if proc_step.verification == "True":
+                    vrf_options.append(OPTION('Yes', _value='True'))
+                    vrf_options.append(OPTION('No', _value='False'))
+                else:
+                    vrf_options.append(OPTION('No', _value='False'))
+                    vrf_options.append(OPTION('Yes', _value='True'))
             else:
-                vrf_options.append(OPTION('No', _value='False'))
-                vrf_options.append(OPTION('Yes', _value='True'))
-            sel_vrf = SELECT(_value=proc_step.arguments, _id=inp_vrf_addr, _name=inp_vrf_addr,
+                    vrf_options.append(OPTION('No', _value='False'))
+                    vrf_options.append(OPTION('Yes', _value='True'))
+            sel_vrf = SELECT(_id=inp_vrf_addr, _name=inp_vrf_addr,
                              *vrf_options)
 
             # build confirmation button
+            if not create:
+                cnf_funct = 'edit_procedure_step_for_test_case?row=%s' % row
+            else:
+                cnf_funct = 'create_new_step?row=%s' % row
             btn_cnf_script = "ajax('%(function)s', %(values)s, '%(target)s');" \
                              "jQuery(%(remove)s).remove();" \
-                             % {'function': 'edit_procedure_step_for_test_case?row=%s' % row,
+                             % {'function': cnf_funct,
                                 'values': "['test_case_selection', '%s', "
                                           "'%s', '%s', '%s']" % (inp_desc_addr, inp_funct_addr,
                                                                  inp_args_addr, inp_vrf_addr),
@@ -1170,7 +1219,7 @@ class TestManager():
                                 'values': "['test_case_selection']",
                                 'target': '%s' % div_proc_addr,
                                 'remove': '%s' % t_proc_addr}
-            btn_cnf = INPUT(_type='button', _value='Change', _class='btn',
+            btn_cnf = INPUT(_type='button', _value='Change' if not create else 'Add', _class='btn',
                             _onclick=btn_cnf_script)
 
             # build cancel button
@@ -1270,6 +1319,7 @@ class TestManager():
             change_proc_button_addr = 'btn_proc_step_%s_change' % row
             del_proc_button_addr = 'btn_proc_step_%s_del' % row
             edit_proc_button_addr = 'btn_proc_step_%s_edit' % row
+            create_proc_button_addr = 'btn_proc_step_%s_create' % row
             div_mod_buttons_addr = 'div_proc_step_%s_mod_buttons' % row
             td_mod_buttons_addr = 'td_proc_step_%s_mod_buttons' % row
             t_proc_addr = 't_proc'
@@ -1297,6 +1347,13 @@ class TestManager():
                           'target': '%s' % td_mod_buttons_addr,
                           'remove': '%s' % div_mod_buttons_addr}
 
+            n_script = "ajax('%(function)s', %(values)s, '%(target)s');" \
+                       "jQuery(%(remove)s).remove();" \
+                       % {'function': 'enable_create_proc_step?row=%s' % row,
+                          'values': "['test_case_selection']",
+                          'target': '%s' % td_mod_buttons_addr,
+                          'remove': '%s' % div_mod_buttons_addr}
+
             # build the object
             change_proc_button = INPUT(_type='button', _value="Change", _class='btn',
                                      _id=change_proc_button_addr, _name=change_proc_button_addr,
@@ -1310,7 +1367,11 @@ class TestManager():
                                      _id=edit_proc_button_addr, _name=edit_proc_button_addr,
                                      _onclick=e_script)
 
-            div_mod_buttons = DIV(change_proc_button, del_proc_button, edit_proc_button,
+            create_proc_button = INPUT(_type='button', _value="+", _class='btn',
+                                       _id=create_proc_button_addr, _name=create_proc_button_addr,
+                                       _onclick=n_script)
+
+            div_mod_buttons = DIV(change_proc_button, del_proc_button, edit_proc_button, create_proc_button,
                                   _id=div_mod_buttons_addr)
             td_mod_buttons = TD(div_mod_buttons, _id=td_mod_buttons_addr)
 
@@ -2034,5 +2095,20 @@ def edit_procedure_step_for_test_case():
     vrf = eval("request.vars.sel_edit_proc_step_%s_vrf" % request.vars.row)
     tmanager.modify_procedure_step_for_test_case(request.vars.row, request.vars.test_case_selection,
                                                  'edit', name=name, funct=funct, args=args, vrf=vrf)
+    steps = db(db.test_cases.id == request.vars.test_case_selection).select()[0].procedure
+    return tmanager.build_procedure_table(steps)['table']
+
+
+def enable_create_proc_step():
+    return tmanager.build_edit_procedure_step_form(request.vars.row, request.vars.test_case_selection,
+                                                   create=True)['form']
+
+
+def create_new_step():
+    name = eval("request.vars.inp_edit_proc_step_%s_desc" % request.vars.row)
+    funct = eval("request.vars.sel_edit_proc_step_%s_funct" % request.vars.row)
+    args = eval("request.vars.inp_edit_proc_step_%s_args" % request.vars.row)
+    vrf = eval("request.vars.sel_edit_proc_step_%s_vrf" % request.vars.row)
+    tmanager.add_new_procedure_step(name, funct, args, vrf)
     steps = db(db.test_cases.id == request.vars.test_case_selection).select()[0].procedure
     return tmanager.build_procedure_table(steps)['table']
