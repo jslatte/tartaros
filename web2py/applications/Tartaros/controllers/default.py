@@ -16,6 +16,8 @@ from exceptionhandler import ExceptionHandler
 import inspect
 from collections import OrderedDict
 from time import sleep
+from testcase import HestiaTestCase
+from Database import Database
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -23,6 +25,7 @@ from time import sleep
 ####################################################################################################
 
 log = Logger()
+database = Database(log)
 
 ####################################################################################################
 # Test Manager #####################################################################################
@@ -972,8 +975,15 @@ class TestManager():
                                *[selections])
             td_selection_label = TD(selection_label, _id='td_%s_selection_label' % name)
             td_selection = TD(selection, _id='td_%s_selection' % name)
-            tr_selection = TR(td_selection_label, td_selection, td_update, td_add_ts_entry,
-                              _id='tr_%s_selection' % name)
+
+            # build test case-specific TR() for including test runner div
+            if obj_type == object_types['test case']:
+                tr_selection = TR(td_selection_label, td_selection, td_update, td_add_ts_entry,
+                                  self.build_test_runner_div()['div'],
+                                  _id='tr_%s_selection' % name)
+            else:
+                tr_selection = TR(td_selection_label, td_selection, td_update, td_add_ts_entry,
+                                  _id='tr_%s_selection' % name)
 
             # compile return data
             result['object'] = tr_selection
@@ -1763,6 +1773,54 @@ class TestManager():
         self.log.trace("... DONE %s." % operation.replace('_', ' '))
         return result
 
+    def build_test_runner_div(self):
+        """ Build the test runner div.
+        @return: a dict containing:
+            'btn' - the test run button.
+            'div' - the div containing the button and additional fields.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = {'div': DIV(), 'btn': INPUT(_class='btn')}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # define object ids
+            btn_run_test_addr = 'btn_run_test'
+            inp_plan_id_addr = 'inp_plan_id'
+            div_test_runner_addr = 'div_test_runner'
+
+            # build the onclick scripts
+            script = "ajax('%(function)s', %(values)s, '%(target)s');" \
+                     "jQuery(%(remove)s).remove();" \
+                     % {'function': 'run_test',
+                        'values': "['test_case_selection', '%s']" % inp_plan_id_addr,
+                        'target': '',
+                        'remove': ''}
+
+            # build the objects
+            btn_run_test = INPUT(_type='button', _value="Run Test", _class='btn',
+                                 _id=btn_run_test_addr, _name=btn_run_test_addr,
+                                 _onclick=script)
+            lbl_plan_id = LABEL("TEST PLAN ID: ")
+            inp_plan_id = INPUT(_type='string',
+                                _id=inp_plan_id_addr, _name=inp_plan_id_addr)
+
+            div_test_runner = DIV(lbl_plan_id, inp_plan_id, btn_run_test,
+                                  _id=div_test_runner_addr)
+
+            # compile results
+            result['div'] = div_test_runner
+            result['btn'] = btn_run_test
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
 
 ####################################################################################################
 # Step Manager #####################################################################################
@@ -2112,3 +2170,21 @@ def create_new_step():
     tmanager.add_new_procedure_step(name, funct, args, vrf)
     steps = db(db.test_cases.id == request.vars.test_case_selection).select()[0].procedure
     return tmanager.build_procedure_table(steps)['table']
+
+
+def run_test():
+    # determine test plan id
+    plan_id = request.vars.inp_plan_id
+
+    # determine test case id
+    test_case_id = request.vars.test_case_selection
+
+    if test_case_id is not None:
+        # create test case object
+        testcase = HestiaTestCase(log, database, test_case_id, debugging=False)
+
+        # run test case
+        testcase.run()
+
+    else:
+        log.warn("No test case selected.")
