@@ -678,7 +678,7 @@ class TestManager():
                             _onclick=btn_cnc_script)
 
             # build form
-            f_test_attribute_edit = FORM(test_attribute_edit, btn_cnf, btn_cnc,
+            f_test_attribute_edit = DIV(test_attribute_edit, btn_cnf, btn_cnc,
                                          _id=div_test_attribute_val_addr)
 
             # compile results
