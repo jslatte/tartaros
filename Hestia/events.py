@@ -40,6 +40,9 @@ DB_CLIPLOG_FIELDS = DB_CLIPLOG['fields']
 DB_COC = DB['custody']
 DB_COC_TABLE = DB_COC['table']
 DB_COC_FIELDS = DB_COC['fields']
+DB_GPS = DB['gps']
+DB_GPS_TABLE = DB_GPS['table']
+DB_GPS_FIELDS = DB_GPS['fields']
 
 ####################################################################################################
 # Events ###########################################################################################
@@ -51,12 +54,64 @@ class Events():
     """ Sub-library for ViM server event download and interaction.
     """
 
-    def verify_event_of_type_downloaded_for_site(self, site_id, event_type, cam_id=None, wait=360, testcase=None):
+    def verify_gps_event_downloaded_for_site(self, site_id, wait=360, testcase=None):
+        """ Verify that gps event is in the database for given site.
+        INPUT
+            site id: id of the site for which to verify the gps event downloaded.
+            wait: how long to wait for the event to download.
+            testcase: a testcase object supplied when executing function as part of a testcase step.
+        OUPUT
+            event id: the id of the gps event.
+            successful: whether the function executed successfully or not.
+            verified: whether the operation was verified or not.
+        """
+
+        self.log.debug("Verifying gps event downloaded for site %s ..." % site_id)
+        result = {'successful': False, 'verified': False, 'event id': None}
+
+        try:
+            # return disk id for site
+            drive_id = self.return_drive_for_site(site_id)['drive id']
+
+            # query database for event for site (on loop)
+            i = 15
+            while not result['verified'] and i <= wait:
+                handle = self.db.db_handle
+                table = DB_GPS_TABLE
+                return_field = DB_GPS_FIELDS['id']
+                known_field = DB_GPS_FIELDS['disk id']
+                known_value = drive_id
+                event_id = self.db.query_database_table_for_single_value(handle, table,
+                                                                         return_field, known_field,
+                                                                         known_value)['value']
+                if event_id is not None:
+                    self.log.trace("Verified gps event downloaded for site %s." % site_id)
+                    result['event id'] = event_id
+                    result['verified'] = True
+                else:
+                    self.log.trace("Event NOT found (attempt %d). Retrying ..." % (i/15))
+                    i += 15
+                    sleep(15)
+
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation="verify gps event downloaded for site %s" % site_id)
+
+        # return
+        if testcase is not None:
+            testcase.event_id = result['event id']
+            testcase.processing = result['successful']
+        return result
+
+    def verify_event_of_type_downloaded_for_site(self, site_id, event_type, cam_id=None, wait=360,
+                                                 testcase=None):
         """ Verify that specified type of even is in the database for given site.
         INPUT
             site id: id of the site for which to verify the event type downloaded.
-            event type: type of event to verify downloaded (see EVENT_TYPES mapping for valid event keys).
-            cam id: optional camera/event id value to be used with alarms/video events (0-7 for alarm 1-8)
+            event type: type of event to verify downloaded (see EVENT_TYPES mapping for
+                valid event keys).
+            cam id: optional camera/event id value to be used with alarms/video events
+                (0-7 for alarm 1-8).
             wait: how long to wait for the event to download.
             testcase: a testcase object supplied when executing function as part of a testcase step.
         OUPUT

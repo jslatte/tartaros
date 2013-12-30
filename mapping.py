@@ -274,8 +274,15 @@ HESTIA = {
             },
         },
         'gps': {
-            'table':            '',
+            'table':            'GPRMC',
             'fields': {
+                'id':                       'rowid',
+                'disk id':                  'DiskID',
+                'time':                     'FixTime',
+                'latitude':                 'Latitude',
+                'longitude':                'Longitude',
+                'speed':                    'Speed',
+                'direction':                'TrueCourse'
             },
         },
         'drive history': {
