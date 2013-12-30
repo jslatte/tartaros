@@ -21,114 +21,116 @@ from os import getcwdu
 ### Tartaros #######################################################################################
 ####################################################################################################
 
-#TARTAROS_DB_PATH = getcwdu() + "\\Cerberus\\web2py\\applications\\Tartaros\\databases\\tartaros.sqlite"
-TARTAROS_DB_PATH = getcwdu() + "\\tartaros.db"
+TARTAROS_DB_PATH = getcwdu() + "\\applications\\Tartaros\\databases\\tartaros.sqlite"
+#TARTAROS_DB_PATH = getcwdu() + "\\tartaros.db"
 
 TARTAROS = {
     'database': {
         'tables': {
-            'modules':          'Modules',
-            'features':         'Features',
-            'user stories':     'UserStories',
-            'tests':            'Tests',
-            'testcases':        'TestCases',
-            'procedure steps':  'ProcedureSteps',
-            'functions':        'Functions',
-            'submodules':       'Submodules',
-            'licenses':         'Licenses',
-            'dvrs':             'DVRs',
-            'sites':            'Sites',
+            'modules':          'modules',
+            'features':         'features',
+            'user stories':     'user_stories',
+            'tests':            'tests',
+            'testcases':        'test_cases',
+            'procedure steps':  'procedure_steps',
+            'functions':        'functions',
+            'submodules':       'submodules',
+            'licenses':         'licenses',
+            'dvrs':             'dvrs',
+            'sites':            'sites',
         },
         'modules': {
             'fields': OrderedDict([
-                ('id', 'ID'),
-                ('name', 'Name'),
-                ('submodule', 'SubmoduleID'),
+                ('id', 'id'),
+                ('name', 'name'),
+                ('submodule', 'submodule_id'),
             ]),
         },
         'features': {
             'fields': OrderedDict([
-                ('id', 'ID'),
-                ('name', 'Name'),
-                ('module', 'Module'),
+                ('id', 'id'),
+                ('name', 'name'),
+                ('submodule', 'submodule_id'),
             ]),
         },
         'user stories': {
             'fields': OrderedDict([
-                ('id', 'ID'),
-                ('name', 'Name'),
-                ('feature', 'Feature'),
+                ('id', 'id'),
+                ('feature', 'feature_id'),
+                ('module', 'module_id'),
+                ('action', 'action'),
+                ('user type', 'user_type')
             ]),
         },
         'tests': {
             'fields': OrderedDict([
-                ('id', 'ID'),
-                ('name', 'Name'),
-                ('user story', 'UserStory'),
-                ('results id', 'ResultsID'),
+                ('id', 'id'),
+                ('name', 'name'),
+                ('user story', 'user_story_id'),
+                ('results id', 'results_id'),
             ]),
         },
         'testcases': {
             'fields': OrderedDict([
-                ('id', 'ID'),
-                ('name', 'Name'),
-                ('test', 'Test'),
-                ('procedure', 'Procedure'),
-                ('minimum version', 'MinimumVersion'),
-                ('class', 'Class'),
-                ('active', 'Active')
+                ('id', 'id'),
+                ('name', 'name'),
+                ('test', 'test_id'),
+                ('procedure', 'procedure'),
+                ('minimum version', 'min_version'),
+                ('class', 'test_class'),
+                ('active', 'active')
             ]),
         },
         'procedure steps': {
             'fields': OrderedDict([
-                ('id', 'ID'),
-                ('name', 'Name'),
-                ('function', 'FunctionID'),
-                ('arguments', 'Arguments'),
-                ('verification', 'Verification'),
+                ('id', 'id'),
+                ('name', 'name'),
+                ('function', 'function_id'),
+                ('arguments', 'arguments'),
+                ('verification', 'verification'),
             ])
         },
         'functions': {
             'fields': OrderedDict([
-                ('id', 'ID'),
-                ('function', 'Function'),
-                ('submodule id', 'SubmoduleID'),
+                ('id', 'id'),
+                ('function', 'function'),
+                ('submodule id', 'submodule_id'),
             ]),
         },
         'submodules': {
             'fields': OrderedDict([
-                ('id', 'ID'),
-                ('name', 'Name'),
-                ('code', 'Code')
+                ('id', 'id'),
+                ('name', 'name'),
+                ('code', 'code')
         ])
         },
         'licenses': {
             'fields': OrderedDict([
-                ('id', 'ID'),
-                ('name', 'Name'),
-                ('key', 'Key'),
-                ('bit', 'BitNum'),
-                ('number of sites', 'NumSites'),
+                ('id', 'id'),
+                ('name', 'name'),
+                ('key', 'key'),
+                ('bit', 'bit_num'),
+                ('number of sites', 'num_sites'),
             ])
         },
         'dvrs': {
             'fields': OrderedDict([
-                ('id', 'ID'),
-                ('name', 'Name'),
-                ('ip address', 'IPAddress'),
-                ('serial', 'SerialNum'),
-                ('drive serial', 'HDSerialNum'),
-                ('model', 'Model'),
-                ('firmware', 'Firmware'),
-                ('user', 'UserName'),
-                ('password', 'UserPassword'),
+                ('id', 'id'),
+                ('name', 'name'),
+                ('ip address', 'ip_address'),
+                ('serial', 'serial_num'),
+                ('drive serial', 'hd_serial_num'),
+                ('model', 'model'),
+                ('firmware', 'firmware'),
+                ('user', 'username'),
+                ('password', 'password'),
             ])
         },
         'sites': {
             'fields': OrderedDict([
-                ('id', 'ID'),
-                ('name', 'Name'),
-                ('dvr id', 'DVRID'),
+                ('id', 'id'),
+                ('name', 'name'),
+                ('dvr id', 'dvr_id'),
             ])
         }
     },

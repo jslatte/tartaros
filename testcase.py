@@ -63,6 +63,20 @@ class TestCase():
         # product-specific setup
         self.setup_for_product()
 
+    def handle_exception(self, e, operation=None):
+        """ Handle an exception.
+        INPUT
+            e: the exception (from BaseException, e).
+            operation: the action being attempted (that failed).
+        """
+
+        if operation is not None: self.log.error("Failed to %s." % operation)
+        self.log.error(str(e))
+        for error in e:
+            self.log.error(str(error))
+        exception = return_execution_error()['error']
+        self.log.error("Error: %s." % exception)
+
     def initialize(self):
         """ Instance test case object by reference ID in database and assigning associated attributes.
         """
@@ -83,7 +97,7 @@ class TestCase():
             self.name = str(testcase_data['name'])
             self.test = str(test_data['name'])
             self.test_id = testcase_data['test']
-            self.story = str(story_data['name'])
+            self.story = str(story_data['action'])
             self.feature = str(feature_data['name'])
             self.module = str(module_data['name'])
 
@@ -228,36 +242,41 @@ class TestCase():
         result = {'successful': False, 'verified': False}
         self.processing = True
 
-        # send testcase start message to build server
-        self.log.build_testcase_start(self.build_test_name)
+        try:
+            # send testcase start message to build server
+            self.log.build_testcase_start(self.build_test_name)
 
-        # begin timing testcase execution
-        t0 = clock()
+            # begin timing testcase execution
+            t0 = clock()
 
-        # execute testcase
-        for step in self.procedure:
-            if self.processing:
-                if not self.debugging:
-                    try: self.execute_step(step)
-                    except BaseException, e:
-                        self.handle_step_execution_failure(step, e)
-                else: self.execute_step(step)
-            else:
-                self.log.error('Could not execute step "%s" due to previous step '
-                               'execution failure.' % step['name'])
+            # execute testcase
+            for step in self.procedure:
+                if self.processing:
+                    if not self.debugging:
+                        try: self.execute_step(step)
+                        except BaseException, e:
+                            self.handle_step_execution_failure(step, e)
+                    else: self.execute_step(step)
+                else:
+                    self.log.error('Could not execute step "%s" due to previous step '
+                                   'execution failure.' % step['name'])
 
-        # end timing testcase execution
-        self.duration = clock() - t0
+            # end timing testcase execution
+            self.duration = clock() - t0
 
-        # determine test result
-        self.determine_result()
+            # determine test result
+            self.determine_result()
 
-        # report testcase results
-        self.log.info("%s testcase finished in %s seconds with '%s' status." % (self.build_test_name,
-                                                                self.duration, self.status.upper()))
+            # report testcase results
+            self.log.info("%s testcase finished in %s seconds with '%s' status." % (self.build_test_name,
+                                                                    self.duration, self.status.upper()))
 
-        # send testcase end message to build server
-        self.log.build_testcase_end(self.build_test_name, self.status, self.duration)
+            # send testcase end message to build server
+            self.log.build_testcase_end(self.build_test_name, self.status, self.duration)
+
+        except BaseException, e:
+            self.handle_exception(e, 'run testcase %s' % self.name)
+            self.verified = False
 
         # return
         result['verified'] = self.verified

@@ -435,23 +435,23 @@ class Database(Charon):
         # return
         return result
 
-    def return_module_for_feature(self, feature_id):
-        """ Return the module id given its feature.
+    def return_module_for_user_story(self, user_story_id):
+        """ Return the module id given its user story.
         INPUT
-            name: the name of the feature.
+            name: the name of the user story.
         OUTPUT
             id: id of the parent module.
         """
 
-        self.log.debug('Returning module ID for feature %s ...' % feature_id)
+        self.log.debug('Returning module ID for user story %s ...' % user_story_id)
         result = {'successful': False, 'id': None}
 
         try:
             # determine module id
-            table = DB_TABLES['features']
-            return_field = FEATURE_FIELDS['module']
-            known_field = FEATURE_FIELDS['id']
-            known_value = feature_id
+            table = DB_TABLES['user stories']
+            return_field = USERSTORY_FIELDS['module']
+            known_field = USERSTORY_FIELDS['id']
+            known_value = user_story_id
             result['id'] = self.query_database_table_for_single_value(self.db_handle,
                 table, return_field, known_field, known_value)['value']
 
@@ -484,7 +484,6 @@ class Database(Charon):
             module_name = str(module)
             module_id = None
 
-
         # determine module id if needed
         if module_id is None:
             table = DB_TABLES['modules']
@@ -495,15 +494,30 @@ class Database(Charon):
                 table, return_field, known_field, known_value)['value']
 
         try:
-            # query database for all features associated with module
-            table = DB_TABLES['features']
-            addendum = 'WHERE %s = "%s"' % (FEATURE_FIELDS['module'], module_id)
+            # query database for all features that share a user story with the module
+            table = DB_TABLES['user stories']
+            addendum = 'WHERE %s = "%s"' % (USERSTORY_FIELDS['module'], module_id)
             response =\
-            self.query_database_table(self.db_handle, table, addendum=addendum)['response']
+                self.query_database_table(self.db_handle, table, addendum=addendum)['response']
 
-            # add response items to modules list
+            # create a list of unique feature ids from query response
+            feature_ids = []
             for item in response:
-                result['features'].append({'id': item[0], 'name': str(item[1]), 'module id': item[2]})
+                feature_id = item[1]
+                if feature_id not in feature_ids:
+                    feature_ids.append(feature_id)
+
+            # query database for all features for the module and build list of feature data
+            for feature_id in feature_ids:
+                table = DB_TABLES['features']
+                addendum = 'WHERE %s = "%s"' % (FEATURE_FIELDS['id'], feature_id)
+                response =\
+                    self.query_database_table(self.db_handle, table, addendum=addendum)['response']
+
+                # add response items to features list
+                if len(response) > 0:
+                    result['features'].append({'id': response[0][0], 'name': str(response[0][1]),
+                                               'submodule': response[0][2]})
 
             self.log.trace("Returned features.")
             result['successful'] = True
@@ -628,7 +642,7 @@ class Database(Charon):
 
             # add response items to modules list
             for item in response:
-                result['user stories'].append({'id': item[0], 'name': str(item[1]),
+                result['user stories'].append({'id': item[0], 'action': str(item[1]),
                                                'feature id': item[2]})
 
             self.log.trace("Returned user stories.")
@@ -824,10 +838,9 @@ class Database(Charon):
         try:
             # determine user story
             story_id = self.return_user_story_for_test(test_id)['id']
-            # determine feature
-            feature_id = self.return_feature_for_user_story(story_id)['id']
+
             # determine module
-            module_id = self.return_module_for_feature(feature_id)['id']
+            module_id = self.return_module_for_user_story(story_id)['id']
 
             result['id'] = module_id
 
@@ -999,7 +1012,7 @@ class Database(Charon):
             result['feature data'] = feature_data
 
             # query database for module
-            module_id = feature_data['module']
+            module_id = story_data['module']
             table = DB_TABLES['modules']
             addendum = 'WHERE %s = "%s"' % (MODULE_FIELDS['id'], module_id)
             response =\

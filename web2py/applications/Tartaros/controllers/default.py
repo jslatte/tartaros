@@ -2173,6 +2173,9 @@ def create_new_step():
 
 
 def run_test():
+    # instance database
+    database = Database(log)
+
     # determine test plan id
     plan_id = request.vars.inp_plan_id
 
@@ -2188,3 +2191,6 @@ def run_test():
 
     else:
         log.warn("No test case selected.")
+
+    # disconnect from database
+    database.disconnect_from_database()
