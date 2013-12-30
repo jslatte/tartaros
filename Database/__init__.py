@@ -611,8 +611,12 @@ class Database(Charon):
             feature_id = None
 
         # return module id for name (if given)
-        module_id = None
-        if module is not None:
+        try:
+            module_id = int(module)
+        except BaseException:
+            module_id = None
+
+        if module is not None and module_id is None:
             table = DB_TABLES['modules']
             return_field = MODULE_FIELDS['id']
             known_field = MODULE_FIELDS['name']
@@ -626,9 +630,6 @@ class Database(Charon):
             return_field = FEATURE_FIELDS['id']
             known_field = FEATURE_FIELDS['name']
             known_value = feature_name
-            if module_id is not None:
-                # determine feature id by name and module id
-                known_value = '%s" AND "%s" = "%s' % (feature_name, FEATURE_FIELDS['module'], module_id)
 
             feature_id = self.query_database_table_for_single_value(self.db_handle,
                 table, return_field, known_field, known_value)['value']
@@ -636,14 +637,17 @@ class Database(Charon):
         try:
             # query database for all user stories associated with feature
             table = DB_TABLES['user stories']
-            addendum = 'WHERE %s = "%s"' % (USERSTORY_FIELDS['feature'], feature_id)
+            addendum = 'WHERE %s = "%s" AND %s = "%s"' % (USERSTORY_FIELDS['feature'],
+                                                          feature_id, USERSTORY_FIELDS['module'],
+                                                          module_id)
             response =\
             self.query_database_table(self.db_handle, table, addendum=addendum)['response']
 
             # add response items to modules list
             for item in response:
-                result['user stories'].append({'id': item[0], 'action': str(item[1]),
-                                               'feature id': item[2]})
+                result['user stories'].append({'id': item[0], 'action': str(item[3]),
+                                               'module id': item[2], 'feature id': item[1],
+                                               'user type': str(item[4])})
 
             self.log.trace("Returned user stories.")
             result['successful'] = True
@@ -656,23 +660,23 @@ class Database(Charon):
         # return
         return result
 
-    def return_user_story_id(self, name):
-        """ Return the story id given its name.
+    def return_user_story_id(self, action):
+        """ Return the story id given its action.
         INPUT
-            name: the name of the user story.
+            name: the action of the user story.
         OUTPUT
             id: id of the user story.
         """
 
-        self.log.debug('Returning user story ID for user story "%s" ...' % name)
+        self.log.debug('Returning user story ID for user story "%s" ...' % action)
         result = {'successful': False, 'id': None}
 
         try:
             # determine user story id
             table = DB_TABLES['user stories']
             return_field = USERSTORY_FIELDS['id']
-            known_field = USERSTORY_FIELDS['name']
-            known_value = name
+            known_field = USERSTORY_FIELDS['action']
+            known_value = action
             result['id'] = self.query_database_table_for_single_value(self.db_handle,
                 table, return_field, known_field, known_value)['value']
 

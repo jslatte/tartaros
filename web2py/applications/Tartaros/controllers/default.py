@@ -18,6 +18,7 @@ from collections import OrderedDict
 from time import sleep
 from testcase import HestiaTestCase
 from Database import Database
+from testrun import TestRun
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -25,7 +26,6 @@ from Database import Database
 ####################################################################################################
 
 log = Logger()
-database = Database(log)
 
 ####################################################################################################
 # Test Manager #####################################################################################
@@ -1795,7 +1795,9 @@ class TestManager():
             script = "ajax('%(function)s', %(values)s, '%(target)s');" \
                      "jQuery(%(remove)s).remove();" \
                      % {'function': 'run_test',
-                        'values': "['test_case_selection', '%s']" % inp_plan_id_addr,
+                        'values': "['%s', 'module_selection', 'feature_selection', "
+                                  "'user_story_selection', 'test_selection', "
+                                  "'test_case_selection']" % inp_plan_id_addr,
                         'target': '',
                         'remove': ''}
 
@@ -2179,10 +2181,14 @@ def run_test():
     # determine test plan id
     plan_id = request.vars.inp_plan_id
 
-    # determine test case id
+    # determine test suite values
+    module_id = request.vars.module_selection
+    feature_id = request.vars.feature_selection
+    user_story_id = request.vars.user_story_selection
+    test_id = request.vars.test_selection
     test_case_id = request.vars.test_case_selection
 
-    if test_case_id is not None:
+    if plan_id is None and test_case_id != '0':
         # create test case object
         testcase = HestiaTestCase(log, database, test_case_id, debugging=False)
 
@@ -2190,7 +2196,23 @@ def run_test():
         testcase.run()
 
     else:
-        log.warn("No test case selected.")
+        # initialize test run object
+        testrun = TestRun(log, database, name="Cerberus Run", submodule_id=2,
+                          results_plan_id=plan_id)
+
+        # build testcase list for test run
+        testcases = testrun.build_testcase_list_for_run(module_id=module_id,
+            feature_id=feature_id, story_id=user_story_id, test_id=test_id,
+            case_id=test_case_id)['testcases']
+
+        # filter by class
+        #testrun.filter_testcases_by_class(testcases, testcase_class)
+
+        # set testcase list for test run
+        testrun.testcases = testcases
+
+        # execute test run
+        testrun.run()
 
     # disconnect from database
     database.disconnect_from_database()

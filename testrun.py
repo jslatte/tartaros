@@ -28,15 +28,15 @@ from Minos import Minos
 TEST_STATUSES = TARTAROS['test statuses']
 SUBMODULE_ID_TO_TESTCASE_OBJ = {
     '1':                None,
-    '2':                None,
-    '3':                HestiaTestCase,
+    '2':                HestiaTestCase,
+    '3':                None,
     '4':                None,
     '5':                None,
     '6':                None,
     '7':                None,
     '8':                None,
 }
-BLANK_SEL = "None"
+BLANK_SEL = "0"
 
 ####################################################################################################
 # Test Run #########################################################################################
@@ -353,15 +353,15 @@ class TestRun():
         # return
         return result
 
-    def build_testcase_list_for_run(self, module_name='', feature_name='', story_name='',
-                                    test_name='', case_name='', case_class=None):
+    def build_testcase_list_for_run(self, module_id='', feature_id='', story_id='',
+                                    test_id='', case_id='', case_class=None):
         """ Build testcase list for test run.
         INPUT
-            module name: the name of the module being tested (leave blank if all).
-            feature name: the name of the feature being tested (leave blank if all).
-            story name: the name of the story being tested (leave blank if all).
-            test name: the name of the test being run (leave blank if all).
-            case name: the name of the test case being run individually (leave blank if all).
+            module id: the id of the module being tested (leave blank if all).
+            feature id: the id of the feature being tested (leave blank if all).
+            story id: the id of the story being tested (leave blank if all).
+            test id: the id of the test being run (leave blank if all).
+            case id: the id of the test case being run individually (leave blank if all).
         OUPUT
             successful: whether the function executed successfully or not.
             testcases: the list of test cases for the test run.
@@ -382,15 +382,15 @@ class TestRun():
             }
 
             # determine scope of test run
-            if str(case_name) != '' and str(case_name) != BLANK_SEL:
+            if str(case_id) is not None and str(case_id) != BLANK_SEL:
                 scope = SCOPE_LEVELS['test case']
-            elif str(test_name) != '' and str(test_name) != BLANK_SEL:
+            elif str(test_id) is not None and str(test_id) != BLANK_SEL:
                 scope = SCOPE_LEVELS['test']
-            elif str(story_name) != '' and str(story_name) != BLANK_SEL:
+            elif str(story_id) is not None and str(story_id) != BLANK_SEL:
                 scope = SCOPE_LEVELS['user story']
-            elif str(feature_name) != '' and str(feature_name) != BLANK_SEL:
+            elif str(feature_id) is not None and str(feature_id) != BLANK_SEL:
                 scope = SCOPE_LEVELS['feature']
-            elif str(module_name) != '' and str(module_name) != BLANK_SEL:
+            elif str(module_id) is not None and str(module_id) != BLANK_SEL:
                 scope = SCOPE_LEVELS['module']
             else:
                 scope = SCOPE_LEVELS['full']
@@ -421,8 +421,6 @@ class TestRun():
                                     if int(testcase['active']) > 0:
                                         result['testcases'].append({'id': testcase['id']})
             if scope == 4:
-                # determine module id
-                module_id = self.database.return_module_id(module_name)['id']
                 # append all test cases for module
                 features = self.database.return_features_for_module(module_id)['features']
                 for feature in features:
@@ -439,10 +437,9 @@ class TestRun():
                                 if int(testcase['active']) > 0:
                                     result['testcases'].append({'id': testcase['id']})
             if scope == 3:
-                # determine feature id
-                feature_id = self.database.return_feature_id(feature_name)['id']
                 # append all test cases for feature
-                stories = self.database.return_user_stories_for_feature(feature_id)['user stories']
+                stories = self.database.return_user_stories_for_feature(feature_id,
+                                                                        module=module_id)['user stories']
                 for story in stories:
                     # append all test cases for user story
                     tests = self.database.return_tests_for_user_story(story['id'])['tests']
@@ -453,8 +450,6 @@ class TestRun():
                             if int(testcase['active']) > 0:
                                 result['testcases'].append({'id': testcase['id']})
             if scope == 2:
-                # determine user story id
-                story_id = self.database.return_user_story_id(story_name)['id']
                 # append all test cases for user story
                 tests = self.database.return_tests_for_user_story(story_id)['tests']
                 for test in tests:
@@ -464,9 +459,6 @@ class TestRun():
                         if int(testcase['active']) > 0:
                             result['testcases'].append({'id': testcase['id']})
             if scope == 1:
-                # determine test id
-                story_id = self.database.return_user_story_id(story_name)['id']
-                test_id = self.database.return_test_id(test_name, story_id)['id']
                 # append all test cases for test
                 testcases = self.database.return_testcases_for_test(test_id)['testcases']
                 for testcase in testcases:
@@ -474,10 +466,7 @@ class TestRun():
                         result['testcases'].append({'id': testcase['id']})
             if scope == 0:
                 # determine test case id
-                story_id = self.database.return_user_story_id(story_name)['id']
-                test_id = self.database.return_test_id(test_name, story_id)['id']
-                testcase_id = self.database.return_testcase_id(case_name, test_id)['id']
-                testcase = self.database.return_testcase_data(testcase_id)['testcase data']
+                testcase = self.database.return_testcase_data(case_id)['testcase data']
                 # append test case
                 if int(testcase['active']) > 0:
                     result['testcases'].append({'id': testcase['id']})

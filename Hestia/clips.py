@@ -118,8 +118,12 @@ class Clips():
                 return_field = DB_COC_FIELDS['id']
                 addendum = "WHERE %s = '%s' AND " % (DB_COC_FIELDS['clip id'], clipID)\
                     + "%s = '%s'" % (DB_COC_FIELDS['value'], actionValue)
-                entry = self.db.query_database_table(handle, table, return_field=return_field,
-                    addendum=addendum)['response'][0][0]
+                try:
+                    entry = self.db.query_database_table(handle, table, return_field=return_field,
+                        addendum=addendum)['response'][0][0]
+                except IndexError:
+                    entry = None
+
                 if entry is not None:
                     result['verified'] = True
                     self.log.trace("Entry for value %s found." % actionValue)

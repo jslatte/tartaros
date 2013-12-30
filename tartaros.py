@@ -115,9 +115,9 @@ elif mode == 'testing':
     testrun = TestRun(log, database, name=test_name, submodule_id=3, results_plan_id=results_plan_id)
 
     # build testcase list for test run
-    testcases = testrun.build_testcase_list_for_run(module_name=module,
-        feature_name=feature, story_name=story, test_name=test,
-        case_name=testcase)['testcases']
+    testcases = testrun.build_testcase_list_for_run(module_id=module,
+        feature_id=feature, story_id=story, test_id=test,
+        case_id=testcase)['testcases']
 
     # filter by class
     testrun.filter_testcases_by_class(testcases, testcase_class)

@@ -239,9 +239,9 @@ class Buttons():
             # build test run
             testrun = TestRun(self.log, self.database, name='Debug Test Run', submodule_id=3,
                 testcases=[], results_plan_id=publish_id)
-            testcases_to_run = testrun.build_testcase_list_for_run(module_name=module_name,
-                feature_name=feature_name, story_name=story_name, test_name=test_name,
-                case_name=case_name)['testcases']
+            testcases_to_run = testrun.build_testcase_list_for_run(module_id=module_name,
+                feature_id=feature_name, story_id=story_name, test_id=test_name,
+                case_id=case_name)['testcases']
 
             # determine class
             self.log.trace("Getting string from testcase class input field ...")
