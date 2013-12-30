@@ -247,7 +247,7 @@ class Charon():
         try:
             result['value'] = response[0][0]
         except BaseException, e:
-            self.log.error(str(e))
+            self.log.trace("No value returned.")
             result['value'] = None
         # return
         return result

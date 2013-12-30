@@ -482,7 +482,7 @@ class SiteConfiguration():
                 ['dvr username', dvr_data['user']],
                 ['dvr password', dvr_data['password']],
                 ['dvr model', dvr_data['model']],
-                ['recall period', 7]
+                ['recall period', 90]
             ]
             # update settings (if any given)
             for setting in settings:
@@ -558,7 +558,7 @@ class SiteConfiguration():
                 SITECON_FIELDS['clips to download']:     0,
                 SITECON_FIELDS['duration for clips']:    0,
                 SITECON_FIELDS['video loss to download']:0,
-                SITECON_FIELDS['recall period']:         7*86400,
+                SITECON_FIELDS['recall period']:         90*86400,
                 SITECON_FIELDS['pre-event time all']:    2,
                 SITECON_FIELDS['pre-event time 1']:      2,
                 SITECON_FIELDS['pre-event time 2']:      2,

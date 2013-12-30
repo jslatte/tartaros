@@ -1083,6 +1083,7 @@ class TestManager():
 
             # determine options for procedure steps select
             options = db().select(db.procedure_steps.ALL)
+            options = options.sort(lambda x: x.name)
             selections = [OPTION(options[i].name, _value=str(options[i].id))
                           for i in range(len(options))]
 
