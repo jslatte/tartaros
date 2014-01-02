@@ -19,6 +19,9 @@ from time import sleep
 from testcase import HestiaTestCase
 from Database import Database
 from testrun import TestRun
+import subprocess
+from os import getcwdu
+from utility import move_up_windows_path
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -2176,10 +2179,6 @@ def create_new_step():
 
 
 def run_test():
-    # instance database
-    from mapping import TARTAROS_WEB_DB_PATH
-    database = Database(log, path=TARTAROS_WEB_DB_PATH)
-
     # determine test plan id
     plan_id = request.vars.inp_plan_id
 
@@ -2191,6 +2190,10 @@ def run_test():
     test_case_id = request.vars.test_case_selection
 
     if plan_id is None and test_case_id != '0':
+        # instance database
+        from mapping import TARTAROS_WEB_DB_PATH
+        database = Database(log, path=TARTAROS_WEB_DB_PATH)
+
         # create test case object
         testcase = HestiaTestCase(log, database, test_case_id, debugging=False)
 
@@ -2198,20 +2201,35 @@ def run_test():
         testcase.run()
 
     else:
+        log.trace("Starting Cerberus Test Run ...")
+        try:
+            args = '"mode=webtesting" "testname=Cerberus Test Run" "resultsplanid=%(plan id)s" ' \
+                   '"testingmodule=%(module)s" "testingfeature=%(feature)s" ' \
+                   '"testingstory=%(story)s" "testingtest=%(test)s" ' \
+                   '"testingtestcase=%(test case)s"' \
+                   % {'plan id': plan_id, 'module': module_id, 'feature': feature_id,
+                      'story': user_story_id, 'test': test_id, 'test case': test_case_id}
+            path = move_up_windows_path(getcwdu())['path'] + 'tartaros.py'
+            subprocess.Popen('C:\\Python27\\python.exe %s %s' % (path, args), shell=True,
+                             close_fds=True)
+        except BaseException, e:
+            tmanager.handle_exception(log, e)
+        log.trace("... done")
+
         # initialize test run object
-        testrun = TestRun(log, database, name="Cerberus Run", submodule_id=2,
-                          results_plan_id=plan_id)
+        #testrun = TestRun(log, database, name="Cerberus Run", submodule_id=2,
+        #                  results_plan_id=plan_id)
 
         # build testcase list for test run
-        testcases = testrun.build_testcase_list_for_run(module_id=module_id,
-            feature_id=feature_id, story_id=user_story_id, test_id=test_id,
-            case_id=test_case_id)['testcases']
+        #testcases = testrun.build_testcase_list_for_run(module_id=module_id,
+        #    feature_id=feature_id, story_id=user_story_id, test_id=test_id,
+        #    case_id=test_case_id)['testcases']
 
         # set testcase list for test run
-        testrun.testcases = testcases
+        #testrun.testcases = testcases
 
         # execute test run
-        testrun.run()
+        #testrun.run()
 
     # disconnect from database
     #database.disconnect_from_database()
