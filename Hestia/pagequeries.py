@@ -386,8 +386,7 @@ class PageQueries():
                         else:
                             self.log.trace("Failed to verify %(field)s field."\
                                 " Expected value to be '%(expected)s', but was '%(actual)s'."
-                                %{'field':field,'expected':expectedValue,'actual':serverValue},'trace',
-                                "ViM Server API")
+                                %{'field':field,'expected':expectedValue,'actual':serverValue})
                             result['verified'] = False
                     except AttributeError,e:
                         self.log.warn("Failed to get field value.")

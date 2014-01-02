@@ -357,6 +357,17 @@ HESTIA = {
                 'dgp':                      'DeleteGracePeriod'
             },
         },
+        'system log': {
+            'table':            'SystemLog',
+            'fields': {
+                'id':                       'SyslogID',
+                'dvr id':                   'DvrID',
+                'time':                     'SyslogTime',
+                'type':                     'SyslogType',
+                'data':                     'SyslogData',
+                'author':                   'CreatedBy'
+            }
+        }
     },
     'server': {
         'camera event log': {

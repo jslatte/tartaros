@@ -43,6 +43,9 @@ DB_COC_FIELDS = DB_COC['fields']
 DB_GPS = DB['gps']
 DB_GPS_TABLE = DB_GPS['table']
 DB_GPS_FIELDS = DB_GPS['fields']
+DB_SYSLOG = DB['system log']
+DB_SYSLOG_TABLE = DB_SYSLOG['table']
+DB_SYSLOG_FIELDS = DB_SYSLOG['fields']
 
 ####################################################################################################
 # Events ###########################################################################################
@@ -53,6 +56,55 @@ DB_GPS_FIELDS = DB_GPS['fields']
 class Events():
     """ Sub-library for ViM server event download and interaction.
     """
+
+    def verify_system_event_downloaded_for_site(self, site_id, wait=360, testcase=None):
+        """ Verify that system event is in the database for given site.
+        INPUT
+            site id: id of the site for which to verify the event downloaded.
+            wait: how long to wait for the event to download.
+            testcase: a testcase object supplied when executing function as part of a testcase step.
+        OUPUT
+            event id: the id of the system event.
+            successful: whether the function executed successfully or not.
+            verified: whether the operation was verified or not.
+        """
+
+        self.log.debug("Verifying system event downloaded for site %s ..." % site_id)
+        result = {'successful': False, 'verified': False, 'event id': None}
+
+        try:
+            # return disk id for site
+            dvr_id = self.return_dvr_for_site(site_id)['dvr id']
+
+            # query database for event for site (on loop)
+            i = 15
+            while not result['verified'] and i <= wait:
+                handle = self.db.db_handle
+                table = DB_SYSLOG_TABLE
+                return_field = DB_SYSLOG_FIELDS['id']
+                known_field = DB_SYSLOG_FIELDS['dvr id']
+                known_value = dvr_id
+                event_id = self.db.query_database_table_for_single_value(handle, table,
+                                                                         return_field, known_field,
+                                                                         known_value)['value']
+                if event_id is not None:
+                    self.log.trace("Verified system event downloaded for site %s." % site_id)
+                    result['event id'] = event_id
+                    result['verified'] = True
+                else:
+                    self.log.trace("Event NOT found (attempt %d). Retrying ..." % (i/15))
+                    i += 15
+                    sleep(15)
+
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation="verify system event downloaded for site %s" % site_id)
+
+        # return
+        if testcase is not None:
+            testcase.event_id = result['event id']
+            testcase.processing = result['successful']
+        return result
 
     def verify_gps_event_downloaded_for_site(self, site_id, wait=360, testcase=None):
         """ Verify that gps event is in the database for given site.
