@@ -43,7 +43,7 @@ DVR_FIELDS = DB['dvrs']['fields']
 class Database(Charon):
     """ Library for Tartaros database interaction. """
 
-    def __init__(self, logger):
+    def __init__(self, logger, path=None):
         """
         INPUT
             logger: An initialized instance of a logging class to use.
@@ -53,7 +53,7 @@ class Database(Charon):
         self.log = logger
 
         # initialize SQLite API library
-        db_path = TARTAROS_DB_PATH
+        db_path = TARTAROS_DB_PATH if path is None else path
         Charon.__init__(self, db_path, self.log)
 
         # define default database handle

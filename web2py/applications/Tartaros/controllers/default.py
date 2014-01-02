@@ -2177,7 +2177,8 @@ def create_new_step():
 
 def run_test():
     # instance database
-    database = Database(log)
+    from mapping import TARTAROS_WEB_DB_PATH
+    database = Database(log, path=TARTAROS_WEB_DB_PATH)
 
     # determine test plan id
     plan_id = request.vars.inp_plan_id
@@ -2206,9 +2207,6 @@ def run_test():
             feature_id=feature_id, story_id=user_story_id, test_id=test_id,
             case_id=test_case_id)['testcases']
 
-        # filter by class
-        #testrun.filter_testcases_by_class(testcases, testcase_class)
-
         # set testcase list for test run
         testrun.testcases = testcases
 
@@ -2216,4 +2214,4 @@ def run_test():
         testrun.run()
 
     # disconnect from database
-    database.disconnect_from_database()
+    #database.disconnect_from_database()

@@ -21,7 +21,8 @@ from os import getcwdu
 ### Tartaros #######################################################################################
 ####################################################################################################
 
-TARTAROS_DB_PATH = getcwdu() + "\\applications\\Tartaros\\databases\\tartaros.sqlite"
+TARTAROS_DB_PATH = getcwdu() + "\\web2py\\applications\\Tartaros\\databases\\tartaros.sqlite"
+TARTAROS_WEB_DB_PATH = getcwdu() + "\\applications\\Tartaros\\databases\\tartaros.sqlite"
 #TARTAROS_DB_PATH = getcwdu() + "\\tartaros.db"
 
 TARTAROS = {

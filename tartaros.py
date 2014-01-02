@@ -21,6 +21,7 @@ from Minos import Minos
 from Orpheus import Orpheus
 from Sisyphus import Sisyphus
 from Tantalus import Tantalus
+from mapping import TARTAROS_WEB_DB_PATH
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -29,7 +30,6 @@ from Tantalus import Tantalus
 
 # logger instance
 log = Logger(logging_level='trace')
-database = Database(Logger(logging_level='info'))
 
 ####################################################################################################
 # Tartaros #########################################################################################
@@ -37,7 +37,7 @@ database = Database(Logger(logging_level='info'))
 ####################################################################################################
 
 # default variables
-mode = 'default'
+mode = None
 build = ''
 test_name = ''
 results_plan_id = None
@@ -46,7 +46,7 @@ feature = ''
 story = ''
 test = ''
 testcase = ''
-testcase_class = ''
+testcase_class = None
 
 # read system arguments
 params = []
@@ -111,8 +111,11 @@ elif mode == 'ixion':
     ixion = Ixion(log)
     ixion.run()
 elif mode == 'testing':
+    # instance database for TeamCity testing
+    database = Database(Logger(logging_level='info'))
+
     # initialize test run object
-    testrun = TestRun(log, database, name=test_name, submodule_id=3, results_plan_id=results_plan_id)
+    testrun = TestRun(log, database, name=test_name, submodule_id=2, results_plan_id=results_plan_id)
 
     # build testcase list for test run
     testcases = testrun.build_testcase_list_for_run(module_id=module,
@@ -137,3 +140,31 @@ elif mode == 'testing':
 
     else:
         log.error("Failed to setup test environment. %s is not a valid build." % build)
+
+elif mode == 'webtesting':
+    # instance with trace logging and correct db path for Cerberus (web2py) testing
+    database = Database(Logger(logging_level='trace'), path=TARTAROS_WEB_DB_PATH)
+
+    # initialize test run object
+    testrun = TestRun(log, database, name=test_name, submodule_id=2, results_plan_id=results_plan_id)
+
+    # build testcase list for test run
+    testcases = testrun.build_testcase_list_for_run(module_id=module,
+        feature_id=feature, story_id=story, test_id=test,
+        case_id=testcase)['testcases']
+
+    # filter by class
+    if testcase_class is not None:
+        testrun.filter_testcases_by_class(testcases, testcase_class)
+
+    # set testcase list for test run
+    testrun.testcases = testcases
+
+    # execute test run
+    testrun.run()
+
+elif mode is None:
+    log.error("No run mode specified.")
+
+else:
+    log.error("Invalid mode %s specified." % mode)
