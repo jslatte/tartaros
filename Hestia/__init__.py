@@ -12,6 +12,7 @@
 ####################################################################################################
 
 from time import sleep
+import inspect
 from mapping import HESTIA
 from utility import return_execution_error, verify_file_does_not_exist
 from utc import UTC
@@ -115,6 +116,9 @@ class Hestia(ClipClassification, Clips, DriveStatus, EmailNotification, Events, 
         # instance status email aprser
         self.status_email_parser = StatusEmailParser(self.log)
 
+        # stacktrace
+        self.inspect = inspect
+
     def setup_server_for_manual_testing(self, license_type='full'):
         """ Set up a server installation for manual testing.
         INPUT
@@ -188,15 +192,16 @@ class Hestia(ClipClassification, Clips, DriveStatus, EmailNotification, Events, 
             verified: whether the operation was verified or not.
         """
 
-        self.log.debug(" ...")
+        operation = self.inspect.stack()[0][3]
         result = {'successful': False, 'verified': False}
 
         try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
 
-            self.log.trace("")
+            self.log.trace("... done %s." % operation)
             result['successful'] = True
         except BaseException, e:
-            self.handle_exception(e, operation="")
+            self.handle_exception(e, operation=operation)
 
         # return
         if testcase is not None: testcase.processing = result['successful']

@@ -367,6 +367,14 @@ HESTIA = {
                 'type':                     'SyslogType',
                 'data':                     'SyslogData',
                 'author':                   'CreatedBy'
+            },
+            'event type to type id': {
+                'remote log in':            '102',
+                'remote log out':           '103',
+            },
+            'author to author id': {
+                'non-vim':                  '0',
+                'vim':                      '1',
             }
         }
     },

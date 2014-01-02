@@ -46,6 +46,8 @@ DB_GPS_FIELDS = DB_GPS['fields']
 DB_SYSLOG = DB['system log']
 DB_SYSLOG_TABLE = DB_SYSLOG['table']
 DB_SYSLOG_FIELDS = DB_SYSLOG['fields']
+SYSLOG_EVENT_TYPES = DB_SYSLOG['event type to type id']
+SYSLOG_AUTHORS = DB_SYSLOG['author to author id']
 
 ####################################################################################################
 # Events ###########################################################################################
@@ -417,6 +419,60 @@ class Events():
 
         # return
         if testcase is not None: testcase.processing = result['successful']
+        return result
+
+    def generate_system_event_for_site(self, site_id, e_type='remote log in', author='non-vim',
+                                       testcase=None):
+        """ Generate specified type of system event in database for given site.
+        @param site_id: the id of the site for which to generate the event.
+        @param e_type: the type of event to generate (e.g., remote log in, remote log out, etc.).
+        @param author: the user responsible for the event (e.g., vim).
+        @param testcase: a testcase object supplied when executing function as part of a
+            testcase step.
+        @return: a dict containing:
+            'event id' - the id of the event generated.
+            'successful' - whether the function executed successfully or not.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'verified': False}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # determine event attributes
+            dvr_id = self.return_dvr_for_site(site_id)['dvr id']
+            time = str(self.utc.convert_string_to_time('now')) + '000'
+            event_type = SYSLOG_EVENT_TYPES[e_type.lower()]
+            data = "''"
+            author = SYSLOG_AUTHORS[author.lower()]
+
+            # build SQL statement
+            statement = "INSERT INTO %(table)s (%(dvr id field)s, %(time field)s, " \
+                        "%(event type field)s, %(data field)s, %(author field)s) " \
+                        "VALUES (%(dvr id)s, %(time)s, %(event type)s, %(data)s, %(author)s)" \
+                        % {'table': DB_SYSLOG_TABLE,
+                           'dvr id field': DB_SYSLOG_FIELDS['dvr id'], 'dvr id': dvr_id,
+                           'time field': DB_SYSLOG_FIELDS['time'], 'time': time,
+                           'event type field': DB_SYSLOG_FIELDS['type'], 'event type': event_type,
+                           'data field': DB_SYSLOG_FIELDS['data'], 'data': data,
+                           'author field': DB_SYSLOG_FIELDS['author'], 'author': author}
+
+            # insert event into database
+            event_id = self.db.execute_SQL(self.db.db_handle, statement, return_id=True)['id']
+
+            # compile results
+            result['event id'] = event_id
+
+            self.log.trace("... done %s." % operation)
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if testcase is not None:
+            testcase.processing = result['successful']
+            testcase.sysevent_id = result['event id']
         return result
 
     def generate_event_for_site(self, site_id, type='custom', params=[], generated=False,
