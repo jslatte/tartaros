@@ -128,7 +128,7 @@ class Clips():
                     result['verified'] = True
                     self.log.trace("Entry for value %s found." % actionValue)
                 else:
-                    self.log.trace("Entry not found.", 'trace', 'ViM Database API')
+                    self.log.trace("Entry not found.")
 
                 # if verifying clip deleted, check file
                 if actionValue == ACTION_TO_ACTION_VAL['delete']:
@@ -152,7 +152,7 @@ class Clips():
                 if attempt < 5 and not result['verified']:
                     self.log.trace("Failed to verify clip action for clip (attempt %s). "
                                    "Re-attempting in 5 seconds ..." % attempt)
-                    time.sleep (5)
+                    sleep(5)
                 elif attempt == 5 and not result['verified']:
                     self.log.error("Failed to verify clip action for clip.")
                     break

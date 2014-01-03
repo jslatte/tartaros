@@ -38,14 +38,14 @@ log = Logger(logging_level='trace')
 # database
 database = Database(log)
 # utilities
-utc = UTC(log)
+#utc = UTC(log)
 # modules
-ixion = Ixion(log)
-minos = Minos(log)
-orpheus = Orpheus(log)
-sisyphus = Sisyphus(log)
-tantalus = Tantalus(log, Sisyphus, num_sites=1)
-danaides = Danaides(log, database)
+#ixion = Ixion(log)
+#minos = Minos(log)
+#orpheus = Orpheus(log)
+#sisyphus = Sisyphus(log)
+#tantalus = Tantalus(log, Sisyphus, num_sites=1)
+#danaides = Danaides(log, database)
 hestia = Hestia(log, database)
 
 ####################################################################################################
@@ -703,12 +703,7 @@ def run_dvr_simulation_test():
 
 #log.trace("SELECT * FROM ConnectionLog WHERE csTimeStamp > %d and csTimeStamp < %d" %(utc.convert_date_string_to_db_time(start)['db time'], utc.convert_date_string_to_db_time(end)['db time']))
 
-l = [
-    ['a', 2, 3],
-    ['b', 3, 1],
-    ['c', 1, 2]
-]
-
-l.sort(key=lambda x: x[1])
-
-print l
+SEND_STATUS_EMAIL_URL = HESTIA['server']['email']['send status email path']
+url = hestia.server_url + SEND_STATUS_EMAIL_URL
+hestia.log_in_to_vim()
+hestia.get_http_request(url)
