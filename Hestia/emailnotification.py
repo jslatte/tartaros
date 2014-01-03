@@ -24,6 +24,7 @@ from HTMLParser import HTMLParser
 IMAP_ADDRESS = 'by2prd0810.outlook.com'
 IMAP_USER = 'vim@avt-usa.net'
 IMAP_PSWD = 'p@ssw0rd!'
+SEND_STATUS_EMAIL_URL = HESTIA['server']['email']['send status email path']
 
 ####################################################################################################
 # Email Notification ###############################################################################
@@ -33,6 +34,32 @@ IMAP_PSWD = 'p@ssw0rd!'
 class EmailNotification():
     """ Sub-library for Exchange server email interaction and parsing.
     """
+
+    def send_status_email_now(self, testcase=None):
+        """ Send a status email to all configured users now.
+        @param testcase: a testcase object supplied when executing function as part of a testcase step.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # send status email now
+            url = self.server_url + SEND_STATUS_EMAIL_URL
+            self.get_http_request(url)
+
+            self.log.trace("... done %s." % operation)
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if testcase is not None: testcase.processing = result['successful']
+        return result
 
     def verify_clip_download_notification_email_received(self, testcase=None):
         """ Verify that a clip download notification email was received.

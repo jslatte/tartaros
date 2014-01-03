@@ -185,11 +185,10 @@ class Hestia(ClipClassification, Clips, DriveStatus, EmailNotification, Events, 
 
     def TEMPLATE_FUNCTION(self, testcase=None):
         """
-        INPUT
-            testcase: a testcase object supplied when executing function as part of a testcase step.
-        OUPUT
-            successful: whether the function executed successfully or not.
-            verified: whether the operation was verified or not.
+        @param testcase: a testcase object supplied when executing function as part of a testcase step.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'verified' - whether the operation was verified or not.
         """
 
         operation = self.inspect.stack()[0][3]
