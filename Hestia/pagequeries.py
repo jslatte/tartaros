@@ -33,7 +33,7 @@ class PageQueries():
     """ Sub-library for ViM server page querying.
     """
 
-    def query_page(self, page, data={}, testcase=None):
+    def query_page(self, page, data={}, max_attempts=5, testcase=None):
         """ Query a page.
         INPUT
             page: the page to be filtered.
@@ -46,6 +46,7 @@ class PageQueries():
                 'entry id' - the ID of an entry expected to be in the page query return.
                 'expected' - a data dictionary describing values for fields expected for the entry ID
                     expected to return (for thorough verification).
+            max_attempts: the maximum number of attempts to make the query (used with entry id in data).
             testcase: a testcase object supplied when executing function as part of a testcase step.
         OUPUT
             successful: whether the function executed successfully or not.
@@ -158,7 +159,7 @@ class PageQueries():
                 # verify page query response entry
                 verified = False
                 attempt = 1
-                maxAttempts = 5
+                maxAttempts = max_attempts
                 while not verified and attempt <= maxAttempts:
                     verified = self.verify_page_query_response_entry(page, result['query response'],
                         entryID, expected)['verified']

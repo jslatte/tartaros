@@ -136,6 +136,78 @@ class HTTP():
         if testcase is not None: testcase.processing = result['successful']
         return result
 
+    def put_http_request(self, url, data, json=False, max_attempts=1, testcase=None):
+        """ Make a PUT request to the server.
+        @param testcase: a testcase object supplied when executing function as part of a testcase step.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'response' - the server response to the request.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'response': ''}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            attempt = 1
+            while not result['successful'] and attempt <= max_attempts:
+
+                try:
+                    if data is not None:
+                        if json:
+                            # transform the data object into a form data encoded string (using JSON)
+                            data = dumps(data) if data is not None else ''
+                        else:
+                            # transform the data object into a form data encoded string
+                            data = urlencode(data)
+                            data = data.replace('+','%20').replace('%28','(').replace('%29',')')
+                    else: data = ''
+
+                    # post the request
+                    if json:
+                        request = PutRequest(url, data, {"Content-Type": "application/json"})
+                    else:
+                        request = PutRequest(url, data)
+
+                    result['response'] = urlopen(request)
+                    self.log.trace("PUT HTTP request.")
+
+                    self.log.trace("Response: %s" % result['response'])
+
+                    if result['response'] is not None and result['response'] != '':
+                        result['successful'] = True
+                        break
+                    else:
+                        self.log.trace("Failed to PUT HTTP request %s %s (attempt %s). "
+                                       "No response received from server."
+                                       "Re-attempting in 5 seconds ..." % (url, str(data), attempt))
+                except HTTPError, e:
+                    self.log.trace(str(e))
+                    self.log.trace("Failed to PUT HTTP request %s %s (attempt %s). "
+                                   "Re-attempting in 5 seconds ..." % (url, str(data), attempt))
+                except BaseException, e:
+                    self.handle_exception(e,
+                        operation="post HTTP request %s %s (attempt %s)" % (url, str(data), attempt))
+                    self.log.trace("Re-attempting in 5 seconds ...")
+
+                if attempt >= max_attempts:
+                    self.log.error("Failed to post HTTP request to the ViM server.")
+                    break
+
+                # increment
+                attempt += 1
+                sleep(5)
+
+            self.log.trace("... done %s." % operation)
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if testcase is not None: testcase.processing = result['successful']
+        return result
+
     def post_http_request(self, url, data=None, testcase=None, max_attempts=1, json=False):
         """
         INPUT

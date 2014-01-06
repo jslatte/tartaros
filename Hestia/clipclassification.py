@@ -31,6 +31,9 @@ SERVER_CAT_VAL_MOD_PATH = SERVER_CAT_VAL['modify path']
 SERVER_CAT_VAL_FIELDS = SERVER_CAT_VAL['fields']
 SERVER_CAT_VAL_ENTITY_PATH = SERVER_CAT_VAL['entity path']
 SERVER_CAT_VAL_COL = SERVER_CAT_VAL['columns']
+SERVER_CLASS = SERVER['classifications']
+SERVER_CLASS_PATH = SERVER_CLASS['path']
+SERVER_CLASS_FIELDS = SERVER_CLASS['fields']
 
 ####################################################################################################
 # Clip Classification ##############################################################################
@@ -41,6 +44,101 @@ SERVER_CAT_VAL_COL = SERVER_CAT_VAL['columns']
 class ClipClassification():
     """ Sub-library for ViM server clip classification functionality.
     """
+
+    def classify_clip(self, clip_id, value_id, category_id, testcase=None):
+        """ Classify clip with clip classification category value.
+        @param clip_id: the id of the clip to be classified.
+        @param value_id: the id of the value with which to classify the clip.
+        @param category_id: the id of the category of the value with which to classify the clip.
+        @param testcase: a testcase object supplied when executing function as part of a testcase step.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'verified' - whether the operation was verified or not.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'verified': False}
+
+        try:
+            self.log.trace("%s %s with value %s for category %s ..." % (operation.replace('_', ' '),
+                                                                        clip_id, value_id,
+                                                                        category_id))
+
+            # build data packet
+            data = [str(value_id)]
+
+            # construct url
+            url = self.server_url + SERVER_CLASS_PATH % {'clip id': clip_id,
+                                                         'category id': category_id}
+
+            # PUT request to server
+            result['successful'] = self.put_http_request(url, data=data, json=True)['successful']
+
+            # verify clip classified
+            if result['successful']:
+                result['verified'] = self.verify_clip_classification(clip_id, value_id,
+                                                                     category_id)['verified']
+            else:
+                result['verified'] = False
+
+            self.log.trace("... done %s." % operation)
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if testcase is not None: testcase.processing = result['successful']
+        return result
+
+    def verify_clip_classification(self, clip_id, value_id, category_id, testcase=None):
+        """
+        @param clip_id: the id of the clip to verify was classified.
+        @param value_id: the id of the value with which the clip was classified.
+        @param category_id: the id of the category of the value with which the clip was classified.
+        @param testcase: a testcase object supplied when executing function as part of a testcase step.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'verified' - whether the operation was verified or not.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'verified': False}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # query video clip log for classified clip
+            data = {
+                'entry id': clip_id,
+            }
+            video_entry = self.query_page('video clip log', data, max_attempts=1)['entry']
+
+            # attempt to verify clip classification
+            clip_exists = False
+            if eval(str(video_entry)) is not None:
+                if '%s:%s' % (category_id, value_id) in video_entry['classifications']:
+                    self.log.trace("Verified clip classified.")
+                    result['verified'] = True
+                    clip_exists = True
+            else:
+                # check health clip log if no clip found in video clip log
+                health_entry = self.query_page('health clip log', data, max_attempts=1)['entry']
+                if eval(str(video_entry)) is not None:
+                    if '%s:%s' % (category_id, value_id) in health_entry['classifications']:
+                        self.log.trace("Verified clip classified.")
+                        result['verified'] = True
+                        clip_exists = True
+
+            if not clip_exists:
+                self.log.error("Clip not found.")
+
+            self.log.trace("... done %s." % operation)
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if testcase is not None: testcase.processing = result['successful']
+        return result
 
     def delete_category_value(self, value_id, category_id, testcase=None):
         """
