@@ -330,12 +330,13 @@ class Clips():
             url = self.server_url + CLIPACT_PRESERVE % clip_id
             response = self.get_http_request(url)['response']
 
-            # verify clip was scheduled for delete
+            # verify clip was preserved
             if response.lower() == 'ok':
-                self.log.trace("Preserved clip %s." % clip_id)
-                result['verified'] = True
-
-            result['successful'] = True
+                result['successful'] = True
+                result['verified'] = self.verify_clip_action_for_clip(clip_id,
+                                                                      'preserve')['verified']
+            else:
+                result['successful'] = False
         except BaseException, e:
             self.handle_exception(e, operation="preserve clip %s" % clip_id)
 
