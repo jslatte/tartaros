@@ -51,6 +51,9 @@ CLIPACT = SERVER['clip actions']
 CLIPACT_SCHEDULE_DELETE = CLIPACT['schedule for delete path']
 CLIPACT_PRESERVE = CLIPACT['preserve path']
 CLIPACT_CANCEL = CLIPACT['cancel path']
+NOTES = SERVER['clip notations']
+NOTES_FIELDS = NOTES['fields']
+NOTES_PATH = NOTES['path']
 
 ####################################################################################################
 # Clips ############################################################################################
@@ -61,6 +64,105 @@ CLIPACT_CANCEL = CLIPACT['cancel path']
 class Clips():
     """ Sub-library for ViM server clip requests and download functionality.
     """
+
+    def add_note_to_clip(self, clip_id, note, clip_type=None, testcase=None):
+        """ Add a note to specified clip.
+        @param clip_id: the id of the clip to which to add a note.
+        @param note: the string to add as a note to the clip.
+        @param clip_type: the type of clip (e.g., custom, custom video event, location, alarm,
+            custom health event).
+        @param testcase: a testcase object supplied when executing function as part of a testcase step.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'verified' - whether the operation was verified or not.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'verified': False}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # build data packet to send to server
+            packet = {
+                NOTES_FIELDS['clip id']:       clip_id,
+                NOTES_FIELDS['notation']:      note,
+            }
+
+            # send data packet to server
+            url = self.server_url + NOTES_PATH
+            response = self.post_http_request(url, packet)['response']
+
+            # verify post was successful
+            if response == 'Ok':
+                result['successful'] = True
+            else:
+                self.log.warn("Failed to send request to server.")
+
+            # verify note added to clip
+            if result['successful']:
+                result['verified'] = self.verify_note_added_to_clip(clip_id, note,
+                                                                    clip_type)['verified']
+
+            self.log.trace("... done %s." % operation)
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if testcase is not None: testcase.processing = result['successful']
+        return result
+
+    def verify_note_added_to_clip(self, clip_id, note, clip_type=None, testcase=None):
+        """ Verify that specified note was added to specified clip.
+        @param clip_id: the id of the clip to which the note was added.
+        @param note: the string to which the note was added.
+        @param clip_type: the type of clip (e.g., custom, custom video event, location, alarm,
+            custom health event).
+        @param testcase: a testcase object supplied when executing function as part of a testcase step.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'verified' - whether the operation was verified or not.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'verified': False}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # determine page to query
+            if clip_type is not None:
+                if clip_type.lower() == 'custom'\
+                    or clip_type.lower() == 'custom video event'\
+                    or clip_type.lower() == 'location'\
+                    or clip_type.lower() == 'alarm':
+                    page = 'video clip log'
+                elif clip_type.lower() == 'custom health event':
+                    page = 'health clip log'
+                else:
+                    page = 'video clip log'
+            else:
+                page = 'video clip log'
+
+            # url encode note (for comparison)
+            note = note.replace(' ', '%20').replace('(', '%28').replace(')', '%29')
+
+            # query page for clip, expecting note
+            expected = {'notation': note}
+            parameters = {
+                'entry id': clip_id,
+                'expected': expected,
+                }
+            result['verified'] = self.query_page(page, data=parameters)['verified']
+
+            self.log.trace("... done %s." % operation)
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if testcase is not None: testcase.processing = result['successful']
+        return result
 
     def age_simulated_orphaned_clip_file_for_site_past_expiration(self, path, site_id,
                                                                   testcase=None):
