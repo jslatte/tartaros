@@ -252,7 +252,7 @@ class Charon():
         # return
         return result
 
-    def update_entry_in_table(self, handle, table, id, entry):
+    def update_entry_in_table(self, handle, table, id, entry, id_field='ID'):
         """ Updated entry in given table in database.
         INPUT
             handle: an active handle to the database.
@@ -273,7 +273,7 @@ class Charon():
         template = "UPDATE %s SET %s = '%s' WHERE %s = %s"
         for n in range(0, len(fields)):
             # build statement
-            sql = template % (str(table), str(fields[n]), str(values[n]), 'ID', str(id))
+            sql = template % (str(table), str(fields[n]), str(values[n]), id_field, str(id))
             # execute SQL statement
             self.execute_SQL(handle, sql)
 

@@ -22,6 +22,7 @@ from database import Database
 from drivestatus import DriveStatus
 from emailnotification import EmailNotification
 from events import Events
+from gps import GPS
 from http import HTTP
 from installer import Installer
 from licenseconfig import  LicenseConfiguration
@@ -51,7 +52,7 @@ DEFAULT_SERVER_URL = HESTIA['default server url']
 ####################################################################################################
 
 
-class Hestia(ClipClassification, Clips, DriveStatus, EmailNotification, Events, HTTP, Installer,
+class Hestia(ClipClassification, Clips, DriveStatus, EmailNotification, Events, GPS, HTTP, Installer,
     LicenseConfiguration, PageQueries, Server, Session, Software, SiteConfiguration, SiteConnectivity,
     SiteGroupConfiguration, SystemConfiguration, UserConfiguration):
     """ Library for ViM interaction and testing. """

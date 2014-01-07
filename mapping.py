@@ -220,6 +220,25 @@ HESTIA = {
                 '7':                        'clip download cancelled'
             },
         },
+        'drive history': {
+            'table':            'DriveHistory',
+            'fields': {
+                'id':                       'DriveHistoryID',
+                'dvr id':                   'DvrID',
+                'disk id':                  'DiskID',
+                'start':                    'IntervalStart',
+                'end':                      'IntervalEnd',
+                'start type':               'IntervalStartType',
+                'end type':                 'IntervalEndType',
+            },
+        },
+        'drives': {
+            'table':            'HardDisks',
+            'fields': {
+                'id':                       'DiskID',
+                'serial':                   'DiskSN'
+            },
+        },
         'dvr history': {
             'table':            'DvrHistory',
             'fields': {
@@ -270,8 +289,33 @@ HESTIA = {
             },
         },
         'geoclip requests': {
-            'table':            '',
+            'table':            'GeoClipRequest',
             'fields': {
+                'id':                       'GCRID',
+                'event id':                 'EventLogID',
+                'start time':               'ReqFrmtime',
+                'end time':                 'ReqTotime',
+                'post time':                'PostTime',
+                'pre time':                 'PreTime',
+                'minimum latitude':         'MinLatitude',
+                'maximum latitude':         'MaxLatitude',
+                'minimum longitude':        'MinLongitude',
+                'maximum longitude':        'MaxLongitude',
+                'download type':            'DownloadType',
+                'clip length':              'ClipLenght',
+                'cameras':                  'Cameras',
+                'label':                    'Label',
+                'notes':                    'Notes',
+                'notification':             'NotifyUser',
+                'author':                   'ActionBy'
+            },
+        },
+        'geoclip requests pending': {
+            'table':            'GeoClipRequestPendingForSite',
+            'fields': {
+                'id':                       'rowid',
+                'site id':                  'SiteID',
+                'geo request id':           'GCRID',
             },
         },
         'gps': {
@@ -286,23 +330,16 @@ HESTIA = {
                 'direction':                'TrueCourse'
             },
         },
-        'drive history': {
-            'table':            'DriveHistory',
+        'gps last position': {
+            'table':            'LastGPRMCofSite',
             'fields': {
-                'id':                       'DriveHistoryID',
-                'dvr id':                   'DvrID',
-                'disk id':                  'DiskID',
-                'start':                    'IntervalStart',
-                'end':                      'IntervalEnd',
-                'start type':               'IntervalStartType',
-                'end type':                 'IntervalEndType',
-            },
-        },
-        'drives': {
-            'table':            'HardDisks',
-            'fields': {
-                'id':                       'DiskID',
-                'serial':                   'DiskSN'
+                'id':                       'rowid',
+                'site id':                  'SiteID',
+                'time':                     'FixTime',
+                'latitude':                 'Latitude',
+                'longitude':                'Longitude',
+                'speed':                    'Speed',
+                'direction':                'TrueCourse'
             },
         },
         'sites': {

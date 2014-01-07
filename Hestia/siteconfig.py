@@ -176,7 +176,8 @@ class SiteConfiguration():
         if testcase is not None: testcase.processing = result['successful']
         return result
 
-    def add_number_of_fake_sites(self, num_sites, start_id=1, ip_schema='172.22.60.', start_ip=1, testcase=None):
+    def add_number_of_fake_sites(self, num_sites, start_id=1, ip_schema='172.22.60.', start_ip=1,
+                                 testcase=None):
         """ Add a number of fake sites (IP address points nowhere).
         INPUT
             num sites: number of fake sites to add.
@@ -448,7 +449,8 @@ class SiteConfiguration():
         if testcase is not None: testcase.processing = result['successful']
         return result
 
-    def configure_lab_depot_site_for_test(self, site, settings=[], allowed=True, serial_ids=False, testcase=None):
+    def configure_lab_depot_site_for_test(self, site, settings=[], allowed=True, serial_ids=False,
+                                          testcase=None):
         """ Configure a remote site from the lab depot.
         INPUT
             site: the name of a known site (e.g. from Depot - see DVRs table in tartaros database).
