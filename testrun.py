@@ -532,7 +532,7 @@ class TestRun():
         result = {'successful': False, 'verified': False}
 
         try:
-            if self.submodule_id == 3:
+            if self.submodule_id == 2:
                 # set up environment for Hestia test
                 from Hestia import Hestia
                 self.hestia = Hestia(self.log, self.database)
@@ -583,7 +583,7 @@ class TestRun():
         result = {'successful': False, 'verified': False}
 
         try:
-            if self.submodule_id == 3:
+            if self.submodule_id == 2:
                 # instance Hestia module for use
                 from Hestia import Hestia
                 self.hestia = Hestia(self.log, self.database)
