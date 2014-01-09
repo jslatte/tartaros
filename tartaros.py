@@ -120,7 +120,7 @@ elif mode == 'testing':
     # build testcase list for test run
     testcases = testrun.build_testcase_list_for_run(module_id=module,
         feature_id=feature, story_id=story, test_id=test,
-        case_id=testcase)['testcases']
+        case_id=testcase, case_class=testcase_class)['testcases']
 
     # filter by class
     testrun.filter_testcases_by_class(testcases, testcase_class)
