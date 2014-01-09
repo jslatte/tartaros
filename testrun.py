@@ -558,7 +558,7 @@ class TestRun():
                 version = self.hestia.return_vim_server_version()['version']
 
                 # update test tag in TeamCity
-                self.log.build_set_label(version, test_name)
+                self.log.build_set_label(test_name, version)
 
             else:
                 self.log.error("Failed to setup test environment. Invalid submodule %s specified."
