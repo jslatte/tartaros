@@ -36,7 +36,7 @@ SUBMODULE_ID_TO_TESTCASE_OBJ = {
     '7':                None,
     '8':                None,
 }
-BLANK_SEL = "0"
+BLANK_SEL = ""
 
 ####################################################################################################
 # Test Run #########################################################################################
@@ -382,15 +382,15 @@ class TestRun():
             }
 
             # determine scope of test run
-            if str(case_id) is not None and str(case_id) != BLANK_SEL:
+            if str(case_id) is not None and str(case_id) != BLANK_SEL and str(case_id)is not '0':
                 scope = SCOPE_LEVELS['test case']
-            elif str(test_id) is not None and str(test_id) != BLANK_SEL:
+            elif str(test_id) is not None and str(test_id) != BLANK_SEL and str(test_id)is not '0':
                 scope = SCOPE_LEVELS['test']
-            elif str(story_id) is not None and str(story_id) != BLANK_SEL:
+            elif str(story_id) is not None and str(story_id) != BLANK_SEL and str(story_id)is not '0':
                 scope = SCOPE_LEVELS['user story']
-            elif str(feature_id) is not None and str(feature_id) != BLANK_SEL:
+            elif str(feature_id) is not None and str(feature_id) != BLANK_SEL and str(feature_id)is not '0':
                 scope = SCOPE_LEVELS['feature']
-            elif str(module_id) is not None and str(module_id) != BLANK_SEL:
+            elif str(module_id) is not None and str(module_id) != BLANK_SEL and str(module_id)is not '0':
                 scope = SCOPE_LEVELS['module']
             else:
                 scope = SCOPE_LEVELS['full']
@@ -401,7 +401,7 @@ class TestRun():
             # determine pertinent ids
             if scope == 5:
                 # determine modules
-                modules = self.database.return_modules_for_submodule(3)['modules']
+                modules = self.database.return_modules_for_submodule(2)['modules']
                 # append all test cases for product
                 for module in modules:
                     # append all test cases for module
@@ -409,7 +409,8 @@ class TestRun():
                     for feature in features:
                         # append all test cases for feature
                         stories =\
-                        self.database.return_user_stories_for_feature(feature['id'])['user stories']
+                        self.database.return_user_stories_for_feature(feature['id'],
+                                                                    module=module['id'])['user stories']
                         for story in stories:
                             # append all test cases for user story
                             tests = self.database.return_tests_for_user_story(story['id'])['tests']
@@ -426,7 +427,8 @@ class TestRun():
                 for feature in features:
                     # append all test cases for feature
                     stories =\
-                    self.database.return_user_stories_for_feature(feature['id'])['user stories']
+                    self.database.return_user_stories_for_feature(feature['id'],
+                                                                  module=module_id)['user stories']
                     for story in stories:
                         # append all test cases for user story
                         tests = self.database.return_tests_for_user_story(story['id'])['tests']
