@@ -415,6 +415,15 @@ HESTIA = {
             }
         }
     },
+    'dvr models': [
+        'MR4',
+        'MR8',
+        'MRH4',
+        'MRH8',
+        'MRH16',
+        'RRH8',
+        'RRH16',
+    ],
     'server': {
         'camera event log': {
             'query path':               '/cameventlog',

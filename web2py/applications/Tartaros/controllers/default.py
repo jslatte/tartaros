@@ -22,6 +22,7 @@ from testrun import TestRun
 import subprocess
 from os import getcwdu
 from utility import move_up_windows_path
+from mapping import HESTIA
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -29,6 +30,7 @@ from utility import move_up_windows_path
 ####################################################################################################
 
 log = Logger()
+DVR_MODELS = HESTIA['dvr models']
 
 ####################################################################################################
 # Test Manager #####################################################################################
@@ -58,6 +60,9 @@ class TestManager():
                        'user story': db.user_stories,
                        'test':       db.tests,
                        'test case':  db.test_cases}
+
+        # define dvr models
+        self.dvr_models = DVR_MODELS
 
     def TEMPLATE(self):
         """
@@ -984,6 +989,10 @@ class TestManager():
                 tr_selection = TR(td_selection_label, td_selection, td_update, td_add_ts_entry,
                                   self.build_test_runner_div()['div'],
                                   _id='tr_%s_selection' % name)
+            elif obj_type == object_types['test']:
+                tr_selection = TR(td_selection_label, td_selection, td_update, td_add_ts_entry,
+                                  self.build_test_templatizer_div()['div'],
+                                  _id='tr_%s_selection' % name)
             else:
                 tr_selection = TR(td_selection_label, td_selection, td_update, td_add_ts_entry,
                                   _id='tr_%s_selection' % name)
@@ -1650,7 +1659,7 @@ class TestManager():
                     name=request.vars.inp_new_test_case_name,
                     test_id=request.vars.test_selection,
                     procedure='4',
-                    min_version='1',
+                    min_version='1.0',
                     test_class=5,
                     active=1,
                 )
@@ -1827,6 +1836,106 @@ class TestManager():
         self.log.trace("... DONE %s." % operation.replace('_', ' '))
         return result
 
+    def build_test_templatizer_div(self):
+        """ Build the test templatizer div.
+        @return: a dict containing:
+            'btn' - the test run button.
+            'div' - the div containing the button and additional fields.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = {'div': DIV(), 'btn': INPUT(_class='btn')}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # define object ids
+            btn_create_model_test = 'btn_create_model_test'
+            div_templatizer_addr = 'div_test_runner'
+
+            # build the onclick scripts
+            script = "ajax('%(function)s', %(values)s, '%(target)s');" \
+                     "jQuery(%(remove)s).remove();" \
+                     % {'function': 'create_model_test_from_test',
+                        'values': "['module_selection', 'feature_selection', "
+                                  "'user_story_selection', 'test_selection', "
+                                  "'test_case_selection']",
+                        'target': '',
+                        'remove': ''}
+
+            # build the objects
+            btn_create_model_test = INPUT(_type='button', _value="Create Model Test", _class='btn',
+                                          _id=btn_create_model_test, _name=btn_create_model_test,
+                                          _onclick=script)
+
+            div_templatizer = DIV(btn_create_model_test,
+                                  _id=div_templatizer_addr)
+
+            # compile results
+            result['div'] = div_templatizer
+            result['btn'] = btn_create_model_test
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
+    def create_model_test_from_test(self, test_case_id, test_id):
+        """ Create a model test, using the given test case as a template. This will populate
+        a DVR Models test with test cases for each available model. These test cases will
+        be a copy of the given test case.
+        @param test_case_id: the id of the test case to templatize.
+        @param test_id: the id of the test to templatize.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = None
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # determine test template parameters
+            test = db(db.tests.id == test_id).select()[0]
+            name = "DVR Models"
+            user_story_id = test.user_story_id
+            results_id = test.results_id
+
+            # determine test case template parameters
+            test_case = db(db.test_cases.id == test_case_id).select()[0]
+            procedure = test_case.procedure
+            min_version = test_case.min_version
+            test_class = 4
+            active = 1
+
+            # add DVR Model test
+            added_test_id = db.tests.insert(
+                name=name,
+                user_story_id=user_story_id,
+                results_id=results_id
+            )
+
+            for model in self.dvr_models:
+                db.test_cases.insert(
+                    name=model,
+                    test_id=added_test_id,
+                    procedure=procedure,
+                    min_version=min_version,
+                    test_class=test_class,
+                    active=active,
+                )
+
+            # compile results
+            result = None
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
 
 ####################################################################################################
 # Step Manager #####################################################################################
@@ -1938,6 +2047,11 @@ def index():
         pass
 
     return dict(tmanager_form=tmanager_form)
+
+
+def create_model_test_from_test():
+    return tmanager.create_model_test_from_test(request.vars.test_case_selection,
+                                                request.vars.test_selection)
 
 
 def user():
