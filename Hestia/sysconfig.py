@@ -29,6 +29,7 @@ SYSCONFIG_DEFAULT_SETTINGS = SYSCONFIG['default settings']
 SYSCONFIG_DEFAULT_DIAG_SETTINGS = SYSCONFIG['default diagnostics settings']
 SYSCONFIG_DEFAULT_EMAIL_SETTINGS = SYSCONFIG['default email settings']
 SYSCONFIG_DEFAULT_SS_SETTINGS = SYSCONFIG['default streaming server settings']
+SYSCONFIG_DEFAULT_LOC_SETTINGS = SYSCONFIG['default location settings']
 EMAIL_TEST = SERVER['email test']
 EMAIL_TEST_PATH = EMAIL_TEST['path']
 EMAIL_TEST_CFG = EMAIL_TEST['default configuration']
@@ -543,6 +544,16 @@ class SystemConfiguration():
                     field = fields[i]
                     value = values[i]
                     result['settings'][field] = value
+
+                # if server 3.4+ add loc settings
+                if self.release_version >= 3.4:
+                    self.log.trace("Server version is 3.4 or newer. Appending location settings ...")
+
+                    # append to settings dict
+                    for setting in SYSCONFIG_DEFAULT_LOC_SETTINGS:
+                        field = SYSCONFIG_FIELDS[setting[0]]
+                        value = setting[1]
+                        result['settings'][field] = value
 
             self.log.trace("Returned current ViM system configuration.")
             result['successful'] = True

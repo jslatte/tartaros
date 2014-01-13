@@ -34,11 +34,12 @@ class Session():
     """ Sub-library for ViM server user session functionality.
     """
 
-    def log_in_to_vim(self, user_name='admin', password='password', testcase=None):
+    def log_in_to_vim(self, user_name='admin', password='password', max_attempts=1, testcase=None):
         """ Log in to the ViM server as given user with password.
         INPUT
             user name: the name of the user to log in as.
             password: the password to use when logging in.
+            max_attempts: the number of attempts to make to log in.
             testcase: a testcase object supplied when executing function as part of a testcase step.
         OUPUT
             successful: whether the function executed successfully or not.
@@ -61,7 +62,7 @@ class Session():
             }
 
             # log in to ViM
-            response = self.post_http_request(url, data)['response']
+            response = self.post_http_request(url, data, max_attempts=max_attempts)['response']
 
             if response is not None:
                 if response == "Incorrect username or password.":

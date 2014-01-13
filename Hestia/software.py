@@ -237,7 +237,8 @@ class Software():
                     self.db.db_handle = self.db.establish_handle_to_database()['handle']
 
                     # set up initial config
-                    self.log_in_to_vim(testcase=testcase)
+                    sleep(3)
+                    self.log_in_to_vim(testcase=testcase, max_attempts=5)
                     self.configure_vim_system_settings(testcase=testcase)
 
                 elif attempt <= max_attempts:

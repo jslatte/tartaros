@@ -157,18 +157,18 @@ class HTTP():
                     if data is not None:
                         if json:
                             # transform the data object into a form data encoded string (using JSON)
-                            data = dumps(data) if data is not None else ''
+                            s_data = dumps(data) if data is not None else ''
                         else:
                             # transform the data object into a form data encoded string
-                            data = urlencode(data)
-                            data = data.replace('+','%20').replace('%28','(').replace('%29',')')
-                    else: data = ''
+                            s_data = urlencode(data)
+                            s_data = s_data.replace('+','%20').replace('%28','(').replace('%29',')')
+                    else: s_data = ''
 
                     # post the request
                     if json:
-                        request = PutRequest(url, data, {"Content-Type": "application/json"})
+                        request = PutRequest(url, s_data, {"Content-Type": "application/json"})
                     else:
-                        request = PutRequest(url, data)
+                        request = PutRequest(url, s_data)
 
                     result['response'] = urlopen(request)
                     self.log.trace("PUT HTTP request.")
@@ -181,14 +181,14 @@ class HTTP():
                     else:
                         self.log.trace("Failed to PUT HTTP request %s %s (attempt %s). "
                                        "No response received from server."
-                                       "Re-attempting in 5 seconds ..." % (url, str(data), attempt))
+                                       "Re-attempting in 5 seconds ..." % (url, str(s_data), attempt))
                 except HTTPError, e:
                     self.log.trace(str(e))
                     self.log.trace("Failed to PUT HTTP request %s %s (attempt %s). "
-                                   "Re-attempting in 5 seconds ..." % (url, str(data), attempt))
+                                   "Re-attempting in 5 seconds ..." % (url, str(s_data), attempt))
                 except BaseException, e:
                     self.handle_exception(e,
-                        operation="post HTTP request %s %s (attempt %s)" % (url, str(data), attempt))
+                        operation="post HTTP request %s %s (attempt %s)" % (url, str(s_data), attempt))
                     self.log.trace("Re-attempting in 5 seconds ...")
 
                 if attempt >= max_attempts:
@@ -231,20 +231,20 @@ class HTTP():
                 if data is not None:
                     if json:
                         # transform the data object into a form data encoded string (using JSON)
-                        data = dumps(data) if data is not None else ''
+                        s_data = dumps(data) if data is not None else ''
                     else:
                         # transform the data object into a form data encoded string
-                        data = urlencode(data)
-                        data = data.replace('+','%20').replace('%28','(').replace('%29',')')
-                else: data = ''
+                        s_data = urlencode(data)
+                        s_data = s_data.replace('+','%20').replace('%28','(').replace('%29',')')
+                else: s_data = ''
 
                 # post the request
                 if json:
-                    request = Request(url, data, {"Content-Type": "application/json"})
+                    request = Request(url, s_data, {"Content-Type": "application/json"})
                     result['response'] = urlopen(request).read().strip()
                     self.log.trace("Posted JSON request.")
                 else:
-                    result['response'] = urlopen(url, data).read().strip()
+                    result['response'] = urlopen(url, s_data).read().strip()
                     self.log.trace("Posted HTTP request.")
 
                 self.log.trace("Response: %s" % result['response'])
@@ -255,14 +255,14 @@ class HTTP():
                 else:
                     self.log.trace("Failed to post HTTP request %s %s (attempt %s). "
                                    "No response received from server."
-                                   "Re-attempting in 5 seconds ..." % (url, str(data), attempt))
+                                   "Re-attempting in 5 seconds ..." % (url, str(s_data), attempt))
             except HTTPError, e:
                 self.log.trace(str(e))
                 self.log.trace("Failed to post HTTP request %s %s (attempt %s). "
-                               "Re-attempting in 5 seconds ..." % (url, str(data), attempt))
+                               "Re-attempting in 5 seconds ..." % (url, str(s_data), attempt))
             except BaseException, e:
                 self.handle_exception(e,
-                    operation="post HTTP request %s %s (attempt %s)" % (url, str(data), attempt))
+                    operation="post HTTP request %s %s (attempt %s)" % (url, str(s_data), attempt))
                 self.log.trace("Re-attempting in 5 seconds ...")
 
             if attempt >= max_attempts:
