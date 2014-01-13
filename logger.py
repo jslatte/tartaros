@@ -153,7 +153,7 @@ class Logger():
                                  % (test_name, stacktrace)
             else: failureMessage = "\n##teamcity[testFailed name='%s']" % test_name
             print failureMessage
-        
+
         # convert seconds (recorded duration) to milliseconds (TeamCity)
         duration *= 1000
         message = "\n##teamcity[testFinished name='%s' duration='%d']" % (test_name, duration)

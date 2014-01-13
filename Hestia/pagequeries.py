@@ -110,22 +110,32 @@ class PageQueries():
                 defaultWhere = defaultWhere.replace('anhourago', str(anHourAgo))
                 #   update default parameters
                 params['where'] = defaultWhere
-                # update number of results to show
+            # update number of results to show
             if results is not None:
                 params['results'] = results
-                # update sort
+            # update sort
             if sort is not None:
                 params['sort'] = sort
-                # update start index
+            # update start index
             if startIndex is not None:
                 params['start index'] = startIndex
-                # update filters to apply
+            # update filters to apply
             if filters is not None:
                 params['where'] = self.translate_filter_list_to_where_statement(page,filters)['where']
-                # override with given where statement, if any
+            # override with given where statement, if any
             if givenWhere is not None:
+                #   translate 'yesterday'
+                yesterday = self.utc.return_day_start_time_for_time('1 day ago')
+                givenWhere = givenWhere.replace('yesterday', str(yesterday))
+                #   translate 'today'
+                today = self.utc.return_day_end_time_for_time('now')
+                givenWhere = givenWhere.replace('today', str(today))
+                #   translate 'anhourago'
+                anHourAgo = self.utc.convert_string_to_time('1 hour ago')
+                givenWhere = givenWhere.replace('anhourago', str(anHourAgo))
+                # update where parameter
                 params['where'] = givenWhere
-                # append clip status info event ID (if given)
+            # append clip status info event ID (if given)
             if eventID is not None:
                 params['eventId'] = eventID
             # query page

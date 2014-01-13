@@ -1371,7 +1371,7 @@ HESTIA_PAGE_TO_PAGE_FIELDS = {
 }
 
 ORPHEUS = {
-    'server url':           "http://172.22.3.93:80/index.php?/api/v2",
+    'server url':           "http://172.22.2.93:80/index.php?/api/v2",
     'server key':           12345,
     'user name':            'Jonathan.Slattery@avt-usa.com',
     'password':             'Nikmik21',
