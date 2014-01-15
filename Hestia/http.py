@@ -12,7 +12,7 @@
 ####################################################################################################
 
 from urllib import urlencode
-from urllib2 import urlopen, HTTPError, Request
+from urllib2 import urlopen, HTTPError, Request, URLError
 from httplib import IncompleteRead
 from time import sleep, clock
 from json import dumps
@@ -94,6 +94,11 @@ class HTTP():
             while result['response'] is None and attempt <= max_attempts:
                 # make the request (and strip of whispace)
                 try: result['response'] = urlopen(url).read().strip()
+                except URLError, e:
+                    self.log.warn(e)
+                    self.log.warn("Server may have crashed or failed to start. Re-starting ...")
+                    self.start_vim_server()
+                    attempt += 1
                 except HTTPError, e:
                     self.log.trace("Failed to make GET request to server due to HTTP error.")
                     self.log.trace(str(e))

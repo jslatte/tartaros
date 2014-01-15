@@ -31,6 +31,8 @@ from mapping import HESTIA
 
 log = Logger()
 DVR_MODELS = HESTIA['dvr models']
+LICENSES = HESTIA['licenses']
+RUNNING_TESTS = []
 
 ####################################################################################################
 # Test Manager #####################################################################################
@@ -61,8 +63,10 @@ class TestManager():
                        'test':       db.tests,
                        'test case':  db.test_cases}
 
-        # define dvr models
+        # define class variables
+        self.licenses = LICENSES
         self.dvr_models = DVR_MODELS
+        self.running_test = None
 
     def TEMPLATE(self):
         """
@@ -1802,6 +1806,7 @@ class TestManager():
             # define object ids
             btn_run_test_addr = 'btn_run_test'
             inp_plan_id_addr = 'inp_plan_id'
+            btn_stop_test_addr = 'btn_stop_test'
             div_test_runner_addr = 'div_test_runner'
 
             # build the onclick scripts
@@ -1813,6 +1818,12 @@ class TestManager():
                                   "'test_case_selection']" % inp_plan_id_addr,
                         'target': '',
                         'remove': ''}
+            s_script = "ajax('%(function)s', %(values)s, '%(target)s');" \
+                       "jQuery(%(remove)s).remove();" \
+                       % {'function': 'stop_running_test',
+                          'values': "[]",
+                          'target': '',
+                          'remove': ''}
 
             # build the objects
             btn_run_test = INPUT(_type='button', _value="Run Test", _class='btn',
@@ -1821,8 +1832,11 @@ class TestManager():
             lbl_plan_id = LABEL("TEST PLAN ID: ")
             inp_plan_id = INPUT(_type='string',
                                 _id=inp_plan_id_addr, _name=inp_plan_id_addr)
+            btn_stop_test = INPUT(_type='button', _value="Stop Test", _class='btn',
+                                 _id=btn_stop_test_addr, _name=btn_stop_test_addr,
+                                 _onclick=s_script)
 
-            div_test_runner = DIV(lbl_plan_id, inp_plan_id, btn_run_test,
+            div_test_runner = DIV(lbl_plan_id, inp_plan_id, btn_run_test, btn_stop_test,
                                   _id=div_test_runner_addr)
 
             # compile results
@@ -1850,7 +1864,8 @@ class TestManager():
             self.log.trace("%s ..." % operation.replace('_', ' '))
 
             # define object ids
-            btn_create_model_test = 'btn_create_model_test'
+            btn_create_model_test_addr = 'btn_create_model_test'
+            btn_create_licensing_test_addr = 'btn_create_licensing_test'
             div_templatizer_addr = 'div_test_runner'
 
             # build the onclick scripts
@@ -1862,13 +1877,27 @@ class TestManager():
                                   "'test_case_selection']",
                         'target': '',
                         'remove': ''}
+            l_script = "ajax('%(function)s', %(values)s, '%(target)s');" \
+                       "jQuery(%(remove)s).remove();" \
+                       % {'function': 'create_licensing_test_from_test',
+                          'values': "['module_selection', 'feature_selection', "
+                                    "'user_story_selection', 'test_selection', "
+                                    "'test_case_selection']",
+                          'target': '',
+                          'remove': ''}
 
             # build the objects
             btn_create_model_test = INPUT(_type='button', _value="Create Model Test", _class='btn',
-                                          _id=btn_create_model_test, _name=btn_create_model_test,
+                                          _id=btn_create_model_test_addr,
+                                          _name=btn_create_model_test_addr,
                                           _onclick=script)
+            btn_create_licensing_test = INPUT(_type='button', _value="Create Licensing Test",
+                                              _class='btn',
+                                              _id=btn_create_licensing_test_addr,
+                                              _name=btn_create_licensing_test_addr,
+                                              _onclick=l_script)
 
-            div_templatizer = DIV(btn_create_model_test,
+            div_templatizer = DIV(btn_create_model_test, btn_create_licensing_test,
                                   _id=div_templatizer_addr)
 
             # compile results
@@ -1882,10 +1911,9 @@ class TestManager():
         self.log.trace("... DONE %s." % operation.replace('_', ' '))
         return result
 
-    def create_model_test_from_test(self, test_case_id, test_id):
-        """ Create a model test, using the given test case as a template. This will populate
-        a DVR Models test with test cases for each available model. These test cases will
-        be a copy of the given test case.
+    def create_test_from_test(self, test_type, test_case_id, test_id):
+        """ Create a test, using the given test case as a template.
+        @param test_type: the type of test to create (e.g., 'dvr models', 'licensing', etc.).
         @param test_case_id: the id of the test case to templatize.
         @param test_id: the id of the test to templatize.
         """
@@ -1898,7 +1926,6 @@ class TestManager():
 
             # determine test template parameters
             test = db(db.tests.id == test_id).select()[0]
-            name = "DVR Models"
             user_story_id = test.user_story_id
             results_id = test.results_id
 
@@ -1906,8 +1933,18 @@ class TestManager():
             test_case = db(db.test_cases.id == test_case_id).select()[0]
             procedure = test_case.procedure
             min_version = test_case.min_version
-            test_class = 3
             active = 1
+
+            # determine the type specific parameters
+            if test_type.lower() == 'dvr models':
+                name = "DVR Models"
+                test_class = 3
+            elif test_type.lower() == 'licensing':
+                name = "Licensing"
+                test_class = 4
+            else:
+                name = 'Templated Test (rename)'
+                test_class = 5
 
             # add DVR Model test
             added_test_id = db.tests.insert(
@@ -1916,22 +1953,39 @@ class TestManager():
                 results_id=results_id
             )
 
-            for model in self.dvr_models:
-                if 'rrh' in model.lower() and float(min_version) < 4.0:
-                    m_min_version = '4.0'
-                else:
-                    m_min_version = min_version
-                if model.lower() == 'rrh8':
-                    m_active = 0
-                else:
-                    m_active = active
+            # create test cases (based on type)
+            if test_type.lower() == 'dvr models':
+                for model in self.dvr_models:
+                    if 'rrh' in model.lower() and float(min_version) < 4.0:
+                        m_min_version = '4.0'
+                    else:
+                        m_min_version = min_version
+                    db.test_cases.insert(
+                        name=model,
+                        test_id=added_test_id,
+                        procedure=procedure,
+                        min_version=m_min_version,
+                        test_class=test_class,
+                        active=active,
+                    )
+            elif test_type.lower() == 'licensing':
+                for license in self.licenses:
+                    db.test_cases.insert(
+                        name=license['license'],
+                        test_id=added_test_id,
+                        procedure=procedure,
+                        min_version=license['min version'],
+                        test_class=test_class,
+                        active=active,
+                    )
+            else:
                 db.test_cases.insert(
-                    name=model,
+                    name='Templated Test Case (rename)',
                     test_id=added_test_id,
                     procedure=procedure,
-                    min_version=m_min_version,
+                    min_version=min_version,
                     test_class=test_class,
-                    active=m_active,
+                    active=active,
                 )
 
             # compile results
@@ -2057,9 +2111,22 @@ def index():
     return dict(tmanager_form=tmanager_form)
 
 
+def stop_running_test():
+    for test in RUNNING_TESTS:
+        try:
+            test.terminate()
+        except BaseException, e:
+            tmanager.handle_exception(log, e)
+
+
+def create_licensing_test_from_test():
+    return tmanager.create_test_from_test('licensing',request.vars.test_case_selection,
+                                          request.vars.test_selection)
+
+
 def create_model_test_from_test():
-    return tmanager.create_model_test_from_test(request.vars.test_case_selection,
-                                                request.vars.test_selection)
+    return tmanager.create_test_from_test('dvr models',request.vars.test_case_selection,
+                                          request.vars.test_selection)
 
 
 def user():
@@ -2324,6 +2391,7 @@ def run_test():
 
     else:
         log.trace("Starting Cerberus Test Run ...")
+        for i in range(len(RUNNING_TESTS)): RUNNING_TESTS.pop()
         try:
             args = '"mode=webtesting" "testname=Cerberus Test Run" "resultsplanid=%(plan id)s" ' \
                    '"testingmodule=%(module)s" "testingfeature=%(feature)s" ' \
@@ -2332,8 +2400,10 @@ def run_test():
                    % {'plan id': plan_id, 'module': module_id, 'feature': feature_id,
                       'story': user_story_id, 'test': test_id, 'test case': test_case_id}
             path = move_up_windows_path(getcwdu())['path'] + 'tartaros.py'
-            subprocess.Popen('C:\\Python27\\python.exe %s %s' % (path, args), shell=True,
+            running_test = \
+                subprocess.Popen('C:\\Python27\\python.exe %s %s' % (path, args), shell=True,
                              close_fds=True)
+            RUNNING_TESTS.append(running_test)
         except BaseException, e:
             tmanager.handle_exception(log, e)
         log.trace("... done")

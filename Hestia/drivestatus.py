@@ -11,7 +11,7 @@
 ####################################################################################################
 ####################################################################################################
 
-from mapping import HESTIA
+from mapping import HESTIA, TARTAROS
 from time import sleep
 
 ####################################################################################################
@@ -19,6 +19,7 @@ from time import sleep
 ####################################################################################################
 ####################################################################################################
 
+APP_DB = TARTAROS['database']
 DB = HESTIA['database']
 DB_SITES = DB['sites']
 DB_SITES_TABLE = DB_SITES['table']
@@ -325,11 +326,12 @@ class DriveStatus():
         if testcase is not None: testcase.processing = result['successful']
         return result
 
-    def verify_site_drive_status(self, site_id, site, testcase=None):
+    def verify_site_drive_status(self, site_id, site=None, testcase=None):
         """ Verify the current hard drive status of a site.
         INPUT
             site id: id of the added site for which to verify the drive status.
-            site: the type of site to verify (see database Sites table for details)
+            site: the type of site to verify (see database Sites table for details). If left
+                as None, will attempt to determine site based on site name.
             testcase: a testcase object supplied when executing function as part of a testcase step.
         OUPUT
             successful: whether the function executed successfully or not.
@@ -340,8 +342,16 @@ class DriveStatus():
         result = {'successful': False, 'verified': False}
 
         try:
+            # determine dvr id of site
+            if site is not None:
+                dvr_id = self.app_db.return_site_data(site)['site data']['dvr id']
+            else:
+                dvr_id = self.app_db.query_database_table_for_single_value(self.app_db.db_handle,
+                    APP_DB['tables']['dvrs'], APP_DB['dvrs']['fields']['id'],
+                    APP_DB['dvrs']['fields']['name'],
+                    testcase.site_name)['value']
+
             # return dvr data for site type from app database
-            dvr_id = self.app_db.return_site_data(site)['site data']['dvr id']
             dvr_data = self.app_db.return_dvr_data(dvr_id)['dvr data']
             drive_serial = dvr_data['drive serial']
 
@@ -382,11 +392,12 @@ class DriveStatus():
         if testcase is not None: testcase.processing = result['successful']
         return result
 
-    def verify_site_dvr_status(self, site_id, site, testcase=None):
+    def verify_site_dvr_status(self, site_id, site=None, testcase=None):
         """ Verify the current hard drive status of a site.
         INPUT
             site id: id of the added site for which to verify the DVR status.
-            site: the type of site to verify (see database Sites table for details)
+            site: the type of site to verify (see database Sites table for details). If left
+                as None, will attempt to determine site based on site name.
             testcase: a testcase object supplied when executing function as part of a testcase step.
         OUPUT
             successful: whether the function executed successfully or not.
@@ -397,8 +408,16 @@ class DriveStatus():
         result = {'successful': False, 'verified': False}
 
         try:
+            # determine dvr id of site
+            if site is not None:
+                dvr_id = self.app_db.return_site_data(site)['site data']['dvr id']
+            else:
+                dvr_id = self.app_db.query_database_table_for_single_value(self.app_db.db_handle,
+                    APP_DB['tables']['dvrs'], APP_DB['dvrs']['fields']['id'],
+                    APP_DB['dvrs']['fields']['name'],
+                    testcase.site_name)['value']
+
             # return dvr data for site type from app database
-            dvr_id = self.app_db.return_site_data(site)['site data']['dvr id']
             dvr_data = self.app_db.return_dvr_data(dvr_id)['dvr data']
             dvr_serial = dvr_data['serial']
             dvr_model = dvr_data['model']

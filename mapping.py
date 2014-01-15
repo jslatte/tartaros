@@ -424,6 +424,16 @@ HESTIA = {
         'RRH8',
         'RRH16',
     ],
+    'licenses': [
+        {'license': 'demo', 'min version': '1.0'},
+        {'license': 'full', 'min version': '1.0'},
+        {'license': 'basic', 'min version': '1.0'},
+        {'license': 'autoclip', 'min version': '1.0'},
+        {'license': 'health', 'min version': '2.0'},
+        {'license': 'clip management', 'min version': '3.0'},
+        {'license': 'streaming server', 'min version': '4.0'},
+        {'license': 'location', 'min version': '4.0'},
+    ],
     'server': {
         'camera event log': {
             'query path':               '/cameventlog',

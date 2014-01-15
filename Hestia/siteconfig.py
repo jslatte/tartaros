@@ -552,6 +552,7 @@ class SiteConfiguration():
             # define default data packet to send to server
             data = {
                 SITECON_FIELDS['id']:                    '',
+                SITECON_FIELDS['site name']:             '',
                 SITECON_FIELDS['ip address']:            '',
                 SITECON_FIELDS['dvr username']:          'admin',
                 SITECON_FIELDS['dvr password']:          '',
@@ -604,6 +605,12 @@ class SiteConfiguration():
                 # translate value if necessary
                 if SITECON_FIELDS[setting[0].lower()] == SITECON_FIELDS['recall period']:
                     val = int(setting[1])*86400
+
+                elif SITECON_FIELDS[setting[0].lower()] == SITECON_FIELDS['dvr model']:
+                    val = setting[1]
+                    if val == 'RRH8': val = 'RoadRunner HD8'
+                    if val == 'RRH16': val = 'RoadRunner HD16'
+
                 # if field is 'all' for pre-event time, configure all 8 fields
                 elif SITECON_FIELDS[setting[0].lower()] == SITECON_FIELDS['pre-event time all']:
                     val = setting[1]
@@ -637,6 +644,7 @@ class SiteConfiguration():
             returned = self.verify_remote_site_configuration(settings, allowed=allowed)
             result['verified'] = returned['verified']
             result['site id'] = returned['site id']
+            result['site name'] = data[SITECON_FIELDS['site name']]
 
             if result['verified'] and allowed:
                 self.log.trace("Verified site configured.")
@@ -648,6 +656,8 @@ class SiteConfiguration():
         # return
         if testcase is not None:
             testcase.processing = result['successful']
+            testcase.site_id = result['site id']
+            testcase.site_name = result['site name']
         return result
 
     def deactivate_site(self, siteID, testcase=None, allowed=True):
@@ -843,6 +853,9 @@ class SiteConfiguration():
                             # translate value if necessary
                             if SITECON_FIELDS[setting[0].lower()] == SITECON_FIELDS['recall period']:
                                 expectedValue = int(expectedValue)*86400
+                            elif SITECON_FIELDS[setting[0].lower()] == SITECON_FIELDS['dvr model']:
+                                if expectedValue == 'RRH8': expectedValue = 'RoadRunner HD8'
+                                if expectedValue == 'RRH16': expectedValue = 'RoadRunner HD16'
 
                             # check against expected value
                             invalids = 0
