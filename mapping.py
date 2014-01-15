@@ -1385,16 +1385,18 @@ ORPHEUS = {
     'user name':            'Jonathan.Slattery@avt-usa.com',
     'password':             'Nikmik21',
     'test status to id': {
-        'passed':           1,
-        'blocked':          2,
-        're-test':          4,
-        'failed':           5
+        'passed':               1,
+        'blocked':              2,
+        're-test':              4,
+        'failed':               5,
+        'passed with issues':   6,
     },
     'test id to status': {
         '1':                'passed',
         '2':                'blocked',
         '4':                're-test',
-        '5':                'failed'
+        '5':                'failed',
+        '6':                'passed with issues',
     }
 }
 

@@ -871,7 +871,9 @@ class SiteConfiguration():
             self.handle_exception(e, operation="verify remote site configuration")
 
         # return
-        if testcase is not None: testcase.processing = result['successful']
+        if testcase is not None:
+            testcase.processing = result['successful']
+            testcase.site_id = result['site id']
         return result
 
     def verify_remote_site_status(self, siteID, status, testcase=None):

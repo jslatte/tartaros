@@ -1906,7 +1906,7 @@ class TestManager():
             test_case = db(db.test_cases.id == test_case_id).select()[0]
             procedure = test_case.procedure
             min_version = test_case.min_version
-            test_class = 4
+            test_class = 3
             active = 1
 
             # add DVR Model test
@@ -1917,13 +1917,21 @@ class TestManager():
             )
 
             for model in self.dvr_models:
+                if 'rrh' in model.lower() and float(min_version) < 4.0:
+                    m_min_version = '4.0'
+                else:
+                    m_min_version = min_version
+                if model.lower() == 'rrh8':
+                    m_active = 0
+                else:
+                    m_active = active
                 db.test_cases.insert(
                     name=model,
                     test_id=added_test_id,
                     procedure=procedure,
-                    min_version=min_version,
+                    min_version=m_min_version,
                     test_class=test_class,
-                    active=active,
+                    active=m_active,
                 )
 
             # compile results

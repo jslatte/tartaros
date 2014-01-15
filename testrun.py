@@ -199,17 +199,30 @@ class TestRun():
 
                 # determine status of test
                 test_status = None
+                failures = 0
+                retests = 0
+                passed_w_issues = 0
+                blocked = 0
                 for testcase in test_results[str(test_id)]:
                     if testcase['status'].lower() == TEST_STATUSES['failed'].lower():
-                        test_status = TEST_STATUSES['failed']
+                        failures += 1
                     elif testcase['status'].lower() == TEST_STATUSES['re-test']:
-                        test_status = TEST_STATUSES['re-test']
+                        retests += 1
                     elif testcase['status'].lower() == TEST_STATUSES['passed with issues']:
-                        test_status = TEST_STATUSES['passed with issues']
+                        passed_w_issues += 1
                     elif testcase['status'].lower() == TEST_STATUSES['blocked'].lower():
-                        test_status = TEST_STATUSES['blocked']
-                    else:
-                        test_status = TEST_STATUSES['passed']
+                        blocked += 1
+
+                if failures > 0:
+                    test_status = TEST_STATUSES['failed']
+                elif retests > 0:
+                    test_status = TEST_STATUSES['re-test']
+                elif blocked > 0:
+                    test_status = TEST_STATUSES['blocked']
+                elif passed_w_issues > 0:
+                    test_status = TEST_STATUSES['passed with issues']
+                else:
+                    test_status = TEST_STATUSES['passed']
 
                 # determine module for test
                 module_id = self.database.return_module_for_test(test_id)['id']
