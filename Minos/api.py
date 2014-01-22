@@ -70,7 +70,7 @@ class API():
     def encode_url_data(self,data=''):
         """ Encode a url data dictionary. """
 
-        self.log.trace("Encoding url ...",'debug','TeamCity API')
+        self.log.trace("Encoding url ...")
         result = {'successful': False, 'data':None}
 
         try:

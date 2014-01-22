@@ -465,6 +465,37 @@ class Database(Charon):
         # return
         return result
 
+    def return_features(self):
+        """ Return all features.
+        OUTPUT
+            features: list of features {id, name}.
+        """
+
+        self.log.debug("Returning features ...")
+        result = {'successful': False, 'features': []}
+
+        try:
+            # query database for all features
+            table = DB_TABLES['features']
+            addendum = ''
+            response =\
+            self.query_database_table(self.db_handle, table, addendum=addendum)['response']
+
+            # add response items to modules list
+            for item in response:
+                result['features'].append({'id': item[0], 'name': str(item[1])})
+
+            self.log.trace("Returned features.")
+            result['successful'] = True
+        except BaseException, e:
+            self.log.error("Failed to return features.")
+            self.log.error(str(e))
+            self.log.error("Error: %s." % return_execution_error()['error'])
+            result['successful'] = False
+
+        # return
+        return result
+
     def return_features_for_module(self, module):
         """ Return all features for given module.
         INPUT
@@ -637,9 +668,13 @@ class Database(Charon):
         try:
             # query database for all user stories associated with feature
             table = DB_TABLES['user stories']
-            addendum = 'WHERE %s = "%s" AND %s = "%s"' % (USERSTORY_FIELDS['feature'],
-                                                          feature_id, USERSTORY_FIELDS['module'],
-                                                          module_id)
+            if module_id is not None:
+                addendum = 'WHERE %s = "%s" AND %s = "%s"' % (USERSTORY_FIELDS['feature'],
+                                                              feature_id, USERSTORY_FIELDS['module'],
+                                                              module_id)
+            else:
+                addendum = 'WHERE %s = "%s"' % (USERSTORY_FIELDS['feature'], feature_id)
+
             response =\
             self.query_database_table(self.db_handle, table, addendum=addendum)['response']
 

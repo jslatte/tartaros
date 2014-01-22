@@ -1413,4 +1413,84 @@ ORPHEUS = {
 MINOS = {
     'api url':              "http://172.22.1.190/httpAuth/",
     'rest api url':         "http://172.22.1.190/httpAuth/app/rest/",
+    'test configurations': {
+        'new feature': [
+            ['test name', 'New Feature Test'],
+            ['tags', 'New'],
+            ['paths', 'None'],
+            ['inclusive', 'True'],
+            ],
+        'performance validation': [
+            ['test name', 'Performance Validation Test'],
+            ['tags', 'Performance,Validation'],
+            ['paths', 'None'],
+            ['inclusive','False'],
+            ],
+        'regression sanity': [
+            ['test name','Sanity (Class 0) Regression Test'],
+            ['tags','Regression,Severity 0'],
+            ['paths','None'],
+            ['inclusive','False'],
+            ],
+        'class 0': [
+            ['test name','Sanity (Class 0) Regression Test'],
+            ['tags','Regression,Severity 0'],
+            ['paths','None'],
+            ['inclusive','False'],
+            ],
+        'regression smoke': [
+            ['test name','Smoke (Class 1) Regression Test'],
+            ['tags','Regression,Severity 1'],
+            ['paths','None'],
+            ['inclusive','False'],
+            ],
+        'class 1': [
+            ['test name','Smoke (Class 1) Regression Test'],
+            ['tags','Regression,Severity 1'],
+            ['paths','None'],
+            ['inclusive','False'],
+            ],
+        'regression validation': [
+            ['test name','Validation (Class 2) Regression Test'],
+            ['tags','Regression,Severity 2'],
+            ['paths','None'],
+            ['inclusive','False'],
+            ],
+        'class 2': [
+            ['test name','Validation (Class 2) Regression Test'],
+            ['tags','Regression,Severity 2'],
+            ['paths','None'],
+            ['inclusive','False'],
+            ],
+        'regression functional': [
+            ['test name','Functional (Class 3) Regression Test'],
+            ['tags','Regression,Severity 3'],
+            ['paths','None'],
+            ['inclusive','False'],
+            ],
+        'class 3': [
+            ['test name','Functional (Class 3) Regression Test'],
+            ['tags','Regression,Severity 3'],
+            ['paths','None'],
+            ['inclusive','False'],
+            ],
+        'class 4': [
+            ['test name','Class 4 Regression Test'],
+            ['tags','Regression,Severity 4'],
+            ['paths','None'],
+            ['inclusive','False'],
+            ],
+        'class 5': [
+            ['test name','Class 5 Regression Test'],
+            ['tags','Regression,Severity 5'],
+            ['paths','None'],
+            ['inclusive','False'],
+            ],
+        'regression full': [
+            ['test name','Full Regression Test'],
+            ['tags','Regression'],
+            ['paths','None'],
+            ['inclusive','True'],
+            ],
+        },
 }

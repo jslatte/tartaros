@@ -21,7 +21,7 @@ from Minos import Minos
 from Orpheus import Orpheus
 from Sisyphus import Sisyphus
 from Tantalus import Tantalus
-from mapping import TARTAROS_WEB_DB_PATH
+from mapping import TARTAROS_WEB_DB_PATH, MINOS
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -30,6 +30,11 @@ from mapping import TARTAROS_WEB_DB_PATH
 
 # logger instance
 log = Logger(logging_level='trace')
+
+minos = Minos(log)
+TEST_CONFIGURATIONS = MINOS['test configurations']
+
+db = Database(log)
 
 ####################################################################################################
 # Tartaros #########################################################################################
@@ -47,6 +52,9 @@ story = ''
 test = ''
 testcase = ''
 testcase_class = None
+
+# test scheduling variables
+tests_to_schedule = []
 
 # read system arguments
 params = []
@@ -97,6 +105,11 @@ if argv is not None:
         elif 'testcaseclass=' in arg:
             testcase_class = arg.split('testcaseclass=')[1]
             params.append('Testing Test Case Class:\t%s' % testcase_class)
+        elif 'teststoschedule=' in arg:
+            tests = arg.split('teststoschedule=')[1].split(',')
+            for test in tests:
+                if test.strip() != 'None':
+                    tests_to_schedule.append(test.strip())
 
     # log parameters
     log.trace("Parameters modified:")
@@ -110,6 +123,42 @@ if mode == 'cerberus':
 elif mode == 'ixion':
     ixion = Ixion(log)
     ixion.run()
+
+elif mode == 'testscheduling':
+    # trigger each test
+    for test in tests_to_schedule:
+        try:
+            # determine parameters
+            if test.lower().strip() == 'regression full (by feature)':
+                # determine all features
+                features = db.return_features()['features']
+
+                # add a test run for each feature (exclude debug)
+                for feature in features[1:]:
+                    # build parameters list for feature test run
+                    params = []
+                    params.append(['test name', '%s Regression Test' % feature['name']])
+                    params.append(['feature', '%s' % feature['name']])
+
+                    # update parameters (with build and test plan)
+                    params.append(['test plan id', results_plan_id])
+                    params.append(['build', build])
+
+                    # trigger test
+                    minos.trigger_build('tartaros', params)
+            else:
+                params = TEST_CONFIGURATIONS[test.lower()]
+
+                # update parameters (with build and test plan)
+                params.append(['test plan id', results_plan_id])
+                params.append(['build', build])
+
+                # trigger test
+                minos.trigger_build('tartaros', params)
+
+        except KeyError, e:
+            log.error("Invalid test %s specified." % test)
+
 elif mode == 'testing':
     # instance database for TeamCity testing
     database = Database(Logger(logging_level='info'))
