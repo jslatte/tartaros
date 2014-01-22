@@ -677,7 +677,7 @@ def run_dvr_simulation_test():
 
 #hestia.reset_vim_server()
 #connect_to_database()
-#log_in()
+log_in()
 #hestia.setup_server_for_manual_testing('full')
 #configure_license('full')
 #hestia.configure_vim_license('streaming server')
@@ -703,7 +703,10 @@ def run_dvr_simulation_test():
 
 #log.trace("SELECT * FROM ConnectionLog WHERE csTimeStamp > %d and csTimeStamp < %d" %(utc.convert_date_string_to_db_time(start)['db time'], utc.convert_date_string_to_db_time(end)['db time']))
 
-SEND_STATUS_EMAIL_URL = HESTIA['server']['email']['send status email path']
-url = hestia.server_url + SEND_STATUS_EMAIL_URL
-hestia.log_in_to_vim()
-hestia.get_http_request(url)
+#entry = hestia.query_page('video clip log', data={'entry id': 2})['entry']
+#print hestia.generate_gps_event_for_site(1, update_avl=True)['avl id']
+# build testcase list for test run
+testrun = TestRun(log, database, name="TEST", submodule_id=2, results_plan_id=1385)
+testcases = testrun.build_testcase_list_for_run(module_id='',
+    feature_id='Event Log', story_id='', test_id='',
+    case_id='', case_class=None)['testcases']
