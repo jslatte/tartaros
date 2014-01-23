@@ -643,7 +643,6 @@ class TestManager():
 
         try:
             self.log.trace("%s ..." % operation.replace('_', ' '))
-            self.log.warn(request.vars)
 
             # determine object ids by field type
             obj_id = field.lower().replace(' ', '_')
