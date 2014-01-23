@@ -313,7 +313,7 @@ def lock_file(log, file_path, mode='w'):
             log.error("File does not exist.")
     except BaseException, e:
         log.error("Failed to unlock file file.")
-        for error in e: log.error(str(error))
+        log.error(str(e))
         log.error("Error at %s." % return_execution_error(2)['function'])
 
     # return
