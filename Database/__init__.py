@@ -465,19 +465,19 @@ class Database(Charon):
         # return
         return result
 
-    def return_features(self):
+    def return_features_for_submodule(self, submodule_id):
         """ Return all features.
         OUTPUT
             features: list of features {id, name}.
         """
 
-        self.log.debug("Returning features ...")
+        self.log.debug("Returning features for submodule %s ..." % submodule_id)
         result = {'successful': False, 'features': []}
 
         try:
             # query database for all features
             table = DB_TABLES['features']
-            addendum = ''
+            addendum = 'WHERE %s = "%s"' % (FEATURE_FIELDS['submodule'], submodule_id)
             response =\
             self.query_database_table(self.db_handle, table, addendum=addendum)['response']
 

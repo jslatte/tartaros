@@ -131,7 +131,7 @@ elif mode == 'testscheduling':
             # determine parameters
             if test.lower().strip() == 'regression full (by feature)':
                 # determine all features
-                features = db.return_features()['features']
+                features = db.return_features_for_submodule(2)['features']
 
                 # add a test run for each feature (exclude debug)
                 for feature in features[1:]:

@@ -225,7 +225,7 @@ class Software():
                 properties_deleted = delete_file(self.log, self.properties_path)['verified']
 
                 if (not using_custom_database and database_deleted and db_shm_deleted
-                    and db_wal_deleted and license_deleted and storage_reset and
+                    and db_wal_deleted and license_deleted and
                     properties_deleted) or (using_custom_database and storage_reset
                                                                and properties_deleted):
                     self.log.trace("Reset the ViM server.")
