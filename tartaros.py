@@ -128,6 +128,8 @@ elif mode == 'testscheduling':
     # trigger each test
     for test in tests_to_schedule:
         try:
+            builds_triggered = 0
+
             # determine parameters
             if test.lower().strip() == 'regression full (by feature)':
                 # determine all features
@@ -145,7 +147,35 @@ elif mode == 'testscheduling':
                     params.append(['build', build])
 
                     # trigger test
+                    builds_triggered +=1
                     minos.trigger_build('tartaros', params)
+
+            elif test.lower().strip() == 'regression full (by user story)':
+                # determine all features
+                features = db.return_features_for_submodule(2)['features']
+
+                # add a test run for each feature (exclude debug)
+                for feature in features[1:]:
+                    # determine all user stories for feature
+                    stories = []
+                    stories = db.return_user_stories_for_feature(feature['id'])['user stories']
+
+                    for story in stories:
+                        # build parameters list for user story test run
+                        params = []
+                        params.append(['test name', 'Regression Test - %s' % story['action']])
+                        params.append(['module', '%s' % story['module id']])
+                        params.append(['feature', '%s' % story['feature id']])
+                        params.append(['user story', '%s' % story['action']])
+
+                        # update parameters (with build and test plan)
+                        params.append(['test plan id', results_plan_id])
+                        params.append(['build', build])
+
+                        # trigger test
+                        builds_triggered +=1
+                        minos.trigger_build('tartaros', params)
+
             else:
                 params = TEST_CONFIGURATIONS[test.lower()]
 
@@ -156,7 +186,10 @@ elif mode == 'testscheduling':
                 # trigger test
                 minos.trigger_build('tartaros', params)
 
+            log.info("Triggered %s test runs." % builds_triggered)
+
         except KeyError, e:
+            log.error(e)
             log.error("Invalid test %s specified." % test)
 
 elif mode == 'testing':

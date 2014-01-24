@@ -108,7 +108,6 @@ class Logger():
         The error message will be included in the parent test case stacktrace if it fails.
         """
 
-        message = message.replace("'", '"')
         message = "\n##teamcity[message text='%s' errorDetails='' status='ERROR']" % message
         print message
 
