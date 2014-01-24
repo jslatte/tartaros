@@ -360,8 +360,13 @@ def delete_file(log, file_path, silent_warnings=False):
     try:
         # verify file exists
         if exists(file_path):
-            # delete file
-            rmtree(file_path)
+            try:
+                # delete file
+                remove(file_path)
+
+            except BaseException:
+                # delete folder
+                rmtree(file_path)
 
             # verify file deleted
             if not exists(file_path):
