@@ -746,7 +746,7 @@ class Database(Charon):
 
         # determine user story id if needed
         if story_id is None:
-            story_id = self.return_user_story_id(story_name)
+            story_id = self.return_user_story_id(story_name)['id']
 
         try:
             # query database for all tests associated with user story

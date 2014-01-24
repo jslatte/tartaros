@@ -164,8 +164,8 @@ elif mode == 'testscheduling':
                         # build parameters list for user story test run
                         params = []
                         params.append(['test name', 'Regression Test - %s' % story['action']])
-                        params.append(['module', '%s' % story['module id']])
-                        params.append(['feature', '%s' % story['feature id']])
+                        #params.append(['module', '%s' % story['module id']])
+                        #params.append(['feature', '%s' % story['feature id']])
                         params.append(['user story', '%s' % story['action']])
 
                         # update parameters (with build and test plan)
