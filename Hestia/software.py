@@ -155,21 +155,6 @@ class Software():
 
                 # delete any free-floating files, or clear out directories if not a file
                 deleted = delete_file(self.log, file_path, silent_warnings=True)['verified']
-                if not deleted:
-                    # list files in directory
-                    sub_files = listdir(file_path)
-
-                    # delete each file in directory
-                    for sub_file in sub_files:
-                        sub_file_path = file_path + "\\" + sub_file
-
-                        # delete file
-                        delete_file(self.log, sub_file_path)
-
-                    # remove directory
-                    try: rmdir(file_path)
-                    except BaseException, e:
-                        self.handle_exception(e, operation="remove directory %s" % file_path)
 
             self.log.trace("Storage location reset.")
             result['successful'] = True

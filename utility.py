@@ -21,6 +21,7 @@ from sys import exc_info
 from re import search as re_search, split as re_split
 from time import sleep
 from wmi import WMI
+from shutil import rmtree
 
 ####################################################################################################
 # Utilities ########################################################################################
@@ -360,7 +361,7 @@ def delete_file(log, file_path, silent_warnings=False):
         # verify file exists
         if exists(file_path):
             # delete file
-            remove(file_path)
+            rmtree(file_path)
 
             # verify file deleted
             if not exists(file_path):
