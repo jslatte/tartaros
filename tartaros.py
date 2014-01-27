@@ -155,7 +155,7 @@ elif mode == 'testscheduling':
                 features = db.return_features_for_submodule(2)['features']
 
                 # add a test run for each feature (exclude debug)
-                for feature in features[1:]:
+                for feature in features:
                     # determine all user stories for feature
                     stories = []
                     stories = db.return_user_stories_for_feature(feature['id'])['user stories']
