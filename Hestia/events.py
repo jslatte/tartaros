@@ -59,11 +59,14 @@ class Events():
     """ Sub-library for ViM server event download and interaction.
     """
 
-    def verify_system_event_downloaded_for_site(self, site_id, wait=360, testcase=None):
+    def verify_system_event_downloaded_for_site(self, site_id, wait=360, allowed=True,
+                                                testcase=None):
         """ Verify that system event is in the database for given site.
         INPUT
             site id: id of the site for which to verify the event downloaded.
             wait: how long to wait for the event to download.
+            allowed: whether the event download should be allowed or not
+                (verify as allowed/not allowed).
             testcase: a testcase object supplied when executing function as part of a testcase step.
         OUPUT
             event id: the id of the system event.
@@ -71,7 +74,10 @@ class Events():
             verified: whether the operation was verified or not.
         """
 
-        self.log.debug("Verifying system event downloaded for site %s ..." % site_id)
+        if allowed:
+            self.log.debug("Verifying system event downloaded for site %s ..." % site_id)
+        else:
+            self.log.debug("Verifying system event NOT downloaded for site %s ..." % site_id)
         result = {'successful': False, 'verified': False, 'event id': None}
 
         try:
@@ -89,7 +95,7 @@ class Events():
                 event_id = self.db.query_database_table_for_single_value(handle, table,
                                                                          return_field, known_field,
                                                                          known_value)['value']
-                if event_id is not None:
+                if event_id is not None and allowed:
                     self.log.trace("Verified system event downloaded for site %s." % site_id)
                     result['event id'] = event_id
                     result['verified'] = True
@@ -97,6 +103,12 @@ class Events():
                     self.log.trace("Event NOT found (attempt %d). Retrying ..." % (i/15))
                     i += 15
                     sleep(15)
+
+            if result['event id'] is None and allowed:
+                self.log.trace("Failed to verify system event downloaded for site %s." % site_id)
+            elif result['event id'] is None and not allowed:
+                self.log.trace("Verified system event NOT downloaded for site %s." % site_id)
+                result['verified'] = True
 
             result['successful'] = True
         except BaseException, e:

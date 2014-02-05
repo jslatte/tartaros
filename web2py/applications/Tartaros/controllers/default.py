@@ -1969,11 +1969,15 @@ class TestManager():
                     )
             elif test_type.lower() == 'licensing':
                 for license in self.licenses:
+                    if float(min_version) <= license['min version']:
+                        m_min_version = license['min version']
+                    else:
+                        m_min_version = license['min version']
                     db.test_cases.insert(
                         name=license['license'],
                         test_id=added_test_id,
                         procedure=procedure,
-                        min_version=license['min version'],
+                        min_version=m_min_version,
                         test_class=test_class,
                         active=active,
                     )
