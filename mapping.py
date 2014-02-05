@@ -425,14 +425,14 @@ HESTIA = {
         'RRH16',
     ],
     'licenses': [
-        {'license': 'Demo', 'min version': '1.0'},
-        {'license': 'Full', 'min version': '1.0'},
-        {'license': 'Basic', 'min version': '1.0'},
-        {'license': 'Autoclip', 'min version': '1.0'},
-        {'license': 'Health', 'min version': '2.0'},
-        {'license': 'Clip Management', 'min version': '3.0'},
-        {'license': 'Streaming Server', 'min version': '4.0'},
-        {'license': 'Location', 'min version': '4.0'},
+        {'license': 'Demo', 'min version': '3.0', 'step': '33'},
+        {'license': 'Full', 'min version': '1.0', 'step': '30'},
+        {'license': 'Basic', 'min version': '3.0', 'step': '6'},
+        {'license': 'Autoclip', 'min version': '1.0', 'step': '25'},
+        {'license': 'Health', 'min version': '2.0', 'step': '24'},
+        {'license': 'Clip Management', 'min version': '3.0', 'step': '26'},
+        {'license': 'Streaming Server', 'min version': '4.0', 'step': '171'},
+        {'license': 'Location', 'min version': '4.0', 'step': '29'},
     ],
     'server': {
         'camera event log': {

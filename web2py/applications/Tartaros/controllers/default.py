@@ -1381,15 +1381,15 @@ class TestManager():
                           'remove': '%s' % div_mod_buttons_addr}
 
             # build the object
-            change_proc_button = INPUT(_type='button', _value="Change", _class='btn',
+            change_proc_button = INPUT(_type='button', _value="c", _class='btn',
                                      _id=change_proc_button_addr, _name=change_proc_button_addr,
                                      _onclick=c_script)
 
-            del_proc_button = INPUT(_type='button', _value="Delete", _class='btn',
+            del_proc_button = INPUT(_type='button', _value="x", _class='btn',
                                     _id=del_proc_button_addr, _name=del_proc_button_addr,
                                     _onclick=d_script)
 
-            edit_proc_button = INPUT(_type='button', _value="Edit", _class='btn',
+            edit_proc_button = INPUT(_type='button', _value="e", _class='btn',
                                      _id=edit_proc_button_addr, _name=edit_proc_button_addr,
                                      _onclick=e_script)
 
@@ -1397,7 +1397,8 @@ class TestManager():
                                        _id=create_proc_button_addr, _name=create_proc_button_addr,
                                        _onclick=n_script)
 
-            div_mod_buttons = DIV(change_proc_button, del_proc_button, edit_proc_button, create_proc_button,
+            div_mod_buttons = DIV(change_proc_button, del_proc_button,
+                                  edit_proc_button, create_proc_button,
                                   _id=div_mod_buttons_addr)
             td_mod_buttons = TD(div_mod_buttons, _id=td_mod_buttons_addr)
 
@@ -1456,8 +1457,10 @@ class TestManager():
                                       _id='td_proc_step_%d' % i),
                              _id='tr_proc_step_%d' % i)
                 else:
-                    row = TR(TD(), TD(LABEL(steps[i]['step'], _id='td_proc_step_%d_val' % i,
-                                            _name='td_proc_step_%d_val' % i, _value=steps[i]['id']),
+                    row = TR(TD(),
+                             TD(DIV(steps[i]['step'], _id='td_proc_step_%d_val' % i,
+                                            _name='td_proc_step_%d_val' % i, _value=steps[i]['id'],
+                                            _style="white-space: pre-wrap; width: 80%%;"),
                                       _id='td_proc_step_%d' % i),
                              self.build_modify_procedure_step_buttons(i)['td'],
                              _id='tr_proc_step_%d' % i)
@@ -1969,14 +1972,28 @@ class TestManager():
                     )
             elif test_type.lower() == 'licensing':
                 for license in self.licenses:
+                    # determine minimum version
                     if float(min_version) < float(license['min version']):
                         m_min_version = license['min version']
                     else:
                         m_min_version = min_version
+
+                    # determine license configuration step for procedure
+                    procedure_steps = procedure.split(',')
+                    if len(procedure_steps) > 1:
+                        procedure_steps[1] = license['step']
+
+                        m_procedure = str(procedure_steps[0])
+                        for step in procedure_steps[1:]:
+                            m_procedure += ',%s' % str(step)
+                    else:
+                        m_procedure = procedure
+
+                    # insert test case
                     db.test_cases.insert(
                         name=license['license'],
                         test_id=added_test_id,
-                        procedure=procedure,
+                        procedure=m_procedure,
                         min_version=m_min_version,
                         test_class=test_class,
                         active=active,
