@@ -94,11 +94,6 @@ class HTTP():
             while result['response'] is None and attempt <= max_attempts:
                 # make the request (and strip of whispace)
                 try: result['response'] = urlopen(url).read().strip()
-                except URLError, e:
-                    self.log.warn(e)
-                    self.log.warn("Server may have crashed or failed to start. Re-starting ...")
-                    self.start_vim_server()
-                    attempt += 1
                 except HTTPError, e:
                     self.log.trace("Failed to make GET request to server due to HTTP error.")
                     self.log.trace(str(e))
@@ -111,6 +106,14 @@ class HTTP():
                     exception = return_execution_error()['error']
                     self.log.trace("Error: %s." % exception)
                     break
+                except URLError, e:
+                    self.log.trace(e)
+                    self.log.trace("Server may have crashed or failed to start. Checking ...")
+                    running = self.check_if_vim_server_is_running()
+                    if running['service'] or running['process']:
+                        self.start_vim_server()
+                        self.log_in_to_vim()
+                    attempt += 1
                 except BaseException, e:
                     if attempt == max_attempts: result['response'] = {}
                     else:
