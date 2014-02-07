@@ -321,11 +321,13 @@ class EmailNotification():
         if testcase is not None: testcase.processing = result['successful']
         return result
 
-    def verify_email_received(self, type, wait=90, testcase=None):
+    def verify_email_received(self, type, wait=90, allowed=True, testcase=None):
         """ Verify specified email was received.
         INPUT
             type: type of email to verify has been received.
             wait: number of seconds to wait for email to be received.
+            allowed: whether or not the email should be received (if false, expect no email to be
+                found).
             testcase: a testcase object supplied when executing function as part of a testcase step.
         OUPUT
             successful: whether the function executed successfully or not.
@@ -333,7 +335,10 @@ class EmailNotification():
             email: email data dictionary object.
         """
 
-        self.log.debug("Verify %s email was received ..." % type)
+        if allowed:
+            self.log.debug("Verify %s email was received ..." % type)
+        else:
+            self.log.debug("Verifying %s email was NOT received ..." % type)
         result = {'successful': False, 'verified': False, 'email': {}}
 
         try:
@@ -351,6 +356,14 @@ class EmailNotification():
                 returned = self.check_mailbox_for_email(type,wait)
                 result['verified'] = returned['found']
                 result['email'] = returned['email']
+
+            # update for not allowed
+            if not allowed and result['verified']:
+                self.log.warn("Failed to verify that email was not received.")
+                result['verified'] = False
+            elif not allowed and not result['verified']:
+                self.log.trace("Verified that email was not received.")
+                result['verified'] = True
 
             result['successful'] = True
         except BaseException, e:
