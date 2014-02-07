@@ -42,7 +42,7 @@ database = Database(log)
 # modules
 #ixion = Ixion(log)
 #minos = Minos(log)
-#orpheus = Orpheus(log)
+orpheus = Orpheus(log)
 #sisyphus = Sisyphus(log)
 #tantalus = Tantalus(log, Sisyphus, num_sites=1)
 #danaides = Danaides(log, database)
@@ -677,9 +677,10 @@ def run_dvr_simulation_test():
 
 #hestia.reset_vim_server()
 #connect_to_database()
-log_in()
+#hestia.start_vim_server()
+#log_in()
 #hestia.setup_server_for_manual_testing('full')
-#configure_license('full')
+#configure_license('autoclip')
 #hestia.configure_vim_license('streaming server')
 
 #testcase = HestiaTestCase(log, database, 442, debugging=False)
@@ -703,10 +704,22 @@ log_in()
 
 #log.trace("SELECT * FROM ConnectionLog WHERE csTimeStamp > %d and csTimeStamp < %d" %(utc.convert_date_string_to_db_time(start)['db time'], utc.convert_date_string_to_db_time(end)['db time']))
 
-#entry = hestia.query_page('video clip log', data={'entry id': 2})['entry']
-#print hestia.generate_gps_event_for_site(1, update_avl=True)['avl id']
-# build testcase list for test run
-testrun = TestRun(log, database, name="TEST", submodule_id=2, results_plan_id=1385)
-testcases = testrun.build_testcase_list_for_run(module_id='',
-    feature_id='Event Log', story_id='', test_id='',
-    case_id='', case_class=None)['testcases']
+from Orpheus.testrail import *
+
+orpheus = APIClient("http://172.22.2.93:80/testrail/")
+orpheus.user = 'Jonathan.Slattery@avt-usa.com'
+orpheus.password = '12345'
+
+url = "update_case/3416"
+data = {
+    'title':            'Validation Test2',}
+    #'type_id':          5,
+    #'custom_severity':  2,
+    #'custom_rf_test':   True,
+    #'steps_separated':  [
+    #    {'content': 'First procedure step.', 'expected': ''},
+    #    {'content': 'Second procedure step.', 'expected': ''},
+    #    {'content': 'Third procedure step.', 'expected': ''}
+    #]}
+#orpheus.send_post(url, data)
+#orpheus.send_get('get_case/1/1')

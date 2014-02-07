@@ -176,6 +176,7 @@ class TestManager():
             self.log.trace("%s ..." % operation.replace('_', ' '))
 
             # determine test results id for selected test
+            sleep(1)
             result = self.build_test_attribute_field(field)['div']
 
         except BaseException, e:
@@ -544,8 +545,10 @@ class TestManager():
         return result
 
     def build_test_attribute_field(self, field):
-        """ Build the table cell for a test/test case attribute (e.g., test results id, test class, etc.).
-        @param field: the field to create (e.g., 'test results id', 'test case class', 'test case minimum version').
+        """ Build the table cell for a test/test case attribute (e.g., test results id, test class,
+         etc.).
+        @param field: the field to create (e.g., 'test results id', 'test case class',
+            'test case minimum version').
         @return: a dict containing:
             'tr' - the TR() object.
             'td' - the TD() object.
@@ -561,20 +564,30 @@ class TestManager():
             # determine value of field
             try:
                 if field == 'test results id':
-                    val = db(db.tests.id == request.vars.test_selection).select()[0].results_id
+                    val = db(db.tests.id ==
+                             request.vars.test_selection).select()[0].results_id
 
                 elif field == 'test case class':
-                    val = db(db.test_cases.id == request.vars.test_case_selection).select()[0].test_class
+                    val = db(db.test_cases.id ==
+                             request.vars.test_case_selection).select()[0].test_class
 
                 elif field == 'test case minimum version':
-                    val = db(db.test_cases.id == request.vars.test_case_selection).select()[0].min_version
+                    val = db(db.test_cases.id ==
+                             request.vars.test_case_selection).select()[0].min_version
 
                 elif field == 'test case active':
-                    active = db(db.test_cases.id == request.vars.test_case_selection).select()[0].active
+                    active = db(db.test_cases.id ==
+                                request.vars.test_case_selection).select()[0].active
                     if str(active) == '1':
                         val = "Yes"
                     else:
                         val = "No"
+
+                elif field == 'test case type':
+                    type_id = db(db.test_cases.id ==
+                                 request.vars.test_case_selection).select()[0].type_id
+
+                    val = db(db.test_types.id == type_id).select()[0].name
 
                 else:
                     val = "N/A"
@@ -631,8 +644,10 @@ class TestManager():
         return result
 
     def build_edit_test_attribute_field(self, field, c_value=None):
-        """ Build the edit field cell for a test/test case attribute (e.g., test results id, test class, etc.).
-        @param field: the field to edit (e.g., 'test results id', 'test case class', 'test case minimum version').
+        """ Build the edit field cell for a test/test case attribute (e.g., test results id,
+        test class, etc.).
+        @param field: the field to edit (e.g., 'test results id', 'test case class',
+            'test case minimum version').
         @param c_value: the value in the field when clicking to edit
         @return: a dict containing:
             'form' - a subcontainter FORM() with the cell data.
@@ -653,7 +668,8 @@ class TestManager():
             # build the input field
             if field == 'test case active':
                 test_attribute_edit = SELECT(*[OPTION('Yes', _value='1'), OPTION('No', _value='0')],
-                                             _id=test_attribute_val_addr, _name=test_attribute_val_addr)
+                                             _id=test_attribute_val_addr,
+                                             _name=test_attribute_val_addr)
             elif field == 'test case class':
                 test_attribute_edit = SELECT(*[
                     OPTION('0', _value='0'),
@@ -663,15 +679,25 @@ class TestManager():
                     OPTION('4', _value='4'),
                     OPTION('5', _value='5'),
                 ],
-                                            _id=test_attribute_val_addr, _name=test_attribute_val_addr)
+                _id=test_attribute_val_addr,
+                _name=test_attribute_val_addr)
+            elif field == 'test case type':
+                options = db().select(db.test_types.ALL)
+                test_attribute_edit = SELECT(*[OPTION(options[i].name, _value=str(options[i].id))
+                                               for i in range(len(options))],
+                                             _id=test_attribute_val_addr,
+                                             _name=test_attribute_val_addr)
+
             else:
                 test_attribute_edit = INPUT(_class="string", _type="text", _value=c_value,
-                                            _id=test_attribute_val_addr, _name=test_attribute_val_addr)
+                                            _id=test_attribute_val_addr,
+                                            _name=test_attribute_val_addr)
 
             # build confirmation button
             btn_cnf_script = "ajax('%(function)s', %(values)s, '%(target)s');" \
                              % {'function': 'edit_%s_field' % obj_id,
-                                'values': "['%s', 'test_selection', 'test_case_selection']" % test_attribute_val_addr,
+                                'values': "['%s', 'test_selection', 'test_case_selection']"
+                                          % test_attribute_val_addr,
                                 'target': ''}
             restore_script = "jQuery(%(remove)s).remove();" \
                              "ajax('%(function)s', %(values)s, '%(target)s');" \
@@ -729,23 +755,31 @@ class TestManager():
                     options = db().select(self.tables[select_type].ALL)
 
                 elif select_type == 'user story' \
-                    and (request.vars.module_selection is not None and str(request.vars.module_selection) != '0') \
-                    and (request.vars.feature_selection is not None and str(request.vars.module_selection) != '0'):
+                    and (request.vars.module_selection is not None
+                         and str(request.vars.module_selection) != '0') \
+                    and (request.vars.feature_selection is not None
+                         and str(request.vars.module_selection) != '0'):
                     # determine user story options for selection
-                    options = db(db.user_stories.module_id == request.vars.module_selection).select(db.user_stories.ALL)
+                    options = db(db.user_stories.module_id ==
+                                 request.vars.module_selection).select(db.user_stories.ALL)
 
                     # filter by selected feature
-                    options.exclude(lambda entry: str(entry.feature_id) != str(request.vars.feature_selection))
+                    options.exclude(lambda entry:
+                        str(entry.feature_id) != str(request.vars.feature_selection))
 
                 elif select_type == 'test' \
-                    and (request.vars.user_story_selection is not None and str(request.vars.user_story_selection) != '0'):
+                    and (request.vars.user_story_selection is not None
+                         and str(request.vars.user_story_selection) != '0'):
 
-                    options =  db(db.tests.user_story_id == request.vars.user_story_selection).select(db.tests.ALL)
+                    options = db(db.tests.user_story_id ==
+                                 request.vars.user_story_selection).select(db.tests.ALL)
 
                 elif select_type == 'test case' \
-                    and (request.vars.test_selection is not None and str(request.vars.test_selection) != '0'):
+                    and (request.vars.test_selection is not None
+                         and str(request.vars.test_selection) != '0'):
 
-                    options = db(db.test_cases.test_id == request.vars.test_selection).select(db.test_cases.ALL)
+                    options = db(db.test_cases.test_id ==
+                                 request.vars.test_selection).select(db.test_cases.ALL)
 
                 # otherwise, default to grabbing all items from db table
                 else:
@@ -767,22 +801,30 @@ class TestManager():
             ajax_s_template2 = "ajax('update_tmanager_form?%s_selection=0', %s, 'td_%s_selection'); "
             jquery_s_template = "jQuery(%s_selection).remove(); "
             update_tproc_script = "jQuery(tbody_proc).remove(); " \
-                                  "ajax('update_test_case_procedure_table', ['%s_selection'], 't_proc');" %\
+                                  "ajax('update_test_case_procedure_table', " \
+                                  "['%s_selection'], 't_proc');" %\
                                   object_types['test case']
             update_test_results_id_script = "jQuery(div_test_results_id_val).remove(); " \
                                             "ajax('update_test_results_id_field', " \
-                                            "['%s_selection'], 'td_test_results_id_val');" %object_types['test']
+                                            "['%s_selection'], 'td_test_results_id_val');"\
+                                            % object_types['test']
             update_test_case_class_script = "jQuery(div_test_case_class_val).remove(); " \
                                             "ajax('update_test_case_class_field', " \
-                                            "['%s_selection'], 'td_test_case_class_val');" % object_types['test case']
+                                            "['%s_selection'], 'td_test_case_class_val');"\
+                                            % object_types['test case']
             update_test_case_minver_script = "jQuery(div_test_case_minimum_version_val).remove(); " \
                                              "ajax('update_test_case_minver_field', " \
-                                             "['%s_selection'], 'td_test_case_minimum_version_val');" \
+                                             "['%s_selection'], " \
+                                             "'td_test_case_minimum_version_val');" \
                                              % object_types['test case']
             update_test_case_active_script = "jQuery(div_test_case_active_val).remove(); " \
                                              "ajax('update_test_case_active_field', " \
                                              "['%s_selection'], 'td_test_case_active_val');" \
                                              % object_types['test case']
+            update_test_case_type_script = "jQuery(div_test_case_type_val).remove(); " \
+                                           "ajax('update_test_case_type_field', " \
+                                           "['%s_selection'], 'td_test_case_type_val');" \
+                                           % object_types['test case']
 
             # customize drop-down variables based on type
             self.log.trace("... building %s drop-down object ..." % obj_type)
@@ -831,6 +873,7 @@ class TestManager():
                 ajax_s += update_test_case_class_script
                 ajax_s += update_test_case_minver_script
                 ajax_s += update_test_case_active_script
+                ajax_s += update_test_case_type_script
 
                 # add update test case procedure statement (will clear)
                 ajax_s += update_tproc_script
@@ -880,6 +923,7 @@ class TestManager():
                 ajax_s += update_test_case_class_script
                 ajax_s += update_test_case_minver_script
                 ajax_s += update_test_case_active_script
+                ajax_s += update_test_case_type_script
 
                 # add update test case procedure statement (will clear)
                 ajax_s += update_tproc_script
@@ -909,6 +953,7 @@ class TestManager():
                 ajax_s += update_test_case_class_script
                 ajax_s += update_test_case_minver_script
                 ajax_s += update_test_case_active_script
+                ajax_s += update_test_case_type_script
 
                 # add update test case procedure statement (will clear)
                 ajax_s += update_tproc_script
@@ -931,6 +976,7 @@ class TestManager():
                 ajax_s += update_test_case_class_script
                 ajax_s += update_test_case_minver_script
                 ajax_s += update_test_case_active_script
+                ajax_s += update_test_case_type_script
 
                 # add update test case procedure statement
                 ajax_s += update_tproc_script
@@ -1381,15 +1427,15 @@ class TestManager():
                           'remove': '%s' % div_mod_buttons_addr}
 
             # build the object
-            change_proc_button = INPUT(_type='button', _value="c", _class='btn',
+            change_proc_button = INPUT(_type='button', _value="Ch", _class='btn',
                                      _id=change_proc_button_addr, _name=change_proc_button_addr,
                                      _onclick=c_script)
 
-            del_proc_button = INPUT(_type='button', _value="x", _class='btn',
+            del_proc_button = INPUT(_type='button', _value="X", _class='btn',
                                     _id=del_proc_button_addr, _name=del_proc_button_addr,
                                     _onclick=d_script)
 
-            edit_proc_button = INPUT(_type='button', _value="e", _class='btn',
+            edit_proc_button = INPUT(_type='button', _value="E", _class='btn',
                                      _id=edit_proc_button_addr, _name=edit_proc_button_addr,
                                      _onclick=e_script)
 
@@ -1460,7 +1506,7 @@ class TestManager():
                     row = TR(TD(),
                              TD(DIV(steps[i]['step'], _id='td_proc_step_%d_val' % i,
                                             _name='td_proc_step_%d_val' % i, _value=steps[i]['id'],
-                                            _style="white-space: pre-wrap; width: 80%%;"),
+                                            _style="white-space: pre-wrap; width: 400px;"),
                                       _id='td_proc_step_%d' % i),
                              self.build_modify_procedure_step_buttons(i)['td'],
                              _id='tr_proc_step_%d' % i)
@@ -1532,7 +1578,9 @@ class TestManager():
             tr_test_case_class = self.build_test_attribute_field('test case class')['tr']
             tr_test_case_minver = self.build_test_attribute_field('test case minimum version')['tr']
             tr_test_case_active = self.build_test_attribute_field('test case active')['tr']
-            t_attributes = TABLE(tr_test_results_id, tr_test_case_class, tr_test_case_minver, tr_test_case_active,
+            tr_test_case_type = self.build_test_attribute_field('test case type')['tr']
+            t_attributes = TABLE(tr_test_results_id, tr_test_case_class, tr_test_case_minver,
+                                 tr_test_case_active, tr_test_case_type,
                                  _id='t_attributes')
 
             # build test case procedure objects
@@ -1612,6 +1660,8 @@ class TestManager():
                 db(db.test_cases.id == parent_suite_id).update(min_version=value)
             elif field == 'test case active':
                 db(db.test_cases.id == parent_suite_id).update(active=value)
+            elif field == 'test case type':
+                db(db.test_cases.id == parent_suite_id).update(type_id=value)
             else:
                 log.error("Invalid field %s specifed." % field)
 
@@ -2235,6 +2285,10 @@ def update_test_case_active_field():
     return tmanager.update_test_attribute_field('test case active')
 
 
+def update_test_case_type_field():
+    return tmanager.update_test_attribute_field('test case type')
+
+
 def update_test_case_procedure_table():
     return tmanager.update_test_case_procedure_table()
 
@@ -2279,6 +2333,10 @@ def restore_test_case_active_field():
     return tmanager.build_test_attribute_field('test case active')['div']
 
 
+def restore_test_case_type_field():
+    return tmanager.build_test_attribute_field('test case type')['div']
+
+
 def edit_test_results_id_field():
     return tmanager.edit_test_attribute_field('test results id',
                                               request.vars.test_results_id_edit_val,
@@ -2303,6 +2361,12 @@ def edit_test_case_active_field():
                                               request.vars.test_case_selection)['div']
 
 
+def edit_test_case_type_field():
+    return tmanager.edit_test_attribute_field('test case type',
+                                              request.vars.test_case_type_edit_val,
+                                              request.vars.test_case_selection)['div']
+
+
 def enable_test_results_id_edit():
     return tmanager.build_edit_test_attribute_field('test results id',
                                                     c_value=request.vars.test_results_id_val)['form']
@@ -2321,6 +2385,11 @@ def enable_test_case_minimum_version_edit():
 def enable_test_case_active_edit():
     return tmanager.build_edit_test_attribute_field('test case active',
                                                     c_value=request.vars.test_case_active_val)['form']
+
+
+def enable_test_case_type_edit():
+    return tmanager.build_edit_test_attribute_field('test case type',
+                                                    c_value=request.vars.test_case_type_val)['form']
 
 
 def enable_add_proc_step():

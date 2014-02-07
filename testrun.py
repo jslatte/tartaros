@@ -535,6 +535,41 @@ class TestRun():
         # return
         return result
 
+    def filter_testcases_by_type(self, testcases, testcase_type=''):
+        """
+        INPUT
+            testcase: a testcase object supplied when executing function as part of a testcase step.
+        OUPUT
+            successful: whether the function executed successfully or not.
+        """
+
+        self.log.trace("Filtering testcases by type ...")
+        result = {'successful': False}
+
+        try:
+            if str(testcase_type).lower() != BLANK_SEL.lower() and str(testcase_type).lower() != '':
+                # filter testcases to run according to class selected
+                testcases_to_remove = []
+                for testcase in testcases:
+                    testcase_data = self.database.return_testcase_data(testcase['id'])['testcase data']
+                    if int(testcase_data['type']) != int(testcase_type):
+                        testcases_to_remove.append(testcase)
+
+                # remove testcases filtered out
+                for testcase in testcases_to_remove:
+                    testcases.remove(testcase)
+
+            self.log.trace("Filtered testcases by type")
+            result['successful'] = True
+        except BaseException, e:
+            self.log.error("Failed to filter testcases by type.")
+            self.log.error(str(e))
+            self.log.error("Error: %s." % return_execution_error()['error'])
+            result['successful'] = False
+
+        # return
+        return result
+
     def setup_test_environment(self, build, test_name):
         """ Setup the test environment for the product under test.
         OUPUT

@@ -52,6 +52,7 @@ story = ''
 test = ''
 testcase = ''
 testcase_class = None
+testcase_type = None
 
 # test scheduling variables
 tests_to_schedule = []
@@ -105,6 +106,9 @@ if argv is not None:
         elif 'testcaseclass=' in arg:
             testcase_class = arg.split('testcaseclass=')[1]
             params.append('Testing Test Case Class:\t%s' % testcase_class)
+        elif 'testcasetype=' in arg:
+            testcase_type = arg.split('testcasetype=')[1]
+            params.append('Testing Test Case Type:\t%s' % testcase_type)
         elif 'teststoschedule=' in arg:
             tests = arg.split('teststoschedule=')[1].split(',')
             for test in tests:
@@ -147,7 +151,7 @@ elif mode == 'testscheduling':
                     params.append(['build', build])
 
                     # trigger test
-                    builds_triggered +=1
+                    builds_triggered += 1
                     minos.trigger_build('tartaros', params)
 
             elif test.lower().strip() == 'regression full (by user story)':
@@ -205,7 +209,12 @@ elif mode == 'testing':
         case_id=testcase, case_class=testcase_class)['testcases']
 
     # filter by class
-    testrun.filter_testcases_by_class(testcases, testcase_class)
+    if testcase_class is not None:
+        testrun.filter_testcases_by_class(testcases, testcase_class)
+
+    # filter by type
+    if testcase_type is not None:
+        testrun.filter_testcases_by_type(testcases, testcase_type)
 
     # set testcase list for test run
     testrun.testcases = testcases

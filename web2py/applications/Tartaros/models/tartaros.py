@@ -43,6 +43,7 @@ db.define_table('test_cases',
                 Field('min_version', required=True),
                 Field('test_class', type='integer', required=True),
                 Field('active', type='integer', required=True),
+                Field('type_id', type='integer', required=True),
 )
 
 # table: user types
@@ -55,10 +56,15 @@ db.define_table('procedure_steps',
                 Field('name', type='string', unique=True, required=True),
                 Field('function_id', type='integer', unique=False, required=True),
                 Field('arguments', type='string', unique=False, required=False),
-                Field('verification', type='string', unique=False, required=True)
+                Field('verification', type='string', unique=False, required=True),
 )
 
 # table: functions
 db.define_table('functions',
                 Field('function', type='string', unique=True, required=True),
-                Field('submodule_id', type='integer', unique=False, required=True))
+                Field('submodule_id', type='integer', unique=False, required=True)),
+
+# table: test types
+db.define_table('test_types',
+                Field('name', type='string', unique=True, required=True),
+)

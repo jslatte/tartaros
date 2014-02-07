@@ -79,7 +79,8 @@ TARTAROS = {
                 ('procedure', 'procedure'),
                 ('minimum version', 'min_version'),
                 ('class', 'test_class'),
-                ('active', 'active')
+                ('active', 'active'),
+                ('type', 'type_id')
             ]),
         },
         'procedure steps': {
