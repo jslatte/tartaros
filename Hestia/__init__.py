@@ -120,6 +120,12 @@ class Hestia(ClipClassification, Clips, DriveStatus, EmailNotification, Events, 
         # stacktrace
         self.inspect = inspect
 
+        # define dvr integration testing parameters
+        self.dvr_int_name = 'DVR Integration Depot'
+        self.dvr_int_address = '172.22.4.156'
+        self.dvr_int_user = 'admin'
+        self.dvr_int_password = ''
+
     def setup_server_for_manual_testing(self, license_type='full'):
         """ Set up a server installation for manual testing.
         INPUT

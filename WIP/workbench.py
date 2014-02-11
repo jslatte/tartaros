@@ -706,9 +706,9 @@ def run_dvr_simulation_test():
 
 from Orpheus.testrail import *
 
-orpheus = APIClient("http://172.22.2.93:80/testrail/")
+orpheus = APIClient("http://172.22.2.93/")
 orpheus.user = 'Jonathan.Slattery@avt-usa.com'
-orpheus.password = '12345'
+orpheus.password = 'Nikmik21'
 
 url = "update_case/3416"
 data = {
@@ -722,4 +722,4 @@ data = {
     #    {'content': 'Third procedure step.', 'expected': ''}
     #]}
 #orpheus.send_post(url, data)
-#orpheus.send_get('get_case/1/1')
+log.trace(orpheus.send_get('get_case/1/1'))

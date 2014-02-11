@@ -278,7 +278,8 @@ class TestRun():
                    'health':            0,
                    'clip management':   0,
                    'streaming server':  0,
-                   'location':          0}
+                   'location':          0,
+                   'dvr integration':   0,}
             for testRun in testRuns:
                 if 'regression test: software' in testRun['name'].lower():
                     cfg['software'] = testRun['runs'][0]['id']
@@ -294,6 +295,8 @@ class TestRun():
                     cfg['streaming server'] = testRun['runs'][0]['id']
                 elif 'regression test: location' in testRun['name'].lower():
                     cfg['location'] = testRun['runs'][0]['id']
+                elif 'dvr integration test' in testRun['name'].lower():
+                    cfg['dvr integration'] = testRun['runs'][0]['id']
                 else:
                     self.log.trace("Unidentified test run found:\t%s." %testRun['name'])
 
@@ -314,6 +317,8 @@ class TestRun():
                 testRunID = cfg['streaming server']
             elif 'software' in str(module_name).lower():
                 testRunID = cfg['software']
+            elif 'dvr integration' in str(module_name).lower():
+                testRunID = cfg['dvr integration']
             else:
                 self.log.error("Failed to determine test run for publication.")
                 testRunID = 0
