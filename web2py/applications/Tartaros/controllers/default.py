@@ -462,6 +462,7 @@ class TestManager():
             inp_new_action_addr = 'inp_new_user_story_action'
             inp_new_user_type_addr = 'inp_new_user_story_user_type'
             inp_new_results_id_addr = 'inp_new_test_results_id'
+            inp_new_type_addr = 'inp_new_test_type'
             btn_cnf_add_ts_entry_addr = 'td_%s_cnf_add_ts_entry_btn' % select_addr
             btn_cnc_add_ts_entry_addr = 'td_%s_cnc_add_ts_entry_btn' % select_addr
             div_cnf_add_ts_entry_addr = 'td_%s_cnf_add_ts_entry_div' % select_addr
@@ -482,40 +483,51 @@ class TestManager():
             inp_new_results_id_label = LABEL("Test Results ID")
             inp_new_results_id = INPUT(_id=inp_new_results_id_addr, _name=inp_new_results_id_addr,
                                        _class="string", _type="text")
+            inp_new_test_type_label = LABEL("Test Type")
+            options_2 = db().select(db.test_types.ALL)
+            inp_new_test_type = SELECT(_id=inp_new_type_addr, _name=inp_new_type_addr,
+                                       *[OPTION(options_2[i].name, _value=str(options_2[i].id))
+                                         for i in range(len(options_2))])
 
             # build add new entry confirmation button
-            btn_cnf_add_ts_entry_script = "ajax('%(function)s?type=%(type)s', %(values)s, '%(target)s');" \
-                                          "jQuery(%(remove)s).remove();" % {'function': 'add_ts_entry',
-                                                                            'type': suite_type,
-                                                                            'values': "['%s', 'module_selection',"
-                                                                                      "'feature_selection', "
-                                                                                      "'user_story_selection',"
-                                                                                      "'test_selection',"
-                                                                                      "'test_case_selection',"
-                                                                                      "'inp_new_user_story_action',"
-                                                                                      "'inp_new_user_story_user_type',"
-                                                                                      "'inp_new_test_results_id']"
-                                                                                      % inp_new_name_addr,
-                                                                            'target': 'td_%s' % select_addr,
-                                                                            'remove': '%s' % select_addr}
-            btn_cnf_add_ts_entry_script += "ajax('%(function)s?selectaddr=%(selectaddr)s', %(vars)s, '%(target)s');" \
+            btn_cnf_add_ts_entry_script = "ajax('%(function)s?type=%(type)s', %(values)s, " \
+                                          "'%(target)s');" \
+                                          "jQuery(%(remove)s).remove();" \
+                                          % {'function': 'add_ts_entry',
+                                             'type': suite_type,
+                                             'values': "['%s', 'module_selection',"
+                                                       "'feature_selection', 'user_story_selection',"
+                                                       "'test_selection','test_case_selection',"
+                                                       "'inp_new_user_story_action',"
+                                                       "'inp_new_user_story_user_type',"
+                                                       "'inp_new_test_results_id',"
+                                                       "'inp_new_test_type']"
+                                                       % inp_new_name_addr,
+                                             'target': 'td_%s' % select_addr,
+                                             'remove': '%s' % select_addr}
+            btn_cnf_add_ts_entry_script += "ajax('%(function)s?selectaddr=%(selectaddr)s', " \
+                                           "%(vars)s, '%(target)s');" \
                                            "jQuery(%(remove obj)s).remove();" \
                                            % {'function':    'restore_ts_add_new_cell',
                                               'selectaddr':  select_addr,
                                               'vars':        "[]",
                                               'target':      '%s' % td_cnf_add_ts_entry_addr,
                                               'remove obj':  div_cnf_add_ts_entry_addr}
-            btn_cnf_add_ts_entry = INPUT(_id=btn_cnf_add_ts_entry_addr, _type='button', _value='Add', _class='btn',
+            btn_cnf_add_ts_entry = INPUT(_id=btn_cnf_add_ts_entry_addr, _type='button',
+                                         _value='Add', _class='btn',
                                          _onclick=btn_cnf_add_ts_entry_script)
 
             # build add new entry cancel button
-            btn_cnc_add_ts_entry_script = "ajax('%(function)s?selectaddr=%(selectaddr)s', %(values)s, '%(target)s');" \
-                                          "jQuery(%(div addr)s).remove();" % {'function': 'cancel_add_ts_entry',
-                                                                              'selectaddr': select_addr,
-                                                                              'values': '[]',
-                                                                              'target': container,
-                                                                              'div addr': div_cnf_add_ts_entry_addr}
-            btn_cnc_add_ts_entry = INPUT(_id=btn_cnc_add_ts_entry_addr, _type='button', _value='Cancel', _class='btn',
+            btn_cnc_add_ts_entry_script = "ajax('%(function)s?selectaddr=%(selectaddr)s', " \
+                                          "%(values)s, '%(target)s');" \
+                                          "jQuery(%(div addr)s).remove();" \
+                                          % {'function': 'cancel_add_ts_entry',
+                                             'selectaddr': select_addr, 'values': '[]',
+                                             'target': container,
+                                             'div addr': div_cnf_add_ts_entry_addr}
+
+            btn_cnc_add_ts_entry = INPUT(_id=btn_cnc_add_ts_entry_addr, _type='button',
+                                         _value='Cancel', _class='btn',
                                          _onclick=btn_cnc_add_ts_entry_script)
 
             # build entire object (by input type)
@@ -529,6 +541,11 @@ class TestManager():
                                            inp_new_results_id_label, inp_new_results_id,
                                            btn_cnf_add_ts_entry, btn_cnc_add_ts_entry,
                                            _id=div_cnf_add_ts_entry_addr)
+            elif request.vars.type == 'test_case':
+                div_cnf_add_ts_entry = FORM(inp_new_name_label, inp_new_name,
+                                            inp_new_test_type_label, inp_new_test_type,
+                                            btn_cnf_add_ts_entry, btn_cnc_add_ts_entry,
+                                            _id=div_cnf_add_ts_entry_addr)
             else:
                 div_cnf_add_ts_entry = FORM(inp_new_name_label, inp_new_name,
                                            btn_cnf_add_ts_entry, btn_cnc_add_ts_entry,
@@ -1718,6 +1735,7 @@ class TestManager():
                     min_version='1.0',
                     test_class=5,
                     active=1,
+                    type_id=request.vars.inp_new_test_type
                 )
             else:
                 log.error("Invalid test suite type %s specifed." % request.vars.type)
