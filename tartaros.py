@@ -57,6 +57,9 @@ testcase_type = None
 # test scheduling variables
 tests_to_schedule = []
 
+# dvr integration variables
+int_dvr_ip = None
+
 # read system arguments
 params = []
 if argv is not None:
@@ -114,6 +117,9 @@ if argv is not None:
             for test in tests:
                 if test.strip() != 'None':
                     tests_to_schedule.append(test.strip())
+        elif 'int_dvr_ip=' in arg:
+            int_dvr_ip = arg.split('int_dvr_ip=')[1]
+            params.append('Integration DVR IP:\t%s' % int_dvr_ip)
 
     # log parameters
     log.trace("Parameters modified:")
@@ -201,7 +207,8 @@ elif mode == 'testing':
     database = Database(Logger(logging_level='info'))
 
     # initialize test run object
-    testrun = TestRun(log, database, name=test_name, submodule_id=2, results_plan_id=results_plan_id)
+    testrun = TestRun(log, database, name=test_name, submodule_id=2, results_plan_id=results_plan_id,
+                      int_dvr_ip=int_dvr_ip)
 
     # build testcase list for test run
     testcases = testrun.build_testcase_list_for_run(module_id=module,
@@ -237,7 +244,8 @@ elif mode == 'webtesting':
     database = Database(Logger(logging_level='trace'), path=TARTAROS_WEB_DB_PATH)
 
     # initialize test run object
-    testrun = TestRun(log, database, name=test_name, submodule_id=2, results_plan_id=results_plan_id)
+    testrun = TestRun(log, database, name=test_name, submodule_id=2, results_plan_id=results_plan_id,
+                      int_dvr_ip=int_dvr_ip)
 
     # build testcase list for test run
     testcases = testrun.build_testcase_list_for_run(module_id=module,

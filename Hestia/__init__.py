@@ -58,7 +58,7 @@ class Hestia(ClipClassification, Clips, DriveStatus, EmailNotification, Events, 
     """ Library for ViM interaction and testing. """
 
     def __init__(self, logger, app_db, dir=DEFAULT_BIN_LOC, storage_loc=DEFAULT_STORAGE_LOC,
-                 server_url=DEFAULT_SERVER_URL):
+                 server_url=DEFAULT_SERVER_URL, int_dvr_ip=None):
         """
         INPUT
             logger: An initialized instance of a logging class to use.
@@ -66,6 +66,7 @@ class Hestia(ClipClassification, Clips, DriveStatus, EmailNotification, Events, 
             dir: the path to the bin\ installation folder.
             storage_loc: the path to the folder where video is/will be stored.
             server_url: the server url.
+            int_dvr_ip: the ip address of the DVR being used for integration testing.
         """
 
         # instance logger
@@ -122,7 +123,7 @@ class Hestia(ClipClassification, Clips, DriveStatus, EmailNotification, Events, 
 
         # define dvr integration testing parameters
         self.dvr_int_name = 'DVR Integration Depot'
-        self.dvr_int_address = '172.22.4.156'
+        self.dvr_int_address = int_dvr_ip
         self.dvr_int_user = 'admin'
         self.dvr_int_password = ''
 

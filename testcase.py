@@ -30,13 +30,14 @@ TEST_STATUSES = TARTAROS['test statuses']
 class TestCase():
     """ The root test case object class. Includes all root functions and parameters. """
 
-    def __init__(self, logger, database, testcase_id, debugging=False):
+    def __init__(self, logger, database, testcase_id, debugging=False, int_dvr_ip=None):
         """
         INPUT
             logger: An initialized instance of a logging class to use.
             database: database object to use for interacting with Tartaros database (initialized).
             id: the testcase ID used for referencing in database.
             debugging: set to TRUE if debugging the testcase.
+            int_dvr_ip: the ip address of the DVR being used for integration testing.
         """
 
         # instantialize logger
@@ -56,6 +57,7 @@ class TestCase():
         self.verifications = []
         self.duration = 0
         self.version = None
+        self.int_dvr_ip = int_dvr_ip
 
         # instance testcase
         self.initialize()
@@ -292,7 +294,7 @@ class HestiaTestCase(TestCase):
 
         # establish product submodule instance for use
         from Hestia import Hestia
-        self.hestia = Hestia(self.log, self.database)
+        self.hestia = Hestia(self.log, self.database, int_dvr_ip=self.int_dvr_ip)
 
         # establish additional submodules for use
 

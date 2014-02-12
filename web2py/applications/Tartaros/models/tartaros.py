@@ -68,3 +68,15 @@ db.define_table('functions',
 db.define_table('test_types',
                 Field('name', type='string', unique=True, required=True),
 )
+
+# table: dvrs
+db.define_table('dvrs',
+                Field('name', type='string', unique=True, required=True),
+                Field('ip_address', type='string', unique=True, required=True),
+                Field('serial_num', type='string', unique=True, required=False),
+                Field('hd_serial_num', type='string', unique=True, required=False),
+                Field('model', type='string', unique=False, required=False),
+                Field('firmware', type='string', unique=False, required=False),
+                Field('username', type='string', unique=False, required=True),
+                Field('password', type='string', unique=False, required=True),
+)

@@ -1876,6 +1876,7 @@ class TestManager():
             # define object ids
             btn_run_test_addr = 'btn_run_test'
             inp_plan_id_addr = 'inp_plan_id'
+            inp_int_dvr_addr = 'inp_int_dvr'
             btn_stop_test_addr = 'btn_stop_test'
             div_test_runner_addr = 'div_test_runner'
 
@@ -1885,7 +1886,8 @@ class TestManager():
                      % {'function': 'run_test',
                         'values': "['%s', 'module_selection', 'feature_selection', "
                                   "'user_story_selection', 'test_selection', "
-                                  "'test_case_selection']" % inp_plan_id_addr,
+                                  "'test_case_selection', '%s']" % (inp_plan_id_addr,
+                                                                    inp_int_dvr_addr),
                         'target': '',
                         'remove': ''}
             s_script = "ajax('%(function)s', %(values)s, '%(target)s');" \
@@ -1905,8 +1907,17 @@ class TestManager():
             btn_stop_test = INPUT(_type='button', _value="Stop Test", _class='btn',
                                  _id=btn_stop_test_addr, _name=btn_stop_test_addr,
                                  _onclick=s_script)
+            lbl_int_dvr_id = LABEL("INTEGRATION DVR: ")
+            options = db().select(db.dvrs.ALL)
+            options = options.sort(lambda x: x.name)
+            inp_int_dvr_id = SELECT(*[OPTION(options[i].name, _value=str(options[i].id))
+                                      for i in range(len(options))],
+                                    _id=inp_int_dvr_addr,
+                                    _name=inp_int_dvr_addr)
 
-            div_test_runner = DIV(lbl_plan_id, inp_plan_id, btn_run_test, btn_stop_test,
+            div_test_runner = DIV(lbl_plan_id, inp_plan_id,
+                                  lbl_int_dvr_id, inp_int_dvr_id,
+                                  btn_run_test, btn_stop_test,
                                   _id=div_test_runner_addr)
 
             # compile results
@@ -2485,6 +2496,13 @@ def run_test():
     test_id = request.vars.test_selection
     test_case_id = request.vars.test_case_selection
 
+    # determine integration dvr
+    int_dvr_id = request.vars.inp_int_dvr
+    if int_dvr_id is not None:
+        int_dvr_ip = db(db.dvrs.id == int_dvr_id).select()[0].ip_address
+    else:
+        int_dvr_ip = None
+
     if plan_id is None and test_case_id != '0':
         # instance database
         from mapping import TARTAROS_WEB_DB_PATH
@@ -2506,10 +2524,12 @@ def run_test():
                    '"testingtestcase=%(test case)s"' \
                    % {'plan id': plan_id, 'module': module_id, 'feature': feature_id,
                       'story': user_story_id, 'test': test_id, 'test case': test_case_id}
+            if int_dvr_ip is not None:
+                args += ' "int_dvr_ip=%(int dvr ip)s"' % {'int dvr ip': int_dvr_ip}
             path = move_up_windows_path(getcwdu())['path'] + 'tartaros.py'
             running_test = \
                 subprocess.Popen('C:\\Python27\\python.exe %s %s' % (path, args), shell=True,
-                             close_fds=True)
+                                 close_fds=True)
             RUNNING_TESTS.append(running_test)
         except BaseException, e:
             tmanager.handle_exception(log, e)

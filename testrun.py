@@ -47,7 +47,7 @@ class TestRun():
     """ The root test run object class. Includes all root functions and parameters. """
 
     def __init__(self, logger, database, name, submodule_id, testcases=[], results_plan_id=None,
-                 debugging=False):
+                 debugging=False, int_dvr_ip=None):
         """
         INPUT
             logger: An initialized instance of a logging class to use.
@@ -57,6 +57,7 @@ class TestRun():
             testcases: a list of test case data dicts for test cases to execute as part of the test run.
             results plan id: the test plan id to publish results to.
             debugging: set to TRUE if debugging the testcase.
+            int_dvr_ip: the ip address of the DVR being used for integration testing.
         """
 
         # instance logger
@@ -82,6 +83,7 @@ class TestRun():
         self.duration = 0
         self.results = []
         self.testcase_obj = None
+        self.int_dvr_ip = int_dvr_ip
 
         # instance testcase
         self.initialize()
@@ -126,7 +128,7 @@ class TestRun():
             # execute test cases
             for testcase in self.testcases:
                 testcase = self.testcase_obj(self.log, self.database, testcase['id'],
-                    debugging=self.debugging)
+                    debugging=self.debugging, int_dvr_ip=self.int_dvr_ip)
                 testcase.run()
 
                 # compile results data from execution
