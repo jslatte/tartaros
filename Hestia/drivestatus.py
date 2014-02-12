@@ -46,6 +46,140 @@ class DriveStatus():
     """ Sub-library for drive status and history functionality.
     """
 
+    def verify_dvr_information_retrieved_from_site(self, site_id, timeout=300, testcase=None):
+        """
+        @param site_id: the id of the site for which to verify information retrieved.
+        @param timeout: the total amount of seconds to wait for the information to be retrieved.
+        @param testcase: a testcase object supplied when executing function as part of
+            a testcase step.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'verified' - whether the operation was verified or not.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'verified': False}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # determine dvr id for site
+            dvr_id = self.return_dvr_for_site(site_id)['dvr id']
+
+            if dvr_id is not None:
+                # return dvr data for site
+                handle = self.db.db_handle
+                table = DB_DVRS_TABLE
+                dvr_serial = None
+                dvr_model = None
+                dvr_firmware = None
+                interval = 15
+                max_attempts = timeout/interval
+                attempt = 1
+
+                while dvr_serial is None or dvr_model is None or dvr_firmware is None\
+                    or attempt <= max_attempts:
+                    dvr_serial = self.db.query_database_table_for_single_value(handle,
+                        table, DB_DVRS_FIELDS['serial'], DB_DVRS_FIELDS['id'], dvr_id)['value']
+                    dvr_model = self.db.query_database_table_for_single_value(handle,
+                        table, DB_DVRS_FIELDS['model'], DB_DVRS_FIELDS['id'], dvr_id)['value']
+                    dvr_firmware = self.db.query_database_table_for_single_value(handle,
+                        table, DB_DVRS_FIELDS['firmware'], DB_DVRS_FIELDS['id'], dvr_id)['value']
+
+                    self.log.trace("Checking DVR information ...")
+                    if dvr_serial is None:
+                        self.log.trace("Failed to verify DVR Serial information retrieved. "
+                                       "DVR Serial stored was %s." % dvr_serial)
+                    if dvr_model is None or dvr_model == '':
+                        self.log.trace("Failed to verify DVR Model information retrieved. "
+                                       "DVR Model stored was %s." % dvr_model)
+                    if dvr_firmware is None or dvr_firmware == '':
+                        self.log.trace("Failed to verify DVR Firmware information retrieved. "
+                                       "DVR Firmware stored was %s." % dvr_firmware)
+
+                    if dvr_serial is None or dvr_model is None or dvr_firmware is None:
+                        self.log.trace("Attempt %d. Re-attempting in %d seconds ..."
+                                       % (attempt, interval))
+                        attempt += 1
+                        sleep(interval)
+                    else:
+                        self.log.trace("Verified DVR Information retrieved from site.")
+                        result['verified'] = True
+                        break
+
+
+            else:
+                self.log.error("No DVR found for site.")
+
+            self.log.trace("... done %s." % operation)
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if testcase is not None: testcase.processing = result['successful']
+        return result
+
+    def verify_drive_information_retrieved_from_site(self, site_id, timeout=300, testcase=None):
+        """
+        @param site_id: the id of the site for which to verify information retrieved.
+        @param timeout: the total amount of seconds to wait for the information to be retrieved.
+        @param testcase: a testcase object supplied when executing function as part of
+            a testcase step.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'verified' - whether the operation was verified or not.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'verified': False}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # determine drive id for site
+            drive_id = self.return_drive_for_site(site_id)['drive id']
+
+            if drive_id is not None:
+                # return drive id for site
+                handle = self.db.db_handle
+                table = DB_DRIVES_TABLE
+                drive_serial = None
+                interval = 15
+                max_attempts = timeout/interval
+                attempt = 1
+
+                while drive_serial or attempt <= max_attempts:
+                    drive_serial = self.db.query_database_table_for_single_value(handle,
+                    table, DB_DRIVES_FIELDS['serial'], DB_DRIVES_FIELDS['id'], drive_id)['value']
+
+                    self.log.trace("Checking drive information ...")
+                    if drive_serial is None:
+                        self.log.trace("Failed to verify drive Serial information retrieved. "
+                                       "Drive Serial stored was %s." % drive_serial)
+
+                    if drive_serial is None:
+                        self.log.trace("Attempt %d. Re-attempting in %d seconds ..."
+                                       % (attempt, interval))
+                        attempt += 1
+                        sleep(interval)
+                    else:
+                        self.log.trace("Verified drive Information retrieved from site.")
+                        result['verified'] = True
+                        break
+
+            else:
+                self.log.error("No drive found for site.")
+
+            self.log.trace("... done %s." % operation)
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if testcase is not None: testcase.processing = result['successful']
+        return result
+
     def simulate_drive_swap_between_two_sites_without_drive_status_tracking(self, site_id, site2_id,
                                                                             testcase=None):
         """ Simulate a drive swap between two sites.

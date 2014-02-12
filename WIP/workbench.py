@@ -676,7 +676,7 @@ def run_dvr_simulation_test():
 ####################################################################################################
 
 #hestia.reset_vim_server()
-#connect_to_database()
+connect_to_database()
 #hestia.start_vim_server()
 #log_in()
 #hestia.setup_server_for_manual_testing('full')
@@ -722,4 +722,6 @@ data = {
     #    {'content': 'Third procedure step.', 'expected': ''}
     #]}
 #orpheus.send_post(url, data)
-log.trace(orpheus.send_get('get_case/1/1'))
+#log.trace(orpheus.send_get('get_case/1/1'))
+
+log.trace(hestia.db.query_database_table_for_single_value(hestia.db.db_handle, 'MDVRS', 'DvrSN', 'DvrID', '1')['value'])

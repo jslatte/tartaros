@@ -176,7 +176,6 @@ class TestManager():
             self.log.trace("%s ..." % operation.replace('_', ' '))
 
             # determine test results id for selected test
-            sleep(1)
             result = self.build_test_attribute_field(field)['div']
 
         except BaseException, e:
@@ -1683,6 +1682,7 @@ class TestManager():
                 log.error("Invalid field %s specifed." % field)
 
             # compile results
+            sleep(1)
             result = self.build_test_attribute_field(field)['div']
 
         except BaseException, e:
