@@ -59,12 +59,13 @@ class Events():
     """ Sub-library for ViM server event download and interaction.
     """
 
-    def verify_system_event_downloaded_for_site(self, site_id, wait=360, allowed=True,
+    def verify_system_event_downloaded_for_site(self, site_id, wait=360, syslogtype=None, allowed=True,
                                                 testcase=None):
         """ Verify that system event is in the database for given site.
         INPUT
             site id: id of the site for which to verify the event downloaded.
             wait: how long to wait for the event to download.
+            syslogtype: the SyslogType type to search for (see mapping).
             allowed: whether the event download should be allowed or not
                 (verify as allowed/not allowed).
             testcase: a testcase object supplied when executing function as part of a testcase step.
@@ -92,9 +93,15 @@ class Events():
                 return_field = DB_SYSLOG_FIELDS['id']
                 known_field = DB_SYSLOG_FIELDS['dvr id']
                 known_value = dvr_id
+                if syslogtype is not None:
+                    addendum = " AND %s = '%s'" % (DB_SYSLOG_FIELDS['type'],
+                                                   SYSLOG_EVENT_TYPES[syslogtype])
+                else:
+                    addendum = ''
                 event_id = self.db.query_database_table_for_single_value(handle, table,
                                                                          return_field, known_field,
-                                                                         known_value)['value']
+                                                                         known_value,
+                                                                         addendum=addendum)['value']
                 if event_id is not None and allowed:
                     self.log.trace("Verified system event downloaded for site %s." % site_id)
                     result['event id'] = event_id

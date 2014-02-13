@@ -409,6 +409,8 @@ HESTIA = {
             'event type to type id': {
                 'remote log in':            '102',
                 'remote log out':           '103',
+                'disk config change':       '16',
+                'disk serial':              '22',
             },
             'author to author id': {
                 'non-vim':                  '0',

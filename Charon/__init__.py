@@ -231,7 +231,7 @@ class Charon():
         return result
 
     def query_database_table_for_single_value(self, handle, table, return_field, known_field,
-                                              known_value, max=False):
+                                              known_value, addendum='', max=False):
         """ Query a database table for a single value, given a known field and its value.
         """
 
@@ -241,7 +241,7 @@ class Charon():
 
         # query database table
         response = self.query_database_table(handle, table, return_field,
-            'WHERE %s = "%s"' % (known_field, known_value), max)['response']
+            'WHERE %s = "%s"' % (known_field, known_value) + addendum, max)['response']
 
         # get value from response
         try:
