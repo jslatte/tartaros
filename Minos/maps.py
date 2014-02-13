@@ -34,6 +34,7 @@ RELEASE = {
     'build line':       2,
     'sharing projects': [
         'development',
+        'release-ready',
         'sub-development 1',
         'sub-development 2',
         'sub-development 3',
@@ -56,6 +57,19 @@ RELEASE_4_0 = {
     'build line':       54,
     'sharing projects': []
 }
+RELEASE_READY = {
+    'path':             "ViM (Release)\\",
+    'build line':       58,
+    'sharing projects': [
+        'release',
+        'development',
+        'sub-development 1',
+        'sub-development 2',
+        'sub-development 3',
+        'sub-development 4',
+        'sub-development 5',
+    ]
+}
 
 # ViM Development project lines
 WIP = {
@@ -63,6 +77,7 @@ WIP = {
     'build line':       37,
     'sharing projects': [
         'release',
+        'release-ready',
         'sub-development 1',
         'sub-development 2',
         'sub-development 3',
@@ -75,6 +90,7 @@ SUB_DEV_1 = {
     'build line':       42,
     'sharing projects': [
         'release',
+        'release-ready',
         'development',
         'sub-development 2',
         'sub-development 3',
@@ -87,6 +103,7 @@ SUB_DEV_2 = {
     'build line':       43,
     'sharing projects': [
         'release',
+        'release-ready',
         'development',
         'sub-development 1',
         'sub-development 3',
@@ -99,6 +116,7 @@ SUB_DEV_3 = {
     'build line':       44,
     'sharing projects': [
         'release',
+        'release-ready',
         'development',
         'sub-development 1',
         'sub-development 2',
@@ -111,6 +129,7 @@ SUB_DEV_4 = {
     'build line':       45,
     'sharing projects': [
         'release',
+        'release-ready',
         'development',
         'sub-development 1',
         'sub-development 2',
@@ -123,6 +142,7 @@ SUB_DEV_5 = {
     'build line':       46,
     'sharing projects': [
         'release',
+        'release-ready',
         'development',
         'sub-development 1',
         'sub-development 2',
@@ -138,6 +158,7 @@ AUTOMATION = {
 # builds
 PROJECTS = {
     'release':          RELEASE,
+    'release-ready':	RELEASE_READY,
     'release 3.2':      RELEASE_3_2,
     'release 3.3':      RELEASE_3_3,
     'release 3.4':      RELEASE_4_0,
@@ -158,6 +179,7 @@ BUILDING = {
         'dashboard':            'bt36',
         'development':          'bt%d'%WIP['build line'],
         'release':              'bt%d'%RELEASE['build line'],
+        'release-ready':		'bt%d'%RELEASE_READY['build line'],
         'release 3.2':          'bt%d'%RELEASE_3_2['build line'],
         'release 3.3':          'bt%d'%RELEASE_3_3['build line'],
         'release 4.0':          'bt%d'%RELEASE_4_0['build line'],
