@@ -129,10 +129,14 @@ def convert_binary_data():
 def translate_hex(hex):
     import binascii
     for s in hex:
-        log.trace("Hexidecimal:\t\t\t%s" % s)
-        log.trace("Char Length:\t\t\t%s" % len(s))
-        log.trace("ASCII:\t\t\t\t\t%s" % binascii.unhexlify(s))
-        log.trace("Decimal:\t\t\t\t%d" % int(s, 16))
+        try: log.trace("Hexidecimal:\t\t\t%s" % s)
+        except BaseException: pass
+        try: log.trace("Char Length:\t\t\t%s" % len(s))
+        except BaseException: pass
+        try: log.trace("ASCII:\t\t\t\t\t%s" % binascii.unhexlify(s))
+        except BaseException: pass
+        try: log.trace("Decimal:\t\t\t\t%d" % int(s, 16))
+        except BaseException: pass
         j = ''
         for i in range(1, ((len(s) / 2) + 1)):
             j += str(int(s[(i * 2 - 2):(i * 2)], 16)) + ' '
@@ -676,11 +680,11 @@ def run_dvr_simulation_test():
 ####################################################################################################
 
 #hestia.reset_vim_server()
-connect_to_database()
+#connect_to_database()
 #hestia.start_vim_server()
 #log_in()
 #hestia.setup_server_for_manual_testing('full')
-#configure_license('autoclip')
+#configure_license('health')
 #hestia.configure_vim_license('streaming server')
 
 #testcase = HestiaTestCase(log, database, 442, debugging=False)
@@ -710,18 +714,17 @@ orpheus = APIClient("http://172.22.2.93/")
 orpheus.user = 'Jonathan.Slattery@avt-usa.com'
 orpheus.password = 'Nikmik21'
 
-url = "update_case/3416"
+url = "update_case/88920"
 data = {
-    'title':            'Validation Test2',}
-    #'type_id':          5,
-    #'custom_severity':  2,
-    #'custom_rf_test':   True,
-    #'steps_separated':  [
-    #    {'content': 'First procedure step.', 'expected': ''},
-    #    {'content': 'Second procedure step.', 'expected': ''},
-    #    {'content': 'Third procedure step.', 'expected': ''}
-    #]}
-#orpheus.send_post(url, data)
+    'title':            'Validation Test',
+    'type_id':          21,
+    'custom_severity':  2,
+    'custom_rf_test':   True,
+    'custom_steps_separated':  [
+        {'content': 'First procedure step.', 'expected': ''},
+        {'content': 'Second procedure step.', 'expected': ''},
+        {'content': 'Third procedure step.', 'expected': ''}
+    ]}
+orpheus.send_post(url, data)
 #log.trace(orpheus.send_get('get_case/1/1'))
-
-log.trace(hestia.db.query_database_table_for_single_value(hestia.db.db_handle, 'MDVRS', 'DvrSN', 'DvrID', '1')['value'])
+#hestia.verify_system_event_downloaded_for_site(1, syslogtype='disk config change')

@@ -1410,7 +1410,22 @@ ORPHEUS = {
         '4':                're-test',
         '5':                'failed',
         '6':                'passed with issues',
-    }
+    },
+    'test type to id': {
+        'regression':           4,
+        'validation':           21,
+        'performance':          19,
+        'stress':               18,
+        'smoke':                23,
+        'user acceptance':      24,
+    },
+    'fields': {
+        'title':            'title',
+        'type':             'type_id',
+        'class':            'custom_severity',
+        'automated':        'custom_rf_test',
+        'procedure':        'custom_steps_separated',
+    },
 }
 
 MINOS = {
