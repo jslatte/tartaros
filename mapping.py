@@ -1393,10 +1393,14 @@ HESTIA_PAGE_TO_PAGE_FIELDS = {
 }
 
 ORPHEUS = {
+    'server ip address':    "http://172.22.2.93:80/",
     'server url':           "http://172.22.2.93:80/index.php?/api/v2",
     'server key':           12345,
     'user name':            'Jonathan.Slattery@avt-usa.com',
     'password':             'Nikmik21',
+    'projects': {
+        'vim':                  1,
+    },
     'test status to id': {
         'passed':               1,
         'blocked':              2,
@@ -1419,12 +1423,26 @@ ORPHEUS = {
         'smoke':                23,
         'user acceptance':      24,
     },
-    'fields': {
+    'case fields': {
         'title':            'title',
         'type':             'type_id',
         'class':            'custom_severity',
         'automated':        'custom_rf_test',
         'procedure':        'custom_steps_separated',
+    },
+    'suite fields': {
+        'id':               'id',
+        'name':             'name',
+        'desc':             'description',
+        'project id':       'project_id',
+    },
+    'section fields': {
+        'id':               'id',
+        'name':             'name',
+        'order':            'display_order',
+        'parent id':        'parent_id',
+        'depth':            'depth',
+        'suite id':         'suite_id',
     },
 }
 

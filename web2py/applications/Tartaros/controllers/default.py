@@ -19,6 +19,7 @@ from time import sleep
 from testcase import HestiaTestCase
 from Database import Database
 from testrun import TestRun
+from Orpheus import Orpheus
 import subprocess
 from os import getcwdu
 from utility import move_up_windows_path
@@ -1877,7 +1878,7 @@ class TestManager():
             btn_run_test_addr = 'btn_run_test'
             inp_plan_id_addr = 'inp_plan_id'
             inp_int_dvr_addr = 'inp_int_dvr'
-            btn_stop_test_addr = 'btn_stop_test'
+            btn_push_case_addr = 'btn_push_case'
             div_test_runner_addr = 'div_test_runner'
 
             # build the onclick scripts
@@ -1890,10 +1891,10 @@ class TestManager():
                                                                     inp_int_dvr_addr),
                         'target': '',
                         'remove': ''}
-            s_script = "ajax('%(function)s', %(values)s, '%(target)s');" \
+            p_script = "ajax('%(function)s', %(values)s, '%(target)s');" \
                        "jQuery(%(remove)s).remove();" \
-                       % {'function': 'stop_running_test',
-                          'values': "[]",
+                       % {'function': 'push_case_to_testrail',
+                          'values': "['test_case_selection']",
                           'target': '',
                           'remove': ''}
 
@@ -1904,9 +1905,9 @@ class TestManager():
             lbl_plan_id = LABEL("TEST PLAN ID: ")
             inp_plan_id = INPUT(_type='string',
                                 _id=inp_plan_id_addr, _name=inp_plan_id_addr)
-            btn_stop_test = INPUT(_type='button', _value="Stop Test", _class='btn',
-                                 _id=btn_stop_test_addr, _name=btn_stop_test_addr,
-                                 _onclick=s_script)
+            btn_push_case = INPUT(_type='button', _value="Push Case", _class='btn',
+                                  _id=btn_push_case_addr, _name=btn_push_case_addr,
+                                  _onclick=p_script)
             lbl_int_dvr_id = LABEL("INTEGRATION DVR: ")
             options = db().select(db.dvrs.ALL)
             options = options.sort(lambda x: x.name)
@@ -1917,7 +1918,7 @@ class TestManager():
 
             div_test_runner = DIV(lbl_plan_id, inp_plan_id,
                                   lbl_int_dvr_id, inp_int_dvr_id,
-                                  btn_run_test, btn_stop_test,
+                                  btn_run_test, btn_push_case,
                                   _id=div_test_runner_addr)
 
             # compile results
@@ -2097,6 +2098,24 @@ class TestManager():
         self.log.trace("... DONE %s." % operation.replace('_', ' '))
         return result
 
+    def push_case_to_testrail(self, case_id):
+        """ Push the current selected test case to test rail.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'verified': False}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            self.log.trace("... done %s." % operation)
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        return result
+
 
 ####################################################################################################
 # Step Manager #####################################################################################
@@ -2208,6 +2227,10 @@ def index():
         pass
 
     return dict(tmanager_form=tmanager_form)
+
+
+def push_case_to_testrail():
+    return tmanager.push_case_to_testrail(request.vars.test_case_selection)
 
 
 def stop_running_test():

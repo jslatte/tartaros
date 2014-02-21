@@ -130,22 +130,26 @@ def translate_hex(hex):
     import binascii
     for s in hex:
         try: log.trace("Hexidecimal:\t\t\t%s" % s)
-        except BaseException: pass
+        except BaseException, e: log.trace(e)
         try: log.trace("Char Length:\t\t\t%s" % len(s))
-        except BaseException: pass
+        except BaseException, e: log.trace(e)
         try: log.trace("ASCII:\t\t\t\t\t%s" % binascii.unhexlify(s))
-        except BaseException: pass
+        except BaseException, e: log.trace(e)
         try: log.trace("Decimal:\t\t\t\t%d" % int(s, 16))
-        except BaseException: pass
-        j = ''
-        for i in range(1, ((len(s) / 2) + 1)):
-            j += str(int(s[(i * 2 - 2):(i * 2)], 16)) + ' '
-        log.trace("Decimal Bytes:\t\t\t%s" % j)
-        n = s[-2:]
-        if len(s) >= 4:
-            for m in range(2, ((len(s) / 2) + 1)):
-                n += s[-(m * 2):-(m * 2 - 2)]
-        log.trace("Reverse Decimal Bytes:\t%d" % int(n, 16))
+        except BaseException, e: log.trace(e)
+        try:
+            j = ''
+            for i in range(1, ((len(s) / 2) + 1)):
+                j += str(int(s[(i * 2 - 2):(i * 2)], 16)) + ' '
+            log.trace("Decimal Bytes:\t\t\t%s" % j)
+        except BaseException, e: log.trace(e)
+        try:
+            n = s[-2:]
+            if len(s) >= 4:
+                for m in range(2, ((len(s) / 2) + 1)):
+                    n += s[-(m * 2):-(m * 2 - 2)]
+            log.trace("Reverse Decimal Bytes:\t%d" % int(n, 16))
+        except BaseException, e: log.trace(e)
 
 def translate_gps_to_hex():
     import binascii
@@ -707,24 +711,7 @@ def run_dvr_simulation_test():
 #determine_number_of_failed_connections_over_time(danaides, path, start, end)
 
 #log.trace("SELECT * FROM ConnectionLog WHERE csTimeStamp > %d and csTimeStamp < %d" %(utc.convert_date_string_to_db_time(start)['db time'], utc.convert_date_string_to_db_time(end)['db time']))
-
-from Orpheus.testrail import *
-
-orpheus = APIClient("http://172.22.2.93/")
-orpheus.user = 'Jonathan.Slattery@avt-usa.com'
-orpheus.password = 'Nikmik21'
-
-url = "update_case/88920"
-data = {
-    'title':            'Validation Test',
-    'type_id':          21,
-    'custom_severity':  2,
-    'custom_rf_test':   True,
-    'custom_steps_separated':  [
-        {'content': 'First procedure step.', 'expected': ''},
-        {'content': 'Second procedure step.', 'expected': ''},
-        {'content': 'Third procedure step.', 'expected': ''}
-    ]}
-orpheus.send_post(url, data)
-#log.trace(orpheus.send_get('get_case/1/1'))
-#hestia.verify_system_event_downloaded_for_site(1, syslogtype='disk config change')
+project_id = 1
+suite_id = orpheus.return_suite_data('AutoClip Module', project_id)['id']
+response = orpheus.api_client.send_get('get_sections/%s&suite_id=%s' % (project_id, suite_id))
+log.trace(response)
