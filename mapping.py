@@ -1424,7 +1424,8 @@ ORPHEUS = {
         'user acceptance':      24,
     },
     'case fields': {
-        'title':            'title',
+        'id':               'id',
+        'name':             'title',
         'type':             'type_id',
         'class':            'custom_severity',
         'automated':        'custom_rf_test',

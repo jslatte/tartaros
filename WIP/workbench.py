@@ -712,8 +712,14 @@ def run_dvr_simulation_test():
 
 #log.trace("SELECT * FROM ConnectionLog WHERE csTimeStamp > %d and csTimeStamp < %d" %(utc.convert_date_string_to_db_time(start)['db time'], utc.convert_date_string_to_db_time(end)['db time']))
 project_id = 1
-#response = orpheus.add_suite('DVR Integration (Auto)', project_id, description='A suite.')
-suite_id = 685
-#response = orpheus.update_suite(suite_id, project_id, name='DVR Integration (Updated)', description='An updated suite.')
-response = orpheus.delete_suite(suite_id, project_id)
+#response = orpheus.add_suite('DVR Integration (Auto)', project_id, description='DVR integration testing.')
+suite_id = 686
+#ft_sect_id = orpheus.add_section('DEBUG Feature-Level Section', suite_id, project_id)['id']
+#st_sect_id = orpheus.add_section('DEBUG Story-Level Section', suite_id, project_id, parent_id=ft_sect_id)['id']
+#response = orpheus.add_section('DEBUG Test-Level Section', suite_id, project_id, parent_id=st_sect_id)['id']
+sect_id = 16029
+#response = orpheus.add_test_case('DEBUG Test Case', sect_id, suite_id, project_id, case_type='Regression', case_class=3, automated=True, procedure=[['Step 1.', ''], ['Step 2.', '']])
+case_id = 88954
+#response = orpheus.update_test_case(case_id, sect_id, suite_id, project_id, name='EDITED Test case', case_type='Validation', case_class=2, automated=False, procedure=[['Step 1 - Edited.', ''], ['Step 2 - Edited.', '']])
+#response = orpheus.delete_test_case(case_id, sect_id, suite_id, project_id)
 log.trace(response)
