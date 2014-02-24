@@ -164,18 +164,62 @@ class Orpheus(API, TestResults, TestRuns):
         # return
         return result
 
+    def return_suite_data(self, identifier, project_id):
+        """ Return server data for a suite.
+        @param identifier: the name or id of the suite.
+        @param project_id: the project id of the suite.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'id' - the id of the suite.
+            'name' - the name of the suite.
+            'desc' - the description of the suite.
+            'found' - whether the suite was found or not.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'id': None, 'name': None, 'desc': None, 'found': False}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # return all suites for the project
+            url = 'get_suites/%s' % project_id
+            suites = self.api_client.send_get(url)
+
+            # look for suite with given name
+            for suite in suites:
+                if suite[SUITE_FIELDS['name']].lower() == str(identifier).lower()\
+                    or str(suite[SUITE_FIELDS['id']]) == str(identifier):
+                    self.log.trace("Suite %s found." % identifier)
+                    result['found'] = True
+                    result['id'] = suite[SUITE_FIELDS['id']]
+                    result['name'] = suite[SUITE_FIELDS['name']]
+                    result['desc'] = suite[SUITE_FIELDS['desc']]
+
+            if result['id'] is None:
+                self.log.trace("Suite %s not found." % identifier)
+
+            self.log.trace("... done %s." % operation)
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        return result
+
     def add_suite(self, name, project_id, description=''):
         """ Add a suite to given project.
         @param name: the name of the suite to add.
-        @param project_id: the id of the project to which the suite will be added.
+        @param project_id: the project id of the suite.
         @param description: an optional description of the suite to add.
         @return: a data dict containing:
             'successful' - whether the function executed successfully or not.
             'id' - the id of the suite.
+            'verified' - whether the suite was added or not.
         """
 
         operation = self.inspect.stack()[0][3]
-        result = {'successful': False, 'id': None}
+        result = {'successful': False, 'id': None, 'verified': False}
 
         try:
             self.log.trace("%s ..." % operation.replace('_', ' '))
@@ -189,8 +233,15 @@ class Orpheus(API, TestResults, TestRuns):
             url = 'add_suite/%s' % project_id
             self.api_client.send_post(url, data)
 
-            # retrieve id of suite
-            result['id'] = self.return_suite_data(name, project_id)['id']
+            # verify and retrieve id of suite
+            suite_data = self.return_suite_data(name, project_id)
+            result['id'] = suite_data['id']
+            result['verified'] = suite_data['found']
+
+            if not result['verified']:
+                self.log.error("Failed to verify suite %s added." % name)
+            else:
+                self.log.trace("Verified suite %s added." % name)
 
             self.log.trace("... done %s." % operation)
             result['successful'] = True
@@ -200,34 +251,101 @@ class Orpheus(API, TestResults, TestRuns):
         # return
         return result
 
-    def return_suite_data(self, identifier, project_id):
-        """ Return server data for a suite.
-        @param identifier: the name or id of the suite.
+    def update_suite(self, suite_id, project_id, name=None, description=None):
+        """ Update given suite.
+        @param suite_id: the id of the suite to update.
         @param project_id: the project id of the suite.
+        @param name: (optional) a name with which to update the suite.
+        @param description: (optional) a description with which to update the suite.
         @return: a data dict containing:
             'successful' - whether the function executed successfully or not.
-            'id' - the id of the suite.
-            'name' - the name of the suite.
-            'desc' - the description of the suite.
+            'verified' - whether the suite was added or not.
         """
 
         operation = self.inspect.stack()[0][3]
-        result = {'successful': False, 'id': None, 'name': None, 'desc': None}
+        result = {'successful': False, 'verified': False}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+            # determine current suite attributes
+            cur_suite_data = self.return_suite_data(suite_id, project_id)
+
+            # build default suite data packet
+            data = {
+                SUITE_FIELDS['name']:   cur_suite_data['name'],
+                SUITE_FIELDS['desc']:   cur_suite_data['desc'],
+            }
+
+            # update suite data packet with given parameters
+            if name is not None:
+                data[SUITE_FIELDS['name']] = name
+
+            if description is not None:
+                data[SUITE_FIELDS['desc']] = description
+
+            # send POST to server
+            url = 'update_suite/%s' % suite_id
+            self.api_client.send_post(url, data)
+
+            # verify suite updated
+            failures = 0
+            suite_data = self.return_suite_data(suite_id, project_id)
+            if suite_data['found']:
+                if name is not None:
+                    self.log.trace("Checking name ...")
+                    if suite_data['name'] != name:
+                        self.log.warn("Expected name to be %s, but was %s." % (name, suite_data['name']))
+                        failures += 1
+                if description is not None:
+                    self.log.trace("Checking description ...")
+                    if suite_data['desc'] != description:
+                        self.log.warn("Expected description to be %s, but was %s."
+                                      % (description, suite_data['desc']))
+                        failures += 1
+                if failures > 0:
+                    self.log.error("Failed to verify suite %s updated." % suite_id)
+                else:
+                    self.log.trace("Verified suite %s updated." % suite_id)
+                    result['verified'] =  True
+            else:
+                self.log.error("Failed to verify suite %s updated. Suite %s not found."
+                               % (suite_id, suite_id))
+
+            self.log.trace("... done %s." % operation)
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        return result
+
+    def delete_suite(self, suite_id, project_id):
+        """ Delete the specified suite.
+        @param suite_id: the id of the suite to delete.
+        @param project_id: the project id of the suite.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'verified' - whether the suite was deleted or not.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'verified': False}
 
         try:
             self.log.trace("%s ..." % operation.replace('_', ' '))
 
-            # return all suites for the project
-            url = 'get_suites/%s' % project_id
-            suites = self.api_client.send_get(url)
+            # send POST to server
+            url = 'delete_suite/%s' % suite_id
+            data = {}
+            self.api_client.send_post(url, data)
 
-            # look for suite with given name
-            for suite in suites:
-                if suite[SUITE_FIELDS['name']].lower() == str(identifier).lower()\
-                    or str(suite[SUITE_FIELDS['id']]) == str(identifier):
-                    result['id'] = suite[SUITE_FIELDS['id']]
-                    result['name'] = suite[SUITE_FIELDS['name']]
-                    result['desc'] = suite[SUITE_FIELDS['desc']]
+            # verify suite deleted
+            found = self.return_suite_data(suite_id, project_id)['found']
+            if not found:
+                result['verified'] = True
+                self.log.trace("Verified suite %s deleted." % suite_id)
+            else:
+                self.log.error("Failed to verify suite %s deleted." % suite_id)
 
             self.log.trace("... done %s." % operation)
             result['successful'] = True
@@ -250,11 +368,12 @@ class Orpheus(API, TestResults, TestRuns):
             'depth' - the depth of the section (0 is top-level section).
             'order' - the position of the section (down the page) (1 is the first,
                 top-level section displayed on the page).
+            'found' - whether the suite was found or not.
         """
 
         operation = self.inspect.stack()[0][3]
         result = {'successful': False, 'id': None, 'name': None, 'parent id': None,
-                  'depth': None, 'order': None}
+                  'depth': None, 'order': None, 'found': False}
 
         try:
             self.log.trace("%s ..." % operation.replace('_', ' '))
@@ -268,11 +387,16 @@ class Orpheus(API, TestResults, TestRuns):
             for suite in suites:
                 if suite[SECT_FIELDS['name']].lower() == str(identifier).lower()\
                     or str(suite[SECT_FIELDS['id']]) == str(identifier):
+                    self.log.trace("Section %s found." % identifier)
+                    result['found'] = True
                     result['id'] = suite[SECT_FIELDS['id']]
                     result['name'] = suite[SECT_FIELDS['name']]
                     result['order'] = suite[SECT_FIELDS['order']]
                     result['parent id'] = suite[SECT_FIELDS['parent id']]
                     result['depth'] = suite[SECT_FIELDS['depth']]
+
+            if result['id'] is None:
+                self.log.trace("Section %s not found." % identifier)
 
             self.log.trace("... done %s." % operation)
             result['successful'] = True

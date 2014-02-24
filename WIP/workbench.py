@@ -712,6 +712,8 @@ def run_dvr_simulation_test():
 
 #log.trace("SELECT * FROM ConnectionLog WHERE csTimeStamp > %d and csTimeStamp < %d" %(utc.convert_date_string_to_db_time(start)['db time'], utc.convert_date_string_to_db_time(end)['db time']))
 project_id = 1
-suite_id = orpheus.return_suite_data('AutoClip Module', project_id)['id']
-response = orpheus.api_client.send_get('get_sections/%s&suite_id=%s' % (project_id, suite_id))
+#response = orpheus.add_suite('DVR Integration (Auto)', project_id, description='A suite.')
+suite_id = 685
+#response = orpheus.update_suite(suite_id, project_id, name='DVR Integration (Updated)', description='An updated suite.')
+response = orpheus.delete_suite(suite_id, project_id)
 log.trace(response)
