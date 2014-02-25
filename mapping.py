@@ -45,6 +45,7 @@ TARTAROS = {
                 ('id', 'id'),
                 ('name', 'name'),
                 ('submodule', 'submodule_id'),
+                ('results id', 'results_id'),
             ]),
         },
         'features': {
@@ -52,6 +53,7 @@ TARTAROS = {
                 ('id', 'id'),
                 ('name', 'name'),
                 ('submodule', 'submodule_id'),
+                ('results id', 'results_id'),
             ]),
         },
         'user stories': {
@@ -60,7 +62,8 @@ TARTAROS = {
                 ('feature', 'feature_id'),
                 ('module', 'module_id'),
                 ('action', 'action'),
-                ('user type', 'user_type')
+                ('user type', 'user_type'),
+                ('results id', 'results_id'),
             ]),
         },
         'tests': {
@@ -80,7 +83,9 @@ TARTAROS = {
                 ('minimum version', 'min_version'),
                 ('class', 'test_class'),
                 ('active', 'active'),
-                ('type', 'type_id')
+                ('type', 'type_id'),
+                ('results id', 'results_id'),
+                ('parent id', 'parent_id'),
             ]),
         },
         'procedure steps': {
@@ -103,7 +108,8 @@ TARTAROS = {
             'fields': OrderedDict([
                 ('id', 'id'),
                 ('name', 'name'),
-                ('code', 'code')
+                ('code', 'code'),
+                ('results id', 'results_id'),
         ])
         },
         'licenses': {

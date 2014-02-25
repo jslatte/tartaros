@@ -6,18 +6,21 @@ db = DAL('sqlite://tartaros.sqlite')
 db.define_table('submodules',
                 Field('name', unique=True, required=True),
                 Field('code', required=True),
+                Field('results_id', type='integer'),
 )
 
 # table: modules
 db.define_table('modules',
                 Field('name', unique=True, required=True),
                 Field('submodule_id', type='integer', required=True),
+                Field('results_id', type='integer'),
 )
 
 # table: features
 db.define_table('features',
                 Field('name', unique=True, required=True),
                 Field('submodule_id', type='integer', required=True),
+                Field('results_id', type='integer'),
 )
 
 # table: user stories
@@ -26,6 +29,7 @@ db.define_table('user_stories',
                 Field('action', required=True),
                 Field('feature_id', type='integer', required=True),
                 Field('module_id', type='integer', required=True),
+                Field('results_id', type='integer'),
 )
 
 # table: tests
@@ -44,6 +48,8 @@ db.define_table('test_cases',
                 Field('test_class', type='integer', required=True),
                 Field('active', type='integer', required=True),
                 Field('type_id', type='integer', required=True),
+                Field('results_id', type='integer'),
+                Field('parent_id', type='integer'),
 )
 
 # table: user types

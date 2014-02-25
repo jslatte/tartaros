@@ -45,16 +45,17 @@ class TestManager():
     """ A library of functions to be used by the Test Manager app.
     """
 
-    def __init__(self, log, exception_handler):
+    def __init__(self, log, exception_handler, orpheus):
         """
         @param log: an initialized Logger() to inherit.
         @param exception handler: an un-initialized ExceptionHandler() to inherit.
+        @param orpheus: an initialized Orpheus() to inherit.
         """
 
-        # inherit logger (initialized instance)
+        # instance logger (initialized instance)
         self.log = log
 
-        # inherit exception handler
+        # instance exception handler
         self.handle_exception = exception_handler
 
         # define class attributes
@@ -68,6 +69,12 @@ class TestManager():
         self.licenses = LICENSES
         self.dvr_models = DVR_MODELS
         self.running_test = None
+
+        # stacktrace
+        self.inspect = inspect
+
+        # instance orpheus
+        self.orpheus = orpheus
 
     def TEMPLATE(self):
         """
@@ -2103,10 +2110,71 @@ class TestManager():
         """
 
         operation = self.inspect.stack()[0][3]
-        result = {'successful': False, 'verified': False}
+        result = {'successful': False}
 
         try:
             self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # retrieve test case data
+            try:
+                case = db(db.test_cases.id == case_id).select()[0]
+            except BaseException, e:
+                log.error("Failed to find test case.")
+                log.error(e)
+                case = None
+
+            # determine section id
+            level = int(case.test_class)
+            try:
+                if level == 2:
+                    # story-level test case
+                    sect_id = db(db.user_stories.id == case.parent_id).select()[0].results_id
+                elif level > 2:
+                    # test-level test case
+                    sect_id = db(db.tests.id == case.parent_id).select()[0].results_id
+                else:
+                    sect_id = None
+            except BaseException, e:
+                log.error("Failed to find parent section for test case.")
+                log.error(e)
+                sect_id = None
+
+            # determine suite id
+            try:
+                if level == 2:
+                    # story-level test case (find module for story)
+                    module_id = db(db.user_stories.id == case.parent_id).select()[0].module_id
+                    suite_id = db(db.modules.id == module_id).select()[0].results_id
+                elif level > 2:
+                    # test-level test case (find module for test)
+                    story_id = db(db.tests.id == case.parent_id).select()[0].user_story_id
+                    module_id = db(db.user_stories.id == story_id).select()[0].module_id
+                    suite_id = db(db.modules.id == module_id).select()[0].results_id
+                else:
+                    suite_id = None
+            except BaseException, e:
+                log.error("Failed to find suite for test case.")
+                log.error(e)
+                suite_id = None
+
+            # determine project id
+            project_id = 1 # hard-coded to ViM (for now)
+
+            # translate procedure into list object
+            procedure = []
+            steps = case.procedure.split(',')
+            for step in steps:
+                step_id = int(step)
+                step_name = db(db.procedure_steps.id == step_id).select()[0].name
+                procedure.append([step_name, ''])
+
+            # update test case
+            self.log.trace('...')
+            self.orpheus.update_test_case(case.results_id, sect_id, suite_id, project_id,
+                                          name=case.name,
+                                case_type=db(db.test_types.id == case.type_id).select()[0].name,
+                                          case_class=case.test_class, automated=True,
+                                          procedure=procedure)
 
             self.log.trace("... done %s." % operation)
             result['successful'] = True
@@ -2189,7 +2257,7 @@ class StepManager():
 ####################################################################################################
 ####################################################################################################
 
-tmanager = TestManager(log, ExceptionHandler)
+tmanager = TestManager(log, ExceptionHandler, Orpheus(log))
 #smanager = StepManager(log, ExceptionHandler)
 
 ####################################################################################################
@@ -2230,7 +2298,7 @@ def index():
 
 
 def push_case_to_testrail():
-    return tmanager.push_case_to_testrail(request.vars.test_case_selection)
+    tmanager.push_case_to_testrail(request.vars.test_case_selection)
 
 
 def stop_running_test():

@@ -233,7 +233,7 @@ class Server():
             while i < 5:
                 if mode.lower() == 'service':
                     self.log.trace("Starting ViM server as a service ...\n")
-                    system("C:\Windows\System32\NET.exe START ViMServer")
+                    system("D:\Windows\System32\NET.exe START ViMServer")
                     running = self.check_if_vim_server_is_running()['service']
                 elif mode.lower() == 'process':
                     self.log.trace("Starting ViM server as a process ...\n")
