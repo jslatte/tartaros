@@ -712,7 +712,7 @@ def run_dvr_simulation_test():
 
 #log.trace("SELECT * FROM ConnectionLog WHERE csTimeStamp > %d and csTimeStamp < %d" %(utc.convert_date_string_to_db_time(start)['db time'], utc.convert_date_string_to_db_time(end)['db time']))
 
-def sync_modules_with_testrail(submodule_id=2):
+def sync_modules_to_testrail(submodule_id=2):
     # return all modules from the database for given submodule (raw data)
     log.trace("Returning all modules for submodule %s ..." % submodule_id)
     db_module_dat = database.query_database_table(database.db_handle, "modules",
@@ -746,7 +746,7 @@ def sync_modules_with_testrail(submodule_id=2):
         else:
             log.warn("Failed to synchronize module %s with TestRail." % db_module_name)
 
-def sync_stories_with_testrail():
+def sync_stories_to_testrail():
     # return all stories from the database
     log.trace("Returning all user stories ...")
     db_story_dat = database.query_database_table(database.db_handle, "user_stories")['response']
@@ -799,7 +799,7 @@ def sync_stories_with_testrail():
         updated = False
         for tr_story in tr_story_dat:
             if db_story_name.lower() in tr_story['name'].lower():
-                log.trace("Stroy '%s' found. Updating ..." % db_story_name)
+                log.trace("Story '%s' found. Updating ..." % db_story_name)
                 database.update_entry_in_table(database.db_handle, "user_stories", db_story_id,
                     {'results_id': tr_story['id']})
                 updated = True
@@ -809,28 +809,75 @@ def sync_stories_with_testrail():
         else:
             log.warn("Failed to synchronize story '%s' with TestRail." % db_story_name)
 
-def update_testcases():
-    response = database.query_database_table(database.db_handle, "test_cases")['response']
-    testcase_ids = []
-    for testcase in response:
-        testcase_id = testcase[0]
-        testcase_ids.append(testcase_id)
+def sync_testcases_to_testrail():
+    # return all testcases from the database
+    log.trace("Returning all test cases ...")
+    db_cases_dat = database.query_database_table(database.db_handle, "test_cases")['response']
 
-    story_case_ids = []
-    for testcase_id in testcase_ids:
-        data = database.return_testcase_data(testcase_id)
-        case_data = data['testcase data']
-        #if str(case_data['class']) == '2':
+    # update story-level cases
+    log.trace("Updating story-level classes ...")
+    for db_case_dat in db_cases_dat:
+        case_id = int(db_case_dat[0])
+        case_level = int(db_case_dat[5])
+        updated = False
 
-        #story_data = data['user story data']
-        #story_id = story_data['id']
-        #user_story_ids.append(story_id)
+        if case_level == 2:
+            # return story data for test case
+            data = database.return_testcase_data(case_id)
+            db_test_dat = data['test data']
+            db_story_dat = data['user story data']
+            # update test case with story results id
+            parent_id = db_story_dat['id']
+            results_id = db_test_dat['results id']
+            log.trace("Updating story-level test case %s ..." % case_id)
+            database.update_entry_in_table(database.db_handle, "test_cases", case_id,
+                                           {'results_id': results_id, 'parent_id': parent_id})
+            updated = True
 
-    #for user_story_id in user_story_ids:
-    #    print user_story_id
+            # report
+            if updated:
+                log.trace("Test Case '%s' synchronized with TestRail." % case_id)
+            else:
+                log.warn("Failed to synchronize test case '%s' with TestRail." % case_id)
 
-project_id = 1
-suite_id = 683
-#response = orpheus.return_section_data('The server will detect a drive change event on the DVR', suite_id, project_id)['id']
-sync_stories_with_testrail()
-#log.trace(response)
+def convert_test_to_section_with_testcases_in_testrail(test_id):
+    # determine parent section id (story results id in database)
+    log.trace("Determining parent section id ...")
+    story_id = int(database.query_database_table_for_single_value(database.db_handle, "tests",
+                                                                  "user_story_id", "id",
+                                                                  test_id)['value'])
+    p_sect_id = int(database.query_database_table_for_single_value(database.db_handle, "user_stories",
+                                                                   "results_id", "id",
+                                                                   story_id)['value'])
+    log.trace("Parent Section ID:\t%d." % p_sect_id)
+
+    # determine suite id of parent section
+    log.trace("Determining suite id of parent section ...")
+    module_id = int(database.query_database_table_for_single_value(database.db_handle, "user_stories",
+                                                                   "module_id", "id",
+                                                                   story_id)['value'])
+    suite_id = int(database.query_database_table_for_single_value(database.db_handle, "modules",
+                                                                  "results_id", "id",
+                                                                  module_id)['value'])
+    log.trace("Suite ID:\t%d" % suite_id)
+
+    # determine project id of parent section (hard-coded for now)
+    log.trace("Determining project id ...")
+    project_id = 1
+
+    # determine active test cases for test
+    log.trace("Determining test cases for test ...")
+    testcases = database.return_testcases_for_test(test_id, story_id)['testcases']
+    log.trace("Test Cases:")
+    for testcase in testcases:
+        log.trace("\t%s" % str(testcase['name']))
+
+    # add section to parent (user story) for test
+    log.trace("Adding section to parent for test ...")
+    test_name = database.query_database_table_for_single_value(database.db_handle, "tests",
+                                                               "name", "id", test_id)['value']
+    sect_id = orpheus.add_section(test_name, suite_id, project_id, parent_id=p_sect_id)['id']
+
+    # add test case for each case included in test
+
+convert_test_to_section_with_testcases_in_testrail(16)

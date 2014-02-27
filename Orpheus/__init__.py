@@ -105,6 +105,26 @@ class Orpheus(API, TestResults, TestRuns):
         # return
         return result
 
+    def convert_test_to_section_with_testcases_in_testrail(self, test_id):
+        """
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            self.log.trace("... done %s." % operation)
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        return result
+
     def return_test_case_data(self, identifier, sect_id, suite_id, project_id):
         """ Return server data for a test case.
         @param identifier: the name or id of the test case.
@@ -712,8 +732,12 @@ class Orpheus(API, TestResults, TestRuns):
             self.log.trace("%s ..." % operation.replace('_', ' '))
 
             # check if section with given name already exists in suite
-            cursect_data = self.return_section_data(name, suite_id, project_id)
-            already_exists = cursect_data['found']
+            if parent_id is None:
+                cursect_data = self.return_section_data(name, suite_id, project_id)
+                already_exists = cursect_data['found']
+            else:
+                # TODO: better check against sub-sections
+                already_exists = False
 
             # if section with name already exists, return id
             if already_exists:
