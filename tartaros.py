@@ -114,6 +114,7 @@ if argv is not None:
             params.append('Testing Test Case Type:\t%s' % testcase_type)
         elif 'teststoschedule=' in arg:
             tests = arg.split('teststoschedule=')[1].split(',')
+            params.append('Tests to Schedule: %s' % str(tests))
             for test in tests:
                 if test.strip() != 'None':
                     tests_to_schedule.append(test.strip())
@@ -187,11 +188,12 @@ elif mode == 'testscheduling':
                         minos.trigger_build('tartaros', params)
 
             else:
-                params = TEST_CONFIGURATIONS[test.lower()]
+                for test in tests_to_schedule:
+                    params = TEST_CONFIGURATIONS[test.lower()]
 
-                # update parameters (with build and test plan)
-                params.append(['test plan id', results_plan_id])
-                params.append(['build', build])
+                    # update parameters (with build and test plan)
+                    params.append(['test plan id', results_plan_id])
+                    params.append(['build', build])
 
                 # trigger test
                 minos.trigger_build('tartaros', params)
