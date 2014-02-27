@@ -37,6 +37,7 @@ SUBMODULE_ID_TO_TESTCASE_OBJ = {
     '8':                None,
 }
 BLANK_SEL = ""
+TEST_TYPE_TO_ID = TARTAROS['test type to id']
 
 ####################################################################################################
 # Test Run #########################################################################################
@@ -532,6 +533,7 @@ class TestRun():
                     testcases.remove(testcase)
 
             self.log.trace("Filtered testcases by class")
+            self.log.trace("Number of Test Cases:\t%d" % len(testcases))
             result['successful'] = True
         except BaseException, e:
             self.log.error("Failed to filter testcases by class.")
@@ -542,7 +544,7 @@ class TestRun():
         # return
         return result
 
-    def filter_testcases_by_type(self, testcases, testcase_type=''):
+    def filter_testcases_by_type(self, testcases, testcase_type='', inclusive=True):
         """
         INPUT
             testcase: a testcase object supplied when executing function as part of a testcase step.
@@ -555,18 +557,21 @@ class TestRun():
 
         try:
             if str(testcase_type).lower() != BLANK_SEL.lower() and str(testcase_type).lower() != '':
+                testcase_type = TEST_TYPE_TO_ID[testcase_type.lower()]
                 # filter testcases to run according to class selected
                 testcases_to_remove = []
                 for testcase in testcases:
                     testcase_data = self.database.return_testcase_data(testcase['id'])['testcase data']
-                    if int(testcase_data['type']) != int(testcase_type):
+                    if (inclusive and int(testcase_data['type']) != int(testcase_type))\
+                        or not inclusive and int(testcase_data['type']) == int(testcase_type):
                         testcases_to_remove.append(testcase)
 
                 # remove testcases filtered out
                 for testcase in testcases_to_remove:
                     testcases.remove(testcase)
 
-            self.log.trace("Filtered testcases by type")
+            self.log.trace("Filtered testcases by type.")
+            self.log.trace("Number of Test Cases:\t%d" % len(testcases))
             result['successful'] = True
         except BaseException, e:
             self.log.error("Failed to filter testcases by type.")

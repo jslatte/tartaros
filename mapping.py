@@ -145,6 +145,12 @@ TARTAROS = {
         'passed with issues':'passed with issues',
         'invalid due to version':'invalid due to version',
     },
+    'test type to id': {
+        'regression':       1,
+        'dvr integration':  2,
+        'stress':           3,
+        'performance':      4,
+    },
     'modes': {
         'default':          'default',
         'debug':            'debug',

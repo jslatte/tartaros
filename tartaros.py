@@ -52,7 +52,7 @@ story = ''
 test = ''
 testcase = ''
 testcase_class = None
-testcase_type = None
+testcase_type = ''
 
 # test scheduling variables
 tests_to_schedule = []
@@ -224,6 +224,8 @@ elif mode == 'testing':
     # filter by type
     if testcase_type is not None:
         testrun.filter_testcases_by_type(testcases, testcase_type)
+    if testcase_type.lower() != 'dvr integration' and module.lower() != 'dvr integration':
+        testrun.filter_testcases_by_type(testcases, 'dvr integration', inclusive=False)
 
     # set testcase list for test run
     testrun.testcases = testcases
