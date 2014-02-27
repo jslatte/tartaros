@@ -1434,6 +1434,7 @@ ORPHEUS = {
         'stress':               18,
         'smoke':                23,
         'user acceptance':      24,
+        'dvr integration':      26,
     },
     'case fields': {
         'id':               'id',

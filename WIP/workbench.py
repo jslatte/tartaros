@@ -711,7 +711,126 @@ def run_dvr_simulation_test():
 #determine_number_of_failed_connections_over_time(danaides, path, start, end)
 
 #log.trace("SELECT * FROM ConnectionLog WHERE csTimeStamp > %d and csTimeStamp < %d" %(utc.convert_date_string_to_db_time(start)['db time'], utc.convert_date_string_to_db_time(end)['db time']))
+
+def sync_modules_with_testrail(submodule_id=2):
+    # return all modules from the database for given submodule (raw data)
+    log.trace("Returning all modules for submodule %s ..." % submodule_id)
+    db_module_dat = database.query_database_table(database.db_handle, "modules",
+                                    addendum="WHERE submodule_id = '%s'" % submodule_id)['response']
+
+    # determine project id for submodule
+    log.trace("Determining project id for submodule %s ..." % submodule_id)
+    project_id = 1
+
+    # retrieve all modules for submodule project from TestRail
+    log.trace("Retrieving all modules for submodule %s from TestRail ..." % submodule_id)
+    tr_module_dat = orpheus.api_client.send_get('get_suites/%s' % project_id)
+
+    # determine results id (suite id) for each module in submodule
+    log.trace("Determining results id for each module ...")
+    for db_module in db_module_dat:
+        db_module_id = db_module[0]
+        db_module_name = db_module[1]
+        # check for module in those returned from TestRail
+        log.trace("Checking for %s module ..." % db_module_name)
+        updated = False
+        for tr_module in tr_module_dat:
+            if db_module_name.lower() in tr_module['name'].lower():
+                log.trace("Module %s found. Updating ..." % db_module_name)
+                database.update_entry_in_table(database.db_handle, "modules", db_module_id,
+                    {'results_id': tr_module['id']})
+                updated = True
+        # report
+        if updated:
+            log.trace("Module %s synchronized with TestRail." % db_module_name)
+        else:
+            log.warn("Failed to synchronize module %s with TestRail." % db_module_name)
+
+def sync_stories_with_testrail():
+    # return all stories from the database
+    log.trace("Returning all user stories ...")
+    db_story_dat = database.query_database_table(database.db_handle, "user_stories")['response']
+
+    # pre-fetch all sections for each suite from TestRail
+    project_id = 1
+    log.trace("Fetching all section data for each suite in TestRail for project %s ..." % project_id)
+    db_module_dat = database.query_database_table(database.db_handle, "modules")['response']
+    modules_with_suites = []
+    for db_module in db_module_dat:
+        # build list of modules with suites
+        db_module_id = db_module[0]
+        db_module_results_id = db_module[3]
+        if db_module_results_id is not None:
+            modules_with_suites.append([db_module_id, db_module_results_id])
+    # build module to suite sections map
+    module_to_suite_sections = {}
+    for module in modules_with_suites:
+        # retrieve all sections for suite (module) from TestRail
+        suite_sections = orpheus.api_client.send_get(
+            'get_sections/%(project id)s&suite_id=%(suite id)s'
+            % {'project id': project_id, 'suite id': module[1]})
+        # add mapping item for module to suite sections
+        module_to_suite_sections['%s' % module[0]] = suite_sections
+
+    # determine results id (section id) for each user story
+    log.trace("Determining results id for each user story ...")
+    for db_story in db_story_dat[1:]:
+        db_story_id = db_story[0]
+        db_story_name = db_story[3]
+        db_story_module_id = db_story[2]
+
+        # determine project id for submodule
+        log.trace("Determining project id for story '%s' ..." % db_story_name)
+        project_id = 1
+
+        # determine suite (module) for user story
+        log.trace("Determining suite id for story '%s' ..." % db_story_name)
+        suite_id = database.query_database_table_for_single_value(database.db_handle, "modules",
+                                                                  "results_id", "id",
+                                                                  db_story_module_id)['value']
+        log.trace("Suite ID for story '%s': %s." % (db_story_name, suite_id))
+
+        # retrieve all sections for suite (module) from TestRail
+        log.trace("Retrieving all sections for module %s ..." % db_story_module_id)
+        tr_story_dat = module_to_suite_sections[str(db_story_module_id)]
+
+        # determine section id for user story
+        log.trace("Checking for '%s' story ..." % db_story_name)
+        updated = False
+        for tr_story in tr_story_dat:
+            if db_story_name.lower() in tr_story['name'].lower():
+                log.trace("Stroy '%s' found. Updating ..." % db_story_name)
+                database.update_entry_in_table(database.db_handle, "user_stories", db_story_id,
+                    {'results_id': tr_story['id']})
+                updated = True
+        # report
+        if updated:
+            log.trace("Story '%s' synchronized with TestRail." % db_story_name)
+        else:
+            log.warn("Failed to synchronize story '%s' with TestRail." % db_story_name)
+
+def update_testcases():
+    response = database.query_database_table(database.db_handle, "test_cases")['response']
+    testcase_ids = []
+    for testcase in response:
+        testcase_id = testcase[0]
+        testcase_ids.append(testcase_id)
+
+    story_case_ids = []
+    for testcase_id in testcase_ids:
+        data = database.return_testcase_data(testcase_id)
+        case_data = data['testcase data']
+        #if str(case_data['class']) == '2':
+
+        #story_data = data['user story data']
+        #story_id = story_data['id']
+        #user_story_ids.append(story_id)
+
+    #for user_story_id in user_story_ids:
+    #    print user_story_id
+
 project_id = 1
 suite_id = 683
-response = orpheus.return_section_data('The server will detect a drive change event on the DVR', suite_id, project_id)['id']
-log.trace(response)
+#response = orpheus.return_section_data('The server will detect a drive change event on the DVR', suite_id, project_id)['id']
+sync_stories_with_testrail()
+#log.trace(response)

@@ -666,7 +666,7 @@ class Orpheus(API, TestResults, TestRuns):
 
             # return all sections for the suite
             url = 'get_sections/%(project id)s&suite_id=%(suite id)s' \
-                  % {'project id': project_id,'suite id': suite_id}
+                  % {'project id': project_id, 'suite id': suite_id}
             suites = self.api_client.send_get(url)
 
             # look for suite with given name
