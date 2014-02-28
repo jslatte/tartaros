@@ -18,6 +18,7 @@ from api import API
 from testresults import TestResults
 from testruns import TestRuns
 from mapping import ORPHEUS
+from Database import Database
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -168,6 +169,92 @@ class Orpheus(API, TestResults, TestRuns):
 
             if result['id'] is None:
                 self.log.trace("Test case %s not found." % identifier)
+
+            self.log.trace("... done %s." % operation)
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        return result
+
+    def push_case_to_testrail(self, case_id):
+        """ Push the current selected test case to test rail.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # retrieve test case data
+            try:
+                from Database import Database
+                self.database = Database(self.log)
+                case_dat = self.database.return_testcase_data(case_id)
+                case = case_dat['testcase data']
+                #case = db(db.test_cases.id == case_id).select()[0]
+            except BaseException, e:
+                self.log.error("Failed to find test case.")
+                self.log.error(e)
+                case_dat = None
+                case = None
+
+            # determine section id
+            #level = int(case['test_class'])
+            #level = int(case.test_class)
+            try:
+                test = case_dat['test data']
+                sect_id = test['results id']
+                #if level == 2:
+                    # story-level test case
+                #    sect_id = db(db.user_stories.id == case.parent_id).select()[0].results_id
+                #elif level > 2:
+                    # test-level test case
+                    #sect_id = db(db.tests.id == case.parent_id).select()[0].results_id
+                #else:
+                #    sect_id = None
+            except BaseException, e:
+                self.log.error("Failed to find parent section for test case.")
+                self.log.error(e)
+                sect_id = None
+
+            # determine suite id
+            try:
+                #if level == 2:
+                    # story-level test case (find module for story)
+                #    module_id = db(db.user_stories.id == case.parent_id).select()[0].module_id
+                #    suite_id = db(db.modules.id == module_id).select()[0].results_id
+                #elif level > 2:
+                    # test-level test case (find module for test)
+                #    story_id = db(db.tests.id == case.parent_id).select()[0].user_story_id
+                #    module_id = db(db.user_stories.id == story_id).select()[0].module_id
+                #    suite_id = db(db.modules.id == module_id).select()[0].results_id
+                #else:
+                #    suite_id = None
+            except BaseException, e:
+                self.log.error("Failed to find suite for test case.")
+                self.log.error(e)
+                suite_id = None
+
+            # determine project id
+            project_id = 1 # hard-coded to ViM (for now)
+
+            # translate procedure into list object
+            procedure = []
+            steps = case.procedure.split(',')
+            for step in steps:
+                step_id = int(step)
+                step_name = db(db.procedure_steps.id == step_id).select()[0].name
+                procedure.append([step_name, ''])
+
+            # update test case
+            self.log.trace('...')
+            self.update_test_case(case.results_id, sect_id, suite_id, project_id,
+                                  name=case.name,
+                                  case_type=db(db.test_types.id == case.type_id).select()[0].name,
+                                  case_class=case.test_class, automated=True,procedure=procedure)
 
             self.log.trace("... done %s." % operation)
             result['successful'] = True

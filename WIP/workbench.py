@@ -878,6 +878,12 @@ def convert_test_to_section_with_testcases_in_testrail(test_id):
                                                                "name", "id", test_id)['value']
     sect_id = orpheus.add_section(test_name, suite_id, project_id, parent_id=p_sect_id)['id']
 
+    # update test results id
+    database.update_table_field_for_entry(database.db_handle, "tests", "results_id", sect_id,
+                                          "id", test_id)
+
     # add test case for each case included in test
+    for testcase in testcases:
+        orpheus.push_case_to_testrail(testcase['id'])
 
 convert_test_to_section_with_testcases_in_testrail(16)
