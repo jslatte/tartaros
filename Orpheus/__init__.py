@@ -178,12 +178,12 @@ class Orpheus(API, TestResults, TestRuns):
         # return
         return result
 
-    def push_case_to_testrail(self, case_id):
+    def push_new_case_to_testrail(self, case_id):
         """ Push the current selected test case to test rail.
         """
 
         operation = self.inspect.stack()[0][3]
-        result = {'successful': False}
+        result = {'successful': False, 'id': None}
 
         try:
             self.log.trace("%s ..." % operation.replace('_', ' '))
@@ -194,12 +194,24 @@ class Orpheus(API, TestResults, TestRuns):
                 self.database = Database(self.log)
                 case_dat = self.database.return_testcase_data(case_id)
                 case = case_dat['testcase data']
+                case_name = case['name']
+                case_type_id = case['type']
+                case_type = self.database.query_database_table_for_single_value(
+                    self.database.db_handle, "test_types", "name", "id", case_type_id)['value']
+                case_class = 3 # assuming test-level case
+                #case_class = case['class']
                 #case = db(db.test_cases.id == case_id).select()[0]
+                #case_name = case.name
+                #case_type = db(db.test_types.id == case.type_id).select()[0].name
+                #case_class = case.test_class
             except BaseException, e:
                 self.log.error("Failed to find test case.")
                 self.log.error(e)
                 case_dat = None
                 case = None
+                case_name = None
+                case_type = None
+                case_class = None
 
             # determine section id
             #level = int(case['test_class'])
@@ -222,6 +234,8 @@ class Orpheus(API, TestResults, TestRuns):
 
             # determine suite id
             try:
+                module = case_dat['module data']
+                suite_id = module['results id']
                 #if level == 2:
                     # story-level test case (find module for story)
                 #    module_id = db(db.user_stories.id == case.parent_id).select()[0].module_id
@@ -243,18 +257,23 @@ class Orpheus(API, TestResults, TestRuns):
 
             # translate procedure into list object
             procedure = []
-            steps = case.procedure.split(',')
+            #steps = case.procedure.split(',')
+            steps = case['procedure'].split(',')
             for step in steps:
+                #step_id = int(step)
+                #step_name = db(db.procedure_steps.id == step_id).select()[0].name
+
                 step_id = int(step)
-                step_name = db(db.procedure_steps.id == step_id).select()[0].name
+                step_dat = self.database.return_procedure_step_data(step_id)['step data']
+                step_name = step_dat['name']
+
                 procedure.append([step_name, ''])
 
             # update test case
             self.log.trace('...')
-            self.update_test_case(case.results_id, sect_id, suite_id, project_id,
-                                  name=case.name,
-                                  case_type=db(db.test_types.id == case.type_id).select()[0].name,
-                                  case_class=case.test_class, automated=True,procedure=procedure)
+            result['id'] = self.add_test_case(
+                case_name, sect_id, suite_id, project_id, case_type=case_type, case_class=case_class,
+                automated=True, procedure=procedure)['id']
 
             self.log.trace("... done %s." % operation)
             result['successful'] = True

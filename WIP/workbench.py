@@ -876,7 +876,12 @@ def convert_test_to_section_with_testcases_in_testrail(test_id):
     log.trace("Adding section to parent for test ...")
     test_name = database.query_database_table_for_single_value(database.db_handle, "tests",
                                                                "name", "id", test_id)['value']
-    sect_id = orpheus.add_section(test_name, suite_id, project_id, parent_id=p_sect_id)['id']
+    # give unique test name (to avoid issues when attempting to return correct sect id)
+    test_name_q = test_name + ' %s' % str(test_id)
+    sect_id = orpheus.add_section(test_name_q, suite_id, project_id, parent_id=p_sect_id)['id']
+
+    # return sect name to normal
+    orpheus.update_section(sect_id, suite_id, project_id, name=test_name)
 
     # update test results id
     database.update_table_field_for_entry(database.db_handle, "tests", "results_id", sect_id,
@@ -884,6 +889,11 @@ def convert_test_to_section_with_testcases_in_testrail(test_id):
 
     # add test case for each case included in test
     for testcase in testcases:
-        orpheus.push_case_to_testrail(testcase['id'])
+        case_results_id = orpheus.push_new_case_to_testrail(testcase['id'])['id']
+
+        # update test case results id with new results id
+        database.update_table_field_for_entry(
+            database.db_handle, "test_cases", "results_id", case_results_id, "id", testcase['id'])
+
 
 convert_test_to_section_with_testcases_in_testrail(16)
