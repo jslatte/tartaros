@@ -206,7 +206,8 @@ class TestManager():
 
             # determine test case procedure
             try:
-                steps = db(db.test_cases.id == request.vars.test_case_selection).select()[0].procedure
+                steps = db(
+                    db.test_cases.id == request.vars.test_case_selection).select()[0].procedure
 
             except IndexError:
                 log.trace("Cannot determine procedure. No test case selected.")
@@ -1955,6 +1956,7 @@ class TestManager():
             # define object ids
             btn_create_model_test_addr = 'btn_create_model_test'
             btn_create_licensing_test_addr = 'btn_create_licensing_test'
+            btn_convert_test_to_sect_addr = 'btn_convert_test_to_sect'
             div_templatizer_addr = 'div_test_runner'
 
             # build the onclick scripts
@@ -1974,6 +1976,14 @@ class TestManager():
                                     "'test_case_selection']",
                           'target': '',
                           'remove': ''}
+            c_script = "ajax('%(function)s', %(values)s, '%(target)s');" \
+                       "jQuery(%(remove)s).remove();" \
+                       % {'function': 'convert_test_to_section',
+                          'values': "['module_selection', 'feature_selection', "
+                                    "'user_story_selection', 'test_selection', "
+                                    "'test_case_selection']",
+                          'target': '',
+                          'remove': ''}
 
             # build the objects
             btn_create_model_test = INPUT(_type='button', _value="Create Model Test", _class='btn',
@@ -1985,8 +1995,14 @@ class TestManager():
                                               _id=btn_create_licensing_test_addr,
                                               _name=btn_create_licensing_test_addr,
                                               _onclick=l_script)
+            btn_convert_test_to_sect = INPUT(_type='button', _value="Convert to Section",
+                                              _class='btn',
+                                              _id=btn_convert_test_to_sect_addr,
+                                              _name=btn_convert_test_to_sect_addr,
+                                              _onclick=c_script)
 
             div_templatizer = DIV(btn_create_model_test, btn_create_licensing_test,
+                                  btn_convert_test_to_sect,
                                   _id=div_templatizer_addr)
 
             # compile results
@@ -2184,6 +2200,73 @@ class TestManager():
         # return
         return result
 
+    def convert_test_to_section_with_testcases_in_testrail(self, test_id):
+        """ Convert the selected test to a section in TestRail. Push all of its test cases
+        to TestRail as children of that section.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = None
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+            # determine parent section id (story results id in database)
+            log.trace("Determining parent section id ...")
+            test = db(db.tests.id == test_id).select()[0]
+            story = db(db.user_stories.id == test.user_story_id).select()[0]
+            p_sect_id = story.results_id
+            log.trace("Parent Section ID:\t%d." % p_sect_id)
+
+            # determine suite id of parent section
+            log.trace("Determining suite id of parent section ...")
+            module_id = story.module_id
+            module = db(db.modules.id == module_id).select()
+            suite_id = module.results_id
+            log.trace("Suite ID:\t%d" % suite_id)
+
+            # determine project id of parent section (hard-coded for now)
+            log.trace("Determining project id ...")
+            project_id = 1
+
+            # determine active test cases for test
+            log.trace("Determining test cases for test ...")
+            testcases = db(db.test_cases.test_id == test_id).select()
+            log.trace("Test Cases:")
+            for testcase in testcases:
+                log.trace("\t%s" % testcase.name)
+
+            # add section to parent (user story) for test
+            log.trace("Adding section to parent for test ...")
+            test_name = test.name
+            # give unique test name (to avoid issues when attempting to return correct sect id)
+            test_name_q = test_name + ' %s' % str(test_id)
+            sect_id = self.orpheus.add_section(
+                test_name_q, suite_id, project_id, parent_id=p_sect_id)['id']
+
+            # return sect name to normal
+            self.orpheus.update_section(sect_id, suite_id, project_id, name=test_name)
+
+            # update test results id
+            db(db.tests.id == test_id).update(results_id=sect_id)
+
+
+            # add test case for each case included in test
+            for testcase in testcases:
+                case_results_id = self.orpheus.push_new_case_to_testrail(testcase['id'])['id']
+
+                # update test case results id with new results id
+                db(db.test_cases.id == test_id).update(results_id=case_results_id)
+
+            # compile results
+            result = None
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
 
 ####################################################################################################
 # Step Manager #####################################################################################
@@ -2295,6 +2378,10 @@ def index():
         pass
 
     return dict(tmanager_form=tmanager_form)
+
+
+def convert_test_to_section():
+    tmanager.convert_test_to_section_with_testcases_in_testrail(request.vars.test_selection)
 
 
 def push_case_to_testrail():
