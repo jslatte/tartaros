@@ -2200,6 +2200,95 @@ class TestManager():
         # return
         return result
 
+    def push_new_case_to_testrail(self, case_id):
+        """ Push the current selected test case to test rail.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'id': None}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # retrieve test case data
+            try:
+                case = db(db.test_cases.id == case_id).select()[0]
+                case_name = case.name
+                case_type = db(db.test_types.id == case.type_id).select()[0].name
+                case_class = 3 # assuming test-level
+            except BaseException, e:
+                self.log.error("Failed to find test case.")
+                self.log.error(e)
+                case = None
+                case_name = None
+                case_type = None
+                case_class = None
+
+            # determine section id (assume test-level)
+            test = db(db.tests.id == case.test_id).select()[0]
+            sect_id = test.results_id
+            #level = int(case.test_class)
+            #try:
+            #    if level == 2:
+                    # story-level test case
+            #        sect_id = db(db.user_stories.id == case.parent_id).select()[0].results_id
+            #    elif level > 2:
+                    # test-level test case
+            #        sect_id = db(db.tests.id == case.parent_id).select()[0].results_id
+            #    else:
+            #        sect_id = None
+            #except BaseException, e:
+            #    self.log.error("Failed to find parent section for test case.")
+            #    self.log.error(e)
+            #    sect_id = None
+
+            # determine suite id (assume test-level)
+            story = db(db.user_stories.id == test.user_story_id).select()[0]
+            module = db(db.modules.id == story.module_id).select()[0]
+            suite_id = module.results_id
+            #try:
+            #    if level == 2:
+                    # story-level test case (find module for story)
+            #        module_id = db(db.user_stories.id == case.parent_id).select()[0].module_id
+            #        suite_id = db(db.modules.id == module_id).select()[0].results_id
+            #    elif level > 2:
+                    # test-level test case (find module for test)
+            #        story_id = db(db.tests.id == case.parent_id).select()[0].user_story_id
+            #        module_id = db(db.user_stories.id == story_id).select()[0].module_id
+            #        suite_id = db(db.modules.id == module_id).select()[0].results_id
+            #    else:
+            #        suite_id = None
+            #except BaseException, e:
+            #    self.log.error("Failed to find suite for test case.")
+            #    self.log.error(e)
+            #    suite_id = None
+
+            # determine project id
+            project_id = 1 # hard-coded to ViM (for now)
+
+            # translate procedure into list object
+            procedure = []
+            steps = case.procedure.split(',')
+            for step in steps:
+                step_id = int(step)
+                step_name = db(db.procedure_steps.id == step_id).select()[0].name
+
+                procedure.append([step_name, ''])
+
+            # update test case
+            self.log.trace('...')
+            result['id'] = self.orpheus.add_test_case(
+                case_name, sect_id, suite_id, project_id, case_type=case_type, case_class=case_class,
+                automated=True, procedure=procedure)['id']
+
+            self.log.trace("... done %s." % operation)
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        return result
+
     def convert_test_to_section_with_testcases_in_testrail(self, test_id):
         """ Convert the selected test to a section in TestRail. Push all of its test cases
         to TestRail as children of that section.
@@ -2220,7 +2309,7 @@ class TestManager():
             # determine suite id of parent section
             log.trace("Determining suite id of parent section ...")
             module_id = story.module_id
-            module = db(db.modules.id == module_id).select()
+            module = db(db.modules.id == module_id).select()[0]
             suite_id = module.results_id
             log.trace("Suite ID:\t%d" % suite_id)
 
@@ -2252,7 +2341,8 @@ class TestManager():
 
             # add test case for each case included in test
             for testcase in testcases:
-                case_results_id = self.orpheus.push_new_case_to_testrail(testcase['id'])['id']
+                #case_results_id = self.orpheus.push_new_case_to_testrail(testcase['id'])['id']
+                case_results_id = self.push_new_case_to_testrail(testcase.id)['id']
 
                 # update test case results id with new results id
                 db(db.test_cases.id == test_id).update(results_id=case_results_id)
