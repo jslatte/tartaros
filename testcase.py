@@ -14,6 +14,7 @@
 from time import clock
 from mapping import TARTAROS
 from utility import return_execution_error
+from Orpheus import Orpheus
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -30,7 +31,8 @@ TEST_STATUSES = TARTAROS['test statuses']
 class TestCase():
     """ The root test case object class. Includes all root functions and parameters. """
 
-    def __init__(self, logger, database, testcase_id, debugging=False, int_dvr_ip=None):
+    def __init__(self, logger, database, testcase_id, debugging=False, int_dvr_ip=None,
+                 results_plan_id=None):
         """
         INPUT
             logger: An initialized instance of a logging class to use.
@@ -46,6 +48,9 @@ class TestCase():
         # database object
         self.database = database
 
+        # instance test reporter
+        self.reporter = Orpheus(self.log)
+
         # define default attributes
         self.debugging = debugging
         self.id = testcase_id
@@ -58,6 +63,7 @@ class TestCase():
         self.duration = 0
         self.version = None
         self.int_dvr_ip = int_dvr_ip
+        self.results_plan_id = results_plan_id
 
         # instance testcase
         self.initialize()
@@ -102,6 +108,8 @@ class TestCase():
             self.story = str(story_data['action'])
             self.feature = str(feature_data['name'])
             self.module = str(module_data['name'])
+            self.module_id = int(module_data['id'])
+            self.case_results_id = testcase_data['results id']
 
             # assign unique name for build server test result tracking
             self.build_test_name = "%s: %s: %s: %s: %s" % (self.module, self.feature, self.story,
@@ -236,6 +244,96 @@ class TestCase():
             for failure in failures:
                 self.log.error("FAILED to %s" % failure)
 
+    def determine_test_runs_to_publish_to(self, module_id):
+        """ Determine the correct test run ID to publish to for resutls.
+        INPUT
+            module id: the id of the module for the product under test.
+        OUPUT
+            successful: whether the function executed successfully or not.
+        """
+
+        self.log.debug("Determining test run to publish to ...")
+        result = {'successful': False, 'test run id': None}
+
+        try:
+            # determine test run config for test plan
+            # determine submodule for product under test
+            submodule_id = self.database.return_submodule_for_module(module_id)['id']
+            # determine project id from submodule id
+            # TODO: Add field in table to track project id, and parse correctly here
+            project_id = 1
+            # retrieve test runs for given test plan ID
+            key = '&key=%d' % self.reporter.serverKey
+            url = self.reporter.serverURL + '/get_plan/%s' % self.results_plan_id + key
+            response = self.reporter.get_request_from_server(url)['response dict']
+            try: testRuns = response['entries']
+            except KeyError:
+                self.log.error("Returned no test runs for results plan id %s." % self.results_plan_id)
+                testRuns = []
+            # build cfg dict from server response
+            cfg = {'software':          0,
+                   'core':              0,
+                   'autoclip':          0,
+                   'health':            0,
+                   'clip management':   0,
+                   'streaming server':  0,
+                   'location':          0,
+                   'dvr integration':   0,}
+            for testRun in testRuns:
+                if 'regression test: software' in testRun['name'].lower():
+                    cfg['software'] = testRun['runs'][0]['id']
+                elif 'regression test: core' in testRun['name'].lower():
+                    cfg['core'] = testRun['runs'][0]['id']
+                elif 'regression test: autoclip' in testRun['name'].lower():
+                    cfg['autoclip'] = testRun['runs'][0]['id']
+                elif 'regression test: health' in testRun['name'].lower():
+                    cfg['health'] = testRun['runs'][0]['id']
+                elif 'regression test: clip management' in testRun['name'].lower():
+                    cfg['clip management'] = testRun['runs'][0]['id']
+                elif 'regression test: streaming server' in testRun['name'].lower():
+                    cfg['streaming server'] = testRun['runs'][0]['id']
+                elif 'regression test: location' in testRun['name'].lower():
+                    cfg['location'] = testRun['runs'][0]['id']
+                elif 'dvr integration test' in testRun['name'].lower():
+                    cfg['dvr integration'] = testRun['runs'][0]['id']
+                else:
+                    self.log.trace("Unidentified test run found:\t%s." %testRun['name'])
+
+            # determine module name
+            module_name = self.database.return_module_name(module_id)['name']
+            # determine test run to publish to
+            if 'core' in str(module_name).lower():
+                testRunID = cfg['core']
+            elif 'autoclip' in str(module_name).lower():
+                testRunID = cfg['autoclip']
+            elif 'health' in str(module_name).lower():
+                testRunID = cfg['health']
+            elif 'clip management' in str(module_name).lower():
+                testRunID = cfg['clip management']
+            elif 'location' in str(module_name).lower():
+                testRunID = cfg['location']
+            elif 'streaming server' in str(module_name).lower():
+                testRunID = cfg['streaming server']
+            elif 'software' in str(module_name).lower():
+                testRunID = cfg['software']
+            elif 'dvr integration' in str(module_name).lower():
+                testRunID = cfg['dvr integration']
+            else:
+                self.log.error("Failed to determine test run for publication.")
+                testRunID = 0
+
+            self.log.trace("Determined test run to publish to.")
+            result['successful'] = True
+        except BaseException, e:
+            self.log.error("Failed to determine test run to publish to.")
+            self.log.error(str(e))
+            self.log.error("Error: %s." % return_execution_error()['error'])
+            testRunID = None
+
+        # return
+        result['test run id'] = testRunID
+        return result
+
     def run(self):
         """ Execute the testcase step-by-step according to its procedure and determine result.
         """
@@ -270,8 +368,22 @@ class TestCase():
             self.determine_result()
 
             # report testcase results
-            self.log.info("%s testcase finished in %s seconds with '%s' status." % (self.build_test_name,
-                                                                    self.duration, self.status.upper()))
+            self.log.info("%s testcase finished in %s seconds with '%s' status."
+                          % (self.build_test_name, self.duration, self.status.upper()))
+            # publish to TestRail if case has individual results id
+            if self.case_results_id is not None and self.results_plan_id is not None:
+                self.log.trace("Publishing test case results to TestRail ...")
+                # determine test run to publish to
+                run_id = self.determine_test_runs_to_publish_to(self.module_id)['test run id']
+
+                # publish results to TestRail
+                results_id = self.case_results_id
+                status = self.status
+                comment = ''
+                version = self.version
+                self.reporter.add_result_for_testcase_in_test(run_id, results_id, status,
+                    {'comment': comment, 'version': version})
+                self.log.trace("... done.")
 
             # send testcase end message to build server
             self.log.build_testcase_end(self.build_test_name, self.status, self.duration)

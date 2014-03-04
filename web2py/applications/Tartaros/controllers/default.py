@@ -2341,11 +2341,10 @@ class TestManager():
 
             # add test case for each case included in test
             for testcase in testcases:
-                #case_results_id = self.orpheus.push_new_case_to_testrail(testcase['id'])['id']
                 case_results_id = self.push_new_case_to_testrail(testcase.id)['id']
 
                 # update test case results id with new results id
-                db(db.test_cases.id == test_id).update(results_id=case_results_id)
+                db(db.test_cases.id == testcase.id).update(results_id=case_results_id)
 
             # compile results
             result = None

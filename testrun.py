@@ -129,7 +129,8 @@ class TestRun():
             # execute test cases
             for testcase in self.testcases:
                 testcase = self.testcase_obj(self.log, self.database, testcase['id'],
-                    debugging=self.debugging, int_dvr_ip=self.int_dvr_ip)
+                    debugging=self.debugging, int_dvr_ip=self.int_dvr_ip,
+                    results_plan_id=self.results_plan_id)
                 testcase.run()
 
                 # compile results data from execution
