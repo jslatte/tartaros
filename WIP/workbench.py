@@ -896,4 +896,21 @@ def convert_test_to_section_with_testcases_in_testrail(test_id):
             database.db_handle, "test_cases", "results_id", case_results_id, "id", testcase['id'])
 
 
-convert_test_to_section_with_testcases_in_testrail(16)
+for test_id in range(84, 90):
+    # get test name
+    test_name = database.query_database_table_for_single_value(
+        database.db_handle, "tests", "name", "id", test_id)['value']
+
+    if "validation" not in test_name.lower():
+        # convert
+        convert_test_to_section_with_testcases_in_testrail(test_id)
+
+    else:
+        # determine case id
+        case_id = database.return_testcases_for_test(test_id)['testcases'][0]['id']
+
+        # update validation test case results id
+        test_results_id = database.query_database_table_for_single_value(
+            database.db_handle, "tests", "results_id", "id", test_id)['value']
+        database.update_table_field_for_entry(
+            database.db_handle, "test_cases", "results_id", test_results_id, "id", case_id)
