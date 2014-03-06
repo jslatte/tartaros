@@ -589,8 +589,8 @@ class TestManager():
             # determine value of field
             try:
                 if field == 'test results id':
-                    val = db(db.tests.id ==
-                             request.vars.test_selection).select()[0].results_id
+                    val = db(db.test_cases.id ==
+                             request.vars.test_case_selection).select()[0].results_id
 
                 elif field == 'test case class':
                     val = db(db.test_cases.id ==
@@ -618,10 +618,7 @@ class TestManager():
                     val = "N/A"
 
             except IndexError or TypeError:
-                if field == 'test results id':
-                    val = "No test selected."
-                else:
-                    val = "No test case selected."
+                val = "No test case selected."
 
             # determine field label by field type
             field_label = field.replace('test ', '').replace('case ', '').upper() + ":"
@@ -832,7 +829,7 @@ class TestManager():
             update_test_results_id_script = "jQuery(div_test_results_id_val).remove(); " \
                                             "ajax('update_test_results_id_field', " \
                                             "['%s_selection'], 'td_test_results_id_val');"\
-                                            % object_types['test']
+                                            % object_types['test case']
             update_test_case_class_script = "jQuery(div_test_case_class_val).remove(); " \
                                             "ajax('update_test_case_class_field', " \
                                             "['%s_selection'], 'td_test_case_class_val');"\
@@ -998,6 +995,7 @@ class TestManager():
                 ajax_s = ''
 
                 # add update test attributes statements
+                ajax_s += update_test_results_id_script
                 ajax_s += update_test_case_class_script
                 ajax_s += update_test_case_minver_script
                 ajax_s += update_test_case_active_script
@@ -1678,7 +1676,7 @@ class TestManager():
 
             # update the test attribute for the test/case in database by field
             if field == 'test results id':
-                db(db.tests.id == parent_suite_id).update(results_id=value)
+                db(db.test_cases.id == parent_suite_id).update(results_id=value)
             elif field == 'test case class':
                 db(db.test_cases.id == parent_suite_id).update(test_class=value)
             elif field == 'test case minimum version':
