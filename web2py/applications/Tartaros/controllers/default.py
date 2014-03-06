@@ -1714,19 +1714,19 @@ class TestManager():
             if request.vars.type == 'module':
                 db.modules.insert(
                     name=request.vars.inp_new_module_name,
-                    submodule_id=2  # hard-coded to ViM (hestia)
+                    submodule_id=2,  # hard-coded to ViM (hestia)
                 )
             elif request.vars.type == 'feature':
                 db.features.insert(
                     name=request.vars.inp_new_feature_name,
-                    submodule_id=2  # hard-coded to ViM (hestia)
+                    submodule_id=2,  # hard-coded to ViM (hestia)
                 )
             elif request.vars.type == 'user_story':
                 db.user_stories.insert(
                     action=request.vars.inp_new_user_story_action,
                     user_type=request.vars.inp_new_user_story_user_type,
                     feature_id=request.vars.feature_selection,
-                    module_id=request.vars.module_selection
+                    module_id=request.vars.module_selection,
                 )
             elif request.vars.type == 'test':
                 db.tests.insert(
@@ -1742,7 +1742,7 @@ class TestManager():
                     min_version='1.0',
                     test_class=5,
                     active=1,
-                    type_id=request.vars.inp_new_test_type
+                    type_id=request.vars.inp_new_test_type,
                 )
             else:
                 log.error("Invalid test suite type %s specifed." % request.vars.type)
@@ -2119,7 +2119,7 @@ class TestManager():
         self.log.trace("... DONE %s." % operation.replace('_', ' '))
         return result
 
-    def push_case_to_testrail(self, case_id):
+    def push_case_to_testrail(self, case_id, new=False):
         """ Push the current selected test case to test rail.
         """
 
@@ -2142,10 +2142,12 @@ class TestManager():
             try:
                 if level == 2:
                     # story-level test case
-                    sect_id = db(db.user_stories.id == case.parent_id).select()[0].results_id
+                    story_id = db(db.tests.id == case.test_id).select()[0].user_story_id
+                    story = db(db.user_stories.id == story_id).select()[0]
+                    sect_id = story.results_id
                 elif level > 2:
                     # test-level test case
-                    sect_id = db(db.tests.id == case.parent_id).select()[0].results_id
+                    sect_id = db(db.tests.id == case.test_id).select()[0].results_id
                 else:
                     sect_id = None
             except BaseException, e:
@@ -2157,11 +2159,13 @@ class TestManager():
             try:
                 if level == 2:
                     # story-level test case (find module for story)
-                    module_id = db(db.user_stories.id == case.parent_id).select()[0].module_id
+                    story_id = db(db.tests.id == case.test_id).select()[0].user_story_id
+                    story = db(db.user_stories.id == story_id).select()[0]
+                    module_id = story.module_id
                     suite_id = db(db.modules.id == module_id).select()[0].results_id
                 elif level > 2:
                     # test-level test case (find module for test)
-                    story_id = db(db.tests.id == case.parent_id).select()[0].user_story_id
+                    story_id = db(db.tests.id == case.test_id).select()[0].user_story_id
                     module_id = db(db.user_stories.id == story_id).select()[0].module_id
                     suite_id = db(db.modules.id == module_id).select()[0].results_id
                 else:
@@ -2182,13 +2186,21 @@ class TestManager():
                 step_name = db(db.procedure_steps.id == step_id).select()[0].name
                 procedure.append([step_name, ''])
 
-            # update test case
-            self.log.trace('...')
-            self.orpheus.update_test_case(case.results_id, sect_id, suite_id, project_id,
-                                          name=case.name,
-                                case_type=db(db.test_types.id == case.type_id).select()[0].name,
-                                          case_class=case.test_class, automated=True,
-                                          procedure=procedure)
+            if new:
+                # add new test case
+                self.log.trace("Pushing new test case ...")
+                self.orpheus.add_test_case(
+                    case.name, sect_id, suite_id, project_id,
+                    case_type=db(db.test_types.id == case.type_id).select()[0].name,
+                    case_class=case.test_class,automated=True, procedure=procedure)
+
+            else:
+                # update test case
+                self.log.trace('Pushing updated test case ...')
+                self.orpheus.update_test_case(
+                    case.results_id, sect_id, suite_id, project_id, name=case.name,
+                    case_type=db(db.test_types.id == case.type_id).select()[0].name,
+                    case_class=case.test_class, automated=True, procedure=procedure)
 
             self.log.trace("... done %s." % operation)
             result['successful'] = True

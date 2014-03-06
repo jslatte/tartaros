@@ -46,6 +46,57 @@ class DriveStatus():
     """ Sub-library for drive status and history functionality.
     """
 
+    def verify_no_hyphenated_drive_entry(self, testcase=None):
+        """ Check the HardDisks table for a duplicate entry due to a hyphenated drive serial.
+        @param testcase: a testcase object supplied when executing function as part of
+            a testcase step.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'found' - whether an abbreviated duplicate entry for a hyphenated drive serial
+                was found or not.
+            'verified' - whether the operation was verified or not.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'found': False, 'verified': False}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # return list of all drives
+            handle = self.db.db_handle
+            table = DB_DRIVES_TABLE
+            drives = self.db.query_database_table(handle, table)['response']
+
+            # check if a duplicate copy of any hyphenated serial was entered
+            for drive in drives:
+                id = int(drive[0])
+                serial = str(drive[1])
+
+                # if the serial is hyphenated
+                if '-' in serial:
+                    abbr_serial = serial.split('-')[1]
+                    # check each other drive for abbreviated serial
+                    for other_drive in drives:
+                        other_id = int(other_drive[0])
+                        other_serial = str(other_drive[1])
+                        if other_id != id and abbr_serial == other_serial:
+                            self.log.trace("Found duplicate entry for hyphenated drive serial.")
+                            result['found'] = True
+
+            # verify
+            if not result['found']:
+                result['verified'] = True
+
+            self.log.trace("... done %s." % operation)
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if testcase is not None: testcase.processing = result['successful']
+        return result
+
     def verify_dvr_information_retrieved_from_site(self, site_id, timeout=300, testcase=None):
         """
         @param site_id: the id of the site for which to verify information retrieved.
