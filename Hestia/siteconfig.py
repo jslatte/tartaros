@@ -506,7 +506,7 @@ class SiteConfiguration():
                 result['settings'] = parameters
                 result['verified'] = verified
                 result['site id'] = returned['site id']
-                result['site name'] = dvr_data['name']
+                result['site name'] = returned['site name']
 
                 self.log.trace("Configured lab depot site for test.")
             result['successful'] = True
@@ -644,7 +644,7 @@ class SiteConfiguration():
             returned = self.verify_remote_site_configuration(settings, allowed=allowed)
             result['verified'] = returned['verified']
             result['site id'] = returned['site id']
-            result['site name'] = data[SITECON_FIELDS['site name']]
+            result['site name'] = returned['site name']
 
             if result['verified'] and allowed:
                 self.log.trace("Verified site configured.")
@@ -802,7 +802,7 @@ class SiteConfiguration():
         """
 
         self.log.debug("Verifying remote site configuration ...")
-        result = {'successful': False, 'verified': False, 'site id': None}
+        result = {'successful': False, 'verified': False, 'site id': None, 'site name': None}
 
         try:
             # determine site configuration map (per version)
@@ -827,7 +827,9 @@ class SiteConfiguration():
                 siteName = None
                 for setting in settings:
                     if str(setting[0]) == 'id': siteID = setting[1]
-                    elif str(setting[0]) == 'site name': siteName = setting[1]
+                    elif str(setting[0]) == 'site name':
+                        siteName = setting[1]
+                        result['site name'] = setting[1]
                 if siteID is None and siteName is None:
                     self.log.error("Did not find site ID or name in given settings.")
 
@@ -872,9 +874,9 @@ class SiteConfiguration():
                             self.log.trace("Verified remote site configured.")
                             result['verified'] = True
                         elif invalids == 0 and not allowed:
-                            self.log.trace("Failed to verify remote site configured.")
-                        elif invalids > 0 and allowed:
                             self.log.trace("Failed to verify remote site configuration not allowed.")
+                        elif invalids > 0 and allowed:
+                            self.log.trace("Failed to verify remote site configuration.")
                         elif invalids > 0 and not allowed:
                             self.log.trace("Verified remote site configuration not allowed.")
                             result['verified'] = True
@@ -887,6 +889,7 @@ class SiteConfiguration():
         if testcase is not None:
             testcase.processing = result['successful']
             testcase.site_id = result['site id']
+            testcase.site_name = result['site name']
         return result
 
     def verify_remote_site_status(self, siteID, status, testcase=None):

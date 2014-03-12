@@ -24,6 +24,10 @@ DB = HESTIA['database']
 DB_SITES = DB['sites']
 DB_SITES_TABLE = DB_SITES['table']
 DB_SITES_FIELDS = DB_SITES['fields']
+DB_CONLOG = DB['connection log']
+DB_CONLOG_TABLE = DB_CONLOG['table']
+DB_CONLOG_FIELDS = DB_CONLOG['fields']
+CONNECTION_STATES = DB_CONLOG['connection states']
 
 ####################################################################################################
 # Site Connectivity ################################################################################
@@ -76,6 +80,20 @@ class SiteConnectivity():
                         connected = True
 
                 if not connected and attempt < max_attempts:
+                    # try to query database
+                    self.log.trace("Failed to verify site connected via page query. "
+                                   "Checking database ...")
+                    response = self.db.query_database_table_for_single_value(
+                        self.db.db_handle, DB_CONLOG_TABLE, DB_CONLOG_FIELDS['id'],
+                        DB_CONLOG_FIELDS['connection state'], CONNECTION_STATES['available'],
+                        max=True
+                    )['value']
+
+                    if response is not None:
+                        connect = True
+                        self.log.trace("Found successful connection logged in database.")
+                        break
+
                     self.log.trace('Failed to verify that site has connected at least once'
                                    ' (attempt %s). Re-attempting in 15 seconds ...' % attempt)
                     sleep(15)

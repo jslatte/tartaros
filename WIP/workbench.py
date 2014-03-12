@@ -871,7 +871,7 @@ def convert_test_to_section_with_testcases_in_testrail(test_id):
 #hestia.reset_vim_server()
 #connect_to_database()
 #hestia.start_vim_server()
-#log_in()
+log_in()
 #hestia.setup_server_for_manual_testing('full')
 #configure_license('health')
 #hestia.configure_vim_license('streaming server')
@@ -897,4 +897,6 @@ def convert_test_to_section_with_testcases_in_testrail(test_id):
 
 #log.trace("SELECT * FROM ConnectionLog WHERE csTimeStamp > %d and csTimeStamp < %d" %(utc.convert_date_string_to_db_time(start)['db time'], utc.convert_date_string_to_db_time(end)['db time']))
 
-log.trace(orpheus.return_section_data("The server will run as a service", 1, 1))
+#log.trace(orpheus.return_section_data("The server will run as a service", 1, 1))
+
+hestia.configure_lab_depot_site_for_test('mrh8 site', settings=[['dvr model', 'mrh16']])

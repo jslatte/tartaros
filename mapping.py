@@ -198,6 +198,19 @@ HESTIA = {
                 'custom event clip':        2,
             }
         },
+        'connection log': {
+            'table':                        'ConnectionLog',
+            'fields': {
+                'id':                       'rowid',
+                'site id':                  'SiteID',
+                'connection state':         'ConnectionState',
+                'disconnect reason':        'DisconnectReason',
+                'time':                     'csTimeStamp',
+            },
+            'connection states': {
+                'available':                0,
+            }
+        },
         'custody': {
             'table':                        'ChainOfCustody',
             'fields': {
