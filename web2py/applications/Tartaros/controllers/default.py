@@ -2646,7 +2646,7 @@ def restore_test_case_type_field():
 def edit_test_results_id_field():
     return tmanager.edit_test_attribute_field('test results id',
                                               request.vars.test_results_id_edit_val,
-                                              request.vars.test_selection)['div']
+                                              request.vars.test_case_selection)['div']
 
 
 def edit_test_case_class_field():
