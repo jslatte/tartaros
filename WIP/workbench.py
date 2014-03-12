@@ -678,40 +678,6 @@ def run_dvr_simulation_test():
     reset_db_for_simulation()
     tantalus.run_in_dvr_response_simulation_mode()
 
-####################################################################################################
-# Workbench ########################################################################################
-####################################################################################################
-####################################################################################################
-
-#hestia.reset_vim_server()
-#connect_to_database()
-#hestia.start_vim_server()
-#log_in()
-#hestia.setup_server_for_manual_testing('full')
-#configure_license('health')
-#hestia.configure_vim_license('streaming server')
-
-#testcase = HestiaTestCase(log, database, 442, debugging=False)
-#testcase.run()
-
-#hestia.configure_all_lab_depot_sites()
-
-#hestia.add_number_of_fake_sites(1, start_id=1, ip_schema="172.22.80.", start_ip=1)
-
-#run_dvr_simulation_test()
-
-#tantalus.build_gps_event_data_packet(2)
-
-#perform_vim_connections_post_mortem()
-
-#start = "2013-11-1 00:00:00"
-#end = "2013-11-4 23:59:59"
-#path = "C:\\Program Files (x86)\\ViM\\log parsing\\Whatcom\\WhatcomTest\\"
-#parse_vim_logs_for_total_connections(danaides, path, start, end)
-#determine_number_of_failed_connections_over_time(danaides, path, start, end)
-
-#log.trace("SELECT * FROM ConnectionLog WHERE csTimeStamp > %d and csTimeStamp < %d" %(utc.convert_date_string_to_db_time(start)['db time'], utc.convert_date_string_to_db_time(end)['db time']))
-
 def sync_modules_to_testrail(submodule_id=2):
     # return all modules from the database for given submodule (raw data)
     log.trace("Returning all modules for submodule %s ..." % submodule_id)
@@ -895,22 +861,40 @@ def convert_test_to_section_with_testcases_in_testrail(test_id):
         database.update_table_field_for_entry(
             database.db_handle, "test_cases", "results_id", case_results_id, "id", testcase['id'])
 
+#hestia.check_for_hyphenated_drive_entry()
 
-for test_id in range(84, 90):
-    # get test name
-    test_name = database.query_database_table_for_single_value(
-        database.db_handle, "tests", "name", "id", test_id)['value']
+####################################################################################################
+# Workbench ########################################################################################
+####################################################################################################
+####################################################################################################
 
-    if "validation" not in test_name.lower():
-        # convert
-        convert_test_to_section_with_testcases_in_testrail(test_id)
+#hestia.reset_vim_server()
+#connect_to_database()
+#hestia.start_vim_server()
+#log_in()
+#hestia.setup_server_for_manual_testing('full')
+#configure_license('health')
+#hestia.configure_vim_license('streaming server')
 
-    else:
-        # determine case id
-        case_id = database.return_testcases_for_test(test_id)['testcases'][0]['id']
+#testcase = HestiaTestCase(log, database, 442, debugging=False)
+#testcase.run()
 
-        # update validation test case results id
-        test_results_id = database.query_database_table_for_single_value(
-            database.db_handle, "tests", "results_id", "id", test_id)['value']
-        database.update_table_field_for_entry(
-            database.db_handle, "test_cases", "results_id", test_results_id, "id", case_id)
+#hestia.configure_all_lab_depot_sites()
+
+#hestia.add_number_of_fake_sites(1, start_id=1, ip_schema="172.22.80.", start_ip=1)
+
+#run_dvr_simulation_test()
+
+#tantalus.build_gps_event_data_packet(2)
+
+#perform_vim_connections_post_mortem()
+
+#start = "2013-11-1 00:00:00"
+#end = "2013-11-4 23:59:59"
+#path = "C:\\Program Files (x86)\\ViM\\log parsing\\Whatcom\\WhatcomTest\\"
+#parse_vim_logs_for_total_connections(danaides, path, start, end)
+#determine_number_of_failed_connections_over_time(danaides, path, start, end)
+
+#log.trace("SELECT * FROM ConnectionLog WHERE csTimeStamp > %d and csTimeStamp < %d" %(utc.convert_date_string_to_db_time(start)['db time'], utc.convert_date_string_to_db_time(end)['db time']))
+
+log.trace(orpheus.return_section_data("The server will run as a service", 1, 1))
