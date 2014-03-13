@@ -93,6 +93,8 @@ class StatusEmailParser(HTMLParser):
             'connection status 72 hour report': [],
             'connection status never connected report': [],
             'storage space available report': [],
+            'missing drives reported': False,
+            'missing drives report': [],
             }
         # tracking - used to determine which div/subsection of report is currently being
         #   processed. This allows the framework to lump the correct results together.
@@ -136,6 +138,10 @@ class StatusEmailParser(HTMLParser):
             self.data['dvr health reported'] = True
             # set tracking for DVR Health Report flag
             self.tracking = ['dvr health report',None,None]
+        elif 'no storage found' in data.lower():
+            self.log.trace("Missing Drives report found.")
+            self.data['missing drives reported'] = True
+            self.tracking[1] = 'missing drives report'
         elif 'reporting health events' in data.lower():
             self.log.trace("DVR Health summary report found.")
             # set tracking for DVR Health summary report flag
@@ -225,6 +231,23 @@ class StatusEmailParser(HTMLParser):
                     # pushed clipboard if complete
                     if len(self.clipboard) is 2 and self.counter is 0:
                         self.data['dvr health summary'].append(self.clipboard)
+                        self.clear_clipboard()
+            if self.tracking[1] == 'missing drives report':
+                if self.get_starttag_text().lower() == '<p>'\
+                or self.get_starttag_text().lower() == '<td>':
+                    if self.counter is 0:
+                        # parse drive and increment counter
+                        self.counter += 1
+                        data = data.strip()
+                    elif self.counter is 1:
+                        # parse amount of space and increment counter
+                        self.counter = 0
+                        data = data.strip()
+                        # append to clipboard
+                    self.clipboard.append(data)
+                    # pushed clipboard if complete
+                    if len(self.clipboard) is 2 and self.counter is 0:
+                        self.data['missing drives report'].append(self.clipboard)
                         self.clear_clipboard()
         # Camera Health Report
         elif self.tracking[0] == 'camera health report':

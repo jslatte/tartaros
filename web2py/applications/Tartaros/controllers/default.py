@@ -2098,6 +2098,7 @@ class TestManager():
                         min_version=m_min_version,
                         test_class=test_class,
                         active=active,
+                        type_id=1
                     )
             else:
                 db.test_cases.insert(

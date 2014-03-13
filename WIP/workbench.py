@@ -871,7 +871,7 @@ def convert_test_to_section_with_testcases_in_testrail(test_id):
 #hestia.reset_vim_server()
 #connect_to_database()
 #hestia.start_vim_server()
-log_in()
+#log_in()
 #hestia.setup_server_for_manual_testing('full')
 #configure_license('health')
 #hestia.configure_vim_license('streaming server')
@@ -898,5 +898,14 @@ log_in()
 #log.trace("SELECT * FROM ConnectionLog WHERE csTimeStamp > %d and csTimeStamp < %d" %(utc.convert_date_string_to_db_time(start)['db time'], utc.convert_date_string_to_db_time(end)['db time']))
 
 #log.trace(orpheus.return_section_data("The server will run as a service", 1, 1))
-
-hestia.configure_lab_depot_site_for_test('mrh8 site', settings=[['dvr model', 'mrh16']])
+#hestia.enable_email_notification()
+hestia.log_in_to_vim('jonathans', 'password')
+hestia.send_status_email_now()
+#hestia.connect_to_exchange_server()
+#hestia.open_mailbox()
+#email_ids = hestia.return_emails_with_subject('ViM Status Report')['email ids']
+#emails = hestia.fetch_email_data_for_ids(email_ids)['emails']
+#for email in emails:
+#    data = hestia.parse_vim_status_report(email[3])['data']
+#    log.trace(data['missing drives report'])
+log.trace(hestia.verify_email_received('vim status report')['email'][3])

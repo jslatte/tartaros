@@ -321,13 +321,15 @@ class EmailNotification():
         if testcase is not None: testcase.processing = result['successful']
         return result
 
-    def verify_email_received(self, type, wait=90, allowed=True, testcase=None):
+    def verify_email_received(self, type, wait=90, allowed=True, missing_drives_sites=[], testcase=None):
         """ Verify specified email was received.
         INPUT
             type: type of email to verify has been received.
             wait: number of seconds to wait for email to be received.
             allowed: whether or not the email should be received (if false, expect no email to be
                 found).
+            missing_drives_sites: list of sites (names) to verify were included
+                in the missing drives report.
             testcase: a testcase object supplied when executing function as part of a testcase step.
         OUPUT
             successful: whether the function executed successfully or not.
@@ -356,6 +358,41 @@ class EmailNotification():
                 returned = self.check_mailbox_for_email(type,wait)
                 result['verified'] = returned['found']
                 result['email'] = returned['email']
+
+            # verify missing drives report
+            if len(missing_drives_sites) > 0:
+                self.log.trace("Verifying Missing Drives report ...")
+                email_data = result['email'][3]
+                missing_drives_reported = email_data['missing drives reported']
+                missing_drives_report = email_data['missing drives report']
+
+                if missing_drives_reported:
+                    # check for site names
+                    failures = 0
+                    for site in missing_drives_sites:
+                        self.log.trace("Looking for site %s in Missing Drives report ..." % site)
+                        found = False
+                        for report in missing_drives_report:
+                            if site == report[0]:
+                                self.log.trace("Site %s found in Missing Drives report." % site)
+                                found = True
+                                break
+
+                        if not found:
+                            self.log.trace("Failed to find site %s in Missing Drives report." % site)
+                            failures += 1
+
+                    # validate
+                    if failures == 0:
+                        self.log.trace("Verified Missing Drives report.")
+                        result['verified'] = True
+                    else:
+                        self.log.trace("Failed to verify Missing Drives report.")
+                        result['verified'] = False
+
+                else:
+                    self.log.trace("Missing Drives report not found.")
+                    result['verified'] = False
 
             # update for not allowed
             if not allowed and result['verified']:
@@ -526,6 +563,8 @@ class EmailNotification():
                       'connection status 72 hour report': [],
                       'connection status never connected report': [],
                       'storage space available report': [],
+                      'missing drives reported': False,
+                      'missing drives report': [],
                       }}
 
         try:
