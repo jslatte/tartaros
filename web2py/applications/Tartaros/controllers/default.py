@@ -2044,7 +2044,7 @@ class TestManager():
                 test_class = 3
             elif test_type.lower() == 'licensing':
                 name = "Licensing"
-                test_class = 4
+                test_class = 3
             else:
                 name = 'Templated Test (rename)'
                 test_class = 5
