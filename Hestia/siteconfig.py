@@ -503,12 +503,13 @@ class SiteConfiguration():
                 self.log.error("Failed to verify configure lab depot site for test added.")
             else:
                 # define return variables
-                result['settings'] = parameters
                 result['verified'] = verified
-                result['site id'] = returned['site id']
-                result['site name'] = returned['site name']
-
                 self.log.trace("Configured lab depot site for test.")
+
+            result['settings'] = parameters
+            result['site id'] = returned['site id']
+            result['site name'] = returned['site name']
+
             result['successful'] = True
         except BaseException, e:
             self.handle_exception(e, operation="configure lab depot site for test")
