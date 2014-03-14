@@ -187,6 +187,33 @@ elif mode == 'testscheduling':
                         builds_triggered +=1
                         minos.trigger_build('tartaros', params)
 
+            elif test.lower().strip() == 'regression validation':
+                # determine all features
+                features = db.return_features_for_submodule(2)['features']
+
+                # add a test run for each feature (exclude debug)
+                for feature in features:
+                    # determine all user stories for feature
+                    stories = []
+                    stories = db.return_user_stories_for_feature(feature['id'])['user stories']
+
+                    for story in stories:
+                        # build parameters list for user story test run
+                        params = []
+                        params.append(['test name', 'Regression Test - %s' % story['action']])
+                        #params.append(['module', '%s' % story['module id']])
+                        #params.append(['feature', '%s' % story['feature id']])
+                        params.append(['user story', '%s' % story['action']])
+                        params.append(['test class', '2'])
+
+                        # update parameters (with build and test plan)
+                        params.append(['test plan id', results_plan_id])
+                        params.append(['build', build])
+
+                        # trigger test
+                        builds_triggered +=1
+                        minos.trigger_build('tartaros', params)
+
             else:
                 for test in tests_to_schedule:
                     params = TEST_CONFIGURATIONS[test.lower()]
