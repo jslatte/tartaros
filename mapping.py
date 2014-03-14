@@ -432,10 +432,25 @@ HESTIA = {
                 'author':                   'CreatedBy'
             },
             'event type to type id': {
-                'remote log in':            '102',
-                'remote log out':           '103',
+                'bootup':                   '1',
+                'shutdown':                 '2',
                 'disk config change':       '16',
                 'disk serial':              '22',
+                'disk removed':             '23',
+                'no storage found':         '24',
+                'remote log in':            '102',
+                'remote log out':           '103',
+                'remote setup change':      '202',
+                'remote clip-copy begin':   '504',
+                'remote clip-copy end':     '505',
+                'remote clip-copy cancel':  '506',
+                'remote clip-copy fail':    '507',
+                'remote clip-copy user':    '514',
+                'remote clip-copy from':    '515',
+                'remote clip-copy to':      '516',
+                'remote clip-copy duration':'517',
+                'remote clip-copy camera':  '519',
+
             },
             'author to author id': {
                 'non-vim':                  '0',
@@ -1179,7 +1194,7 @@ HESTIA = {
         'system log': {
             'query path':           '/syslog',
             'entry id':             'id',
-            'parameters':{
+            'parameters': {
                 'results':              20,
                 'sort':                 'syslogTime desc',
                 'startIndex':           0,

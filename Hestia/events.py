@@ -13,6 +13,7 @@
 
 from mapping import HESTIA
 from time import sleep
+from binascii import hexlify
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -440,8 +441,56 @@ class Events():
         if testcase is not None: testcase.processing = result['successful']
         return result
 
+    def convert_string_to_syslogdata_string(self, s, empty_buffer=False, testcase=None):
+        """ Convert a string to the proper syslogdata format (64-bit)
+        @param s: the string to convert.
+        @param empty_buffer: whether the buffer should be empty (00) or not (00FF00).
+        @param testcase: a testcase object supplied when executing function as part of
+            a testcase step.
+        @return: a data dict containing:
+            'data' - the translated data string.
+            'successful' - whether the function executed successfully or not.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False,
+                  'data': "X'0000000000000000000000000000000000000000000000000000000000000000'"}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # translate root string to hex
+            syslog_hexstring = hexlify(s) \
+
+            # add pre-buffer
+            syslog_hexstring += '00'
+
+            # build and add buffer (based on length remaining in 64-bit)
+            for i in range(1, ((62 - len(syslog_hexstring))/2) + 1):
+                if not empty_buffer:
+                    syslog_hexstring += 'FF'
+                else:
+                    syslog_hexstring += '00'
+
+            # add post-buffer
+            syslog_hexstring += '00'
+
+            # finalize syslogdata string
+            result['data'] = "X'%s'" % syslog_hexstring.upper()
+
+            self.log.trace("... done %s." % operation)
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if testcase is not None: testcase.processing = result['successful']
+        return result
+
     def generate_system_event_for_site(self, site_id, e_type='remote log in', author='non-vim',
-                                       testcase=None):
+                                       disk_num=1, disk_serial='TESTDISK', user='admin', port='admin',
+                                       log_in_ip='0.0.0.0', clip_download_fail_code=10,
+                                       clip_duration=8, cam_num=1, cam_label='SIMULATED', testcase=None):
         """ Generate specified type of system event in database for given site.
         @param site_id: the id of the site for which to generate the event.
         @param e_type: the type of event to generate (e.g., remote log in, remote log out, etc.).
@@ -463,8 +512,67 @@ class Events():
             dvr_id = self.return_dvr_for_site(site_id)['dvr id']
             time = str(self.utc.convert_string_to_time('now')) + '000'
             event_type = SYSLOG_EVENT_TYPES[e_type.lower()]
-            data = "''"
+            data = "X'0000000000000000000000000000000000000000000000000000000000000000'"
             author = SYSLOG_AUTHORS[author.lower()]
+
+            # update for "disk serial" event
+            if event_type == SYSLOG_EVENT_TYPES['disk serial']:
+                syslog_string = '%d : %s' % (disk_num, disk_serial)
+                data = self.convert_string_to_syslogdata_string(syslog_string)['data']
+                # shows as "Disk <disk_id> : <serial>"
+
+            # update for "disk removed" event
+            if event_type == SYSLOG_EVENT_TYPES['disk removed']:
+                data = "X'31203A2000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00'"
+                # shows as "Disk Removed"
+
+            # update for "remote log in" and "remote log out" events
+            PORT_TO_ABBR = {'admin': 'A', 'search': 'S', 'watch': 'W'}
+            if event_type == SYSLOG_EVENT_TYPES['remote log in']\
+                    or event_type == SYSLOG_EVENT_TYPES['remote log out']:
+                syslog_string = '%(user)s (%(ip)s:%(port)s)' \
+                                % {'user': user, 'port': PORT_TO_ABBR[port.lower()], 'ip': log_in_ip}
+                data = self.convert_string_to_syslogdata_string(syslog_string)['data']
+
+            # update for "remote setup change" event
+            if event_type == SYSLOG_EVENT_TYPES['remote setup change']:
+                data = "X'0000083400000838000000000000000000000000000000000000000000000000'"
+                # shows as "Remote Setup Change"
+
+            # update for "remote clip-copy fail" event
+            if event_type == SYSLOG_EVENT_TYPES['remote clip-copy fail']:
+                syslog_string = '%d' % clip_download_fail_code
+                data = self.convert_string_to_syslogdata_string(syslog_string,
+                                                                empty_buffer=True)['data']
+                # shows as "[Remote] Clip-Copy Fail : <failure code>"
+
+            # update for "remote clip-copy user" event
+            if event_type == SYSLOG_EVENT_TYPES['remote clip-copy user']:
+                syslog_string = '%s' % user
+                data = self.convert_string_to_syslogdata_string(syslog_string,
+                                                                empty_buffer=True)['data']
+                # shows as "[Remote] Clip-Copy User : <user>"
+
+            # update for "remote clip-copy to" and "from" events
+            if event_type == SYSLOG_EVENT_TYPES['remote clip-copy to']\
+                    or event_type == SYSLOG_EVENT_TYPES['remote clip-copy from']:
+                data = "X'2BE50353'"
+                # shows as "[Remote] Clip-Copy <To/From> : 02/18/14 14:56:43"
+
+            # update for "remote clip-copy duration" event
+            if event_type == SYSLOG_EVENT_TYPES['remote clip-copy duration']:
+                syslog_string = '%d' % clip_duration
+                data = self.convert_string_to_syslogdata_string(syslog_string,
+                                                                empty_buffer=True)['data']
+                # shows as "[Remote] Clip-Copy Duration : <00:00:00 time>"
+
+            # update for "remote clip-copy camera" event
+            if event_type == SYSLOG_EVENT_TYPES['remote clip-copy camera']:
+                syslog_string = '%(cam num)d. %(cam label)s' \
+                                % {'cam num': cam_num, 'cam label': cam_label}
+                data = self.convert_string_to_syslogdata_string(syslog_string,
+                                                                empty_buffer=True)['data']
+                # shows as "[Remote] Clip-Copy Camera : <camera #>. <camera label>"
 
             # build SQL statement
             statement = "INSERT INTO %(table)s (%(dvr id field)s, %(time field)s, " \
