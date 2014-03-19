@@ -109,7 +109,7 @@ if argv is not None:
         elif 'testcaseclass=' in arg:
             testcase_class = arg.split('testcaseclass=')[1]
             params.append('Testing Test Case Class:\t%s' % testcase_class)
-        elif 'testcasetype=' in arg:
+        elif 'testcasetype=' in arg and 'testcasetype=None' not in arg:
             testcase_type = arg.split('testcasetype=')[1]
             params.append('Testing Test Case Type:\t%s' % testcase_type)
         elif 'teststoschedule=' in arg:
@@ -220,6 +220,7 @@ elif mode == 'testscheduling':
                 params.append(['test name', 'DVR Integration Test - %s' % int_dvr_ip])
                 params.append(['module', '%s' % '9'])
                 params.append(['integration dvr', '%s' % int_dvr_ip])
+                params.append(['test type', '%s' % 'dvr integration'])
 
                 # update parameters (with build and test plan)
                 params.append(['test plan id', results_plan_id])
@@ -251,8 +252,8 @@ elif mode == 'testing':
     database = Database(Logger(logging_level='info'))
 
     # initialize test run object
-    testrun = TestRun(log, database, name=test_name, submodule_id=2, results_plan_id=results_plan_id,
-                      int_dvr_ip=int_dvr_ip)
+    testrun = TestRun(log, database, name=test_name, submodule_id=2,
+                      results_plan_id=results_plan_id, int_dvr_ip=int_dvr_ip)
 
     # build testcase list for test run
     testcases = testrun.build_testcase_list_for_run(module_id=module,
