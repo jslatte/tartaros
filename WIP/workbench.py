@@ -869,9 +869,9 @@ def convert_test_to_section_with_testcases_in_testrail(test_id):
 ####################################################################################################
 
 #hestia.reset_vim_server()
-#connect_to_database()
+connect_to_database()
 #hestia.start_vim_server()
-#log_in()
+log_in()
 #hestia.setup_server_for_manual_testing('full')
 #configure_license('health')
 #hestia.configure_vim_license('streaming server')
@@ -881,7 +881,11 @@ def convert_test_to_section_with_testcases_in_testrail(test_id):
 
 #hestia.configure_all_lab_depot_sites()
 
-#hestia.add_number_of_fake_sites(1, start_id=1, ip_schema="172.22.80.", start_ip=1)
+#hestia.add_number_of_fake_sites(250, start_id=1, ip_schema="172.22.60.", start_ip=1)
+#hestia.add_number_of_fake_sites(250, start_id=251, ip_schema="172.22.61.", start_ip=1)
+#hestia.add_number_of_fake_sites(250, start_id=501, ip_schema="172.22.62.", start_ip=1)
+#hestia.add_number_of_fake_sites(250, start_id=751, ip_schema="172.22.63.", start_ip=1)
+#hestia.add_number_of_fake_sites(200, start_id=1001, ip_schema="172.22.63.", start_ip=1)
 
 #run_dvr_simulation_test()
 
@@ -896,6 +900,3 @@ def convert_test_to_section_with_testcases_in_testrail(test_id):
 #determine_number_of_failed_connections_over_time(danaides, path, start, end)
 
 #log.trace("SELECT * FROM ConnectionLog WHERE csTimeStamp > %d and csTimeStamp < %d" %(utc.convert_date_string_to_db_time(start)['db time'], utc.convert_date_string_to_db_time(end)['db time']))
-
-import binascii
-log.trace(binascii.unhexlify('20362E204465706F742033300000000000000000000000000000000000000000'))
