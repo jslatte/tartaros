@@ -214,7 +214,7 @@ elif mode == 'testscheduling':
                         builds_triggered += 1
                         minos.trigger_build('tartaros', params)
 
-            elif test.lower().strip() == 'dvr integration test':
+            elif test.lower().strip() == 'dvr integration':
                 # build test configuration parameter list
                 params = []
                 params.append(['test name', 'DVR Integration Test - %s' % int_dvr_ip])
