@@ -217,6 +217,7 @@ BUILDING = {
         'test':                 'TEST',
         'test case':            'TEST_CASE',
         'test class':           'TEST_CLASS',
+        'integration dvr':      'INT_DVR_IP'
         },
     'test configurations': {
         'regression sanity': [

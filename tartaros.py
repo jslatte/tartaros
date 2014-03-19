@@ -118,7 +118,7 @@ if argv is not None:
             for test in tests:
                 if test.strip() != 'None':
                     tests_to_schedule.append(test.strip())
-        elif 'int_dvr_ip=' in arg:
+        elif 'int_dvr_ip=' in arg and 'int_dvr_ip=None' not in arg:
             int_dvr_ip = arg.split('int_dvr_ip=')[1]
             params.append('Integration DVR IP:\t%s' % int_dvr_ip)
 
@@ -211,18 +211,33 @@ elif mode == 'testscheduling':
                         params.append(['build', build])
 
                         # trigger test
-                        builds_triggered +=1
+                        builds_triggered += 1
                         minos.trigger_build('tartaros', params)
 
-            else:
-                for test in tests_to_schedule:
-                    params = TEST_CONFIGURATIONS[test.lower()]
+            elif test.lower().strip() == 'dvr integration test':
+                # build test configuration parameter list
+                params = []
+                params.append(['test name', 'DVR Integration Test - %s' % int_dvr_ip])
+                params.append(['module', '%s' % 'dvr integration'])
+                params.append(['integration dvr', '%s' % int_dvr_ip])
 
-                    # update parameters (with build and test plan)
-                    params.append(['test plan id', results_plan_id])
-                    params.append(['build', build])
+                # update parameters (with build and test plan)
+                params.append(['test plan id', results_plan_id])
+                params.append(['build', build])
 
                 # trigger test
+                builds_triggered += 1
+                minos.trigger_build('tartaros', params)
+
+            else:
+                params = TEST_CONFIGURATIONS[test.lower()]
+
+                # update parameters (with build and test plan)
+                params.append(['test plan id', results_plan_id])
+                params.append(['build', build])
+
+                # trigger test
+                builds_triggered += 1
                 minos.trigger_build('tartaros', params)
 
             log.info("Triggered %s test runs." % builds_triggered)
