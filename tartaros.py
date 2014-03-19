@@ -218,7 +218,7 @@ elif mode == 'testscheduling':
                 # build test configuration parameter list
                 params = []
                 params.append(['test name', 'DVR Integration Test - %s' % int_dvr_ip])
-                params.append(['module', '%s' % 'dvr integration'])
+                params.append(['module', '%s' % '9'])
                 params.append(['integration dvr', '%s' % int_dvr_ip])
 
                 # update parameters (with build and test plan)
