@@ -253,12 +253,12 @@ class DriveStatus():
             # simulate drive history for site 1 having previously had disk 2
             self.simulate_drive_history_for_site(site_id, drive_id=disk2_id,
                 end=self.utc.convert_string_to_time('20 minutes ago'))
-            self.simulate_drive_history_for_site(site_id, drive_id=disk2_id,
+            self.simulate_drive_history_for_site(site_id, drive_id=disk_id,
                 start=self.utc.convert_string_to_time('20 minutes ago'))
             # simulate drive history for site 2 having previously had disk 1
             self.simulate_drive_history_for_site(site2_id, drive_id=disk_id,
                 end=self.utc.convert_string_to_time('20 minutes ago'))
-            self.simulate_drive_history_for_site(site2_id, drive_id=disk_id,
+            self.simulate_drive_history_for_site(site2_id, drive_id=disk2_id,
                 start=self.utc.convert_string_to_time('20 minutes ago'))
 
             self.log.trace("Simulated drive swap between site %s and %s." % (site_id, site2_id))
@@ -269,6 +269,38 @@ class DriveStatus():
 
         # return
         if testcase is not None: testcase.processing = result['successful']
+        return result
+
+    def change_drive_in_dvr(self, dvr_id=1, drive_id=1, testcase=None):
+        """ Change the current drive in a DVR.
+        @param dvr_id: the id of the DVR that will have its drive changed.
+        @param drive_id: the id of the drive to assign to the DVR.
+        @param testcase: a testcase object supplied when executing function as part of
+            a testcase step.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+            # update table
+            self.db.update_table_field_for_entry(
+                self.db.db_handle, DB_DVRS_TABLE, DB_DVRS_FIELDS['disk id'], drive_id,
+                DB_DVRS_FIELDS['id'], dvr_id)
+
+            self.log.trace("... done %s." % operation)
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if testcase is not None:
+            testcase.processing = result['successful']
+            testcase.dvr_id = dvr_id
+            testcase.drive_id = drive_id
         return result
 
     def simulate_dvr_change_for_site(self, site_id, testcase=None):
@@ -437,6 +469,8 @@ class DriveStatus():
                 # if no start or end times given, set from 0 to now
             if start is None: start = 0
             if end is None: end = self.utc.convert_string_to_time('now')
+            if 'ago' in start: start = self.utc.convert_string_to_time(start)
+            if 'ago' in end: end = self.utc.convert_string_to_time(end)
             # define drive history parameters
             parameters = {
                 DB_DVRHIST_FIELDS['dvr id']:       dvr_id,
@@ -490,6 +524,11 @@ class DriveStatus():
             # if no start or end times given, set from 0 to now
             if start is None: start = 0
             if end is None: end = self.utc.convert_string_to_time('now')
+            try:
+                if 'ago' in str(start): start = self.utc.convert_string_to_time(start)
+                if 'ago' in str(end): end = self.utc.convert_string_to_time(end)
+            except BaseException:
+                pass
             # define drive history parameters
             parameters = {
                 DB_DRIVEHIST_FIELDS['dvr id']:       dvr_id,

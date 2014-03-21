@@ -12,6 +12,7 @@
 ####################################################################################################
 
 from apsw import Connection
+from time import sleep
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -184,9 +185,11 @@ class Charon():
                 self.log.error("Failed to execute SQL.")
                 self.log.error(str(e))
                 if str(e) == 'BusyError: database is locked':
+                    sleep(1)
                     continue
                 else:
                     response = None
+                    sleep(1)
                     break
 
         # return
@@ -363,11 +366,11 @@ class Charon():
 
         # define statement
         if math:
-            statement  = '''UPDATE %(table)s SET %(field)s = %(value)s '''\
-                         % {'table': table, 'field': field, 'value': value}
+            statement = '''UPDATE %(table)s SET %(field)s = %(value)s '''\
+                        % {'table': table, 'field': field, 'value': value}
         else:
-            statement  = '''UPDATE %(table)s SET %(field)s = '%(value)s' '''\
-                         % {'table': table, 'field': field, 'value': value}
+            statement = '''UPDATE %(table)s SET %(field)s = '%(value)s' '''\
+                        % {'table': table, 'field': field, 'value': value}
         statement += '''WHERE %(known field)s = '%(known value)s' '''\
                      % {'known field': knownField, 'known value': knownValue}
 
