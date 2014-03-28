@@ -131,11 +131,14 @@ class DriveStatus():
                 while dvr_serial is None or dvr_model is None or dvr_firmware is None\
                     or attempt <= max_attempts:
                     dvr_serial = self.db.query_database_table_for_single_value(handle,
-                        table, DB_DVRS_FIELDS['serial'], DB_DVRS_FIELDS['id'], dvr_id)['value']
+                        table, DB_DVRS_FIELDS['serial'], DB_DVRS_FIELDS['id'],
+                        dvr_id)['value'].strip()
                     dvr_model = self.db.query_database_table_for_single_value(handle,
-                        table, DB_DVRS_FIELDS['model'], DB_DVRS_FIELDS['id'], dvr_id)['value']
+                        table, DB_DVRS_FIELDS['model'], DB_DVRS_FIELDS['id'],
+                        dvr_id)['value'].strip()
                     dvr_firmware = self.db.query_database_table_for_single_value(handle,
-                        table, DB_DVRS_FIELDS['firmware'], DB_DVRS_FIELDS['id'], dvr_id)['value']
+                        table, DB_DVRS_FIELDS['firmware'], DB_DVRS_FIELDS['id'],
+                        dvr_id)['value'].strip()
 
                     self.log.trace("Checking DVR information ...")
                     if dvr_serial is None:
@@ -202,7 +205,8 @@ class DriveStatus():
 
                 while drive_serial or attempt <= max_attempts:
                     drive_serial = self.db.query_database_table_for_single_value(handle,
-                    table, DB_DRIVES_FIELDS['serial'], DB_DRIVES_FIELDS['id'], drive_id)['value']
+                    table, DB_DRIVES_FIELDS['serial'], DB_DRIVES_FIELDS['id'],
+                    drive_id)['value'].strip()
 
                     self.log.trace("Checking drive information ...")
                     if drive_serial is None:
