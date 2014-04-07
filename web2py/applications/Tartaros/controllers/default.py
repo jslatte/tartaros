@@ -968,7 +968,8 @@ class TestManager():
 
                 # build ajax statement
                 self.log.trace("... building AJAX statement ...")
-                ajax_s = ajax_s_template % ("['%s_selection']" % obj_type, object_types['test case'])
+                ajax_s = ajax_s_template % ("['%s_selection']" % obj_type,
+                                            object_types['test case'])
 
                 # add update test attributes statements
                 ajax_s += update_test_results_id_script
@@ -1027,10 +1028,12 @@ class TestManager():
                                    "&target=%s" \
                                    "&selectaddr=%s" \
                                    "&type=%s', " \
-                                   "['module_selection', 'feature_selection', 'user_story_selection'," \
+                                   "['module_selection', 'feature_selection', " \
+                                   "'user_story_selection'," \
                                    "'test_selection', 'test_case_selection'], " \
                                    "'%s'); " \
-                                   % (select_addr, td_update_addr, select_addr, select_type, td_update_addr)
+                                   % (select_addr, td_update_addr, select_addr, select_type,
+                                      td_update_addr)
             div_update = DIV(INPUT(_type='button', _value='Update',
                                    _id=update_button_addr,
                                    _name=update_button_addr,
@@ -1064,6 +1067,10 @@ class TestManager():
             elif obj_type == object_types['test']:
                 tr_selection = TR(td_selection_label, td_selection, td_update, td_add_ts_entry,
                                   self.build_test_templatizer_div()['div'],
+                                  _id='tr_%s_selection' % name)
+            elif obj_type == object_types['user story']:
+                tr_selection = TR(td_selection_label, td_selection, td_update, td_add_ts_entry,
+                                  self.build_story_actions_div()['div'],
                                   _id='tr_%s_selection' % name)
             else:
                 tr_selection = TR(td_selection_label, td_selection, td_update, td_add_ts_entry,
@@ -2367,6 +2374,110 @@ class TestManager():
         self.log.trace("... DONE %s." % operation.replace('_', ' '))
         return result
 
+    def build_story_actions_div(self):
+        """ Build the story actions div.
+        @return: a dict containing:
+            'div' - the div containing the action button(s).
+        """
+
+        operation = inspect.stack()[0][3]
+        result = {'div': DIV()}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # define object ids
+            btn_add_story_to_testrail_addr = 'btn_add_story_to_testrail'
+            div_story_actions_addr = 'div_story_actions'
+
+            # build the onclick scripts
+            script = "ajax('%(function)s', %(values)s, '%(target)s');" \
+                     "jQuery(%(remove)s).remove();" \
+                     % {'function': 'add_story_to_testrail',
+                        'values': "['module_selection', 'feature_selection', "
+                                  "'user_story_selection', 'test_selection', "
+                                  "'test_case_selection']",
+                        'target': '',
+                        'remove': ''}
+
+            # build the objects
+            btn_add_story_to_testrail = INPUT(_type='button', _value="Add to TestRail",
+                                              _class='btn',
+                                              _id=btn_add_story_to_testrail_addr,
+                                              _name=btn_add_story_to_testrail_addr,
+                                              _onclick=script)
+
+            div_story_actions = DIV(btn_add_story_to_testrail,
+                                    _id=div_story_actions_addr)
+
+            # compile results
+            result['div'] = div_story_actions
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
+    def add_story_to_testrail(self, story_id):
+        """ Add the selected user story as a section in TestRail.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = None
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # determine project id of parent section (hard-coded for now)
+            log.trace("Determining project id ...")
+            project_id = 1
+            log.trace("Project ID:\t%d." % project_id)
+
+            # determine suite id of parent section
+            log.trace("Determining suite id ...")
+            story = db(db.user_stories.id == story_id).select()[0]
+            module_id = story.module_id
+            feature_id = story.feature_id
+            module = db(db.modules.id == module_id).select()[0]
+            feature = db(db.features.id == feature_id).select()[0]
+            suite_id = module.results_id
+            log.trace("Suite ID:\t%d" % suite_id)
+
+            # determine parent section id (feature results id within module/suite)
+            log.trace("Determining parent section id ...")
+            p_sect_id = self.orpheus.return_section_data(feature.name, suite_id, project_id)['id']
+            log.trace("Parent Section ID:\t%d." % p_sect_id)
+
+            # add section to parent (feature) for test
+            log.trace("Adding story section to parent ...")
+            # build name
+            if str(story.user_type) == '2':
+                story_name = "The server can %s" % story.name
+            else:
+                story_name = "A user can %s" % story.name
+            # give unique story name (to avoid issues when attempting to return correct sect id)
+            story_name_q = story_name + ' %s' % str(story_id)
+            sect_id = self.orpheus.add_section(
+                story_name_q, suite_id, project_id, parent_id=p_sect_id)['id']
+
+            # return sect name to normal
+            self.orpheus.update_section(sect_id, suite_id, project_id, name=story_name)
+
+            # update story results id
+            db(db.user_stories.id == story_id).update(results_id=sect_id)
+
+            # compile results
+            result = None
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
 
 ####################################################################################################
 # Step Manager #####################################################################################
@@ -2478,6 +2589,10 @@ def index():
         pass
 
     return dict(tmanager_form=tmanager_form)
+
+
+def add_story_to_testrail():
+    tmanager.add_story_to_testrail(request.vars.user_story_selection)
 
 
 def convert_test_to_section():
