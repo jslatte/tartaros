@@ -63,7 +63,8 @@ class Danaides():
 
         # create output folder if it does not exist
         if not path.exists(OUTPUT_FOLDER_PATH):
-            self.log.trace("Output folder path '%s' does not exist. Creating ..." % OUTPUT_FOLDER_PATH)
+            self.log.trace("Output folder path '%s' does not exist. Creating ..." %
+                           OUTPUT_FOLDER_PATH)
             mkdir(OUTPUT_FOLDER_PATH)
 
         self.module_name = self.__class__.__name__
@@ -125,24 +126,31 @@ class Danaides():
                     self.mode = line.lower().strip().split('mode = ')[1]
                     parameters.append(['Mode', self.mode])
                 elif 'connection_lapse_max =' in line.lower():
-                    self.vim_connection_lapse_max = int(line.lower().strip().split('connection_lapse_max = ')[1])
+                    self.vim_connection_lapse_max = int(line.lower().strip().split(
+                        'connection_lapse_max = ')[1])
                     parameters.append(['ViM Connection Lapse Max', self.vim_connection_lapse_max])
 
                 if 'diag_start_time = none' in line.lower():
                     self.vim_connection_diagnostic_start_time = None
-                    parameters.append(['ViM Connection Lapse Max', self.vim_connection_diagnostic_start_time])
+                    parameters.append(
+                        ['ViM Connection Lapse Max', self.vim_connection_diagnostic_start_time])
                 elif 'diag_start_time =' in line.lower():
-                    self.vim_connection_diagnostic_start_time = self.utc.convert_date_string_to_db_time(
-                        line.lower().strip().split('diag_start_time = ')[1])['db time']
-                    parameters.append(['ViM Connection Lapse Max', self.vim_connection_diagnostic_start_time])
+                    self.vim_connection_diagnostic_start_time = \
+                        self.utc.convert_date_string_to_db_time(
+                            line.lower().strip().split('diag_start_time = ')[1])['db time']
+                    parameters.append(['ViM Connection Lapse Max',
+                                       self.vim_connection_diagnostic_start_time])
 
                 if 'diag_end_time = none' in line.lower():
                     self.vim_connection_diagnostic_end_time = None
-                    parameters.append(['ViM Connection Lapse Max', self.vim_connection_diagnostic_end_time])
+                    parameters.append(['ViM Connection Lapse Max',
+                                       self.vim_connection_diagnostic_end_time])
                 elif 'diag_end_time =' in line.lower():
-                    self.vim_connection_diagnostic_end_time = self.utc.convert_date_string_to_db_time(
-                        line.lower().strip().split('diag_end_time = ')[1])['db time']
-                    parameters.append(['ViM Connection Lapse Max', self.vim_connection_diagnostic_end_time])
+                    self.vim_connection_diagnostic_end_time = \
+                        self.utc.convert_date_string_to_db_time(
+                            line.lower().strip().split('diag_end_time = ')[1])['db time']
+                    parameters.append(['ViM Connection Lapse Max',
+                                       self.vim_connection_diagnostic_end_time])
 
             # log parameters in output
             for param in parameters:
@@ -175,8 +183,9 @@ class Danaides():
 
         try:
             result['diagnostics'] = \
-                self.compile_vim_connection_diagnostics(start_time=self.vim_connection_diagnostic_start_time,
-                                                        end_time=self.vim_connection_diagnostic_end_time)['diagnostics']
+                self.compile_vim_connection_diagnostics(
+                    start_time=self.vim_connection_diagnostic_start_time,
+                    end_time=self.vim_connection_diagnostic_end_time)['diagnostics']
 
             self.log.debug("... DONE performing post mortem ViM connection diagnostic.")
             result['successful'] = True
@@ -210,7 +219,7 @@ class Danaides():
 
         try:
             # import ViM submodule (and connect to ViM database)
-            from Modules.Hestia import Hestia
+            from Hestia import Hestia
             if dir is not None:
                 hestia = Hestia(self.log, self.database, dir=dir)
             else:
@@ -295,11 +304,12 @@ class Danaides():
 
                 amalgamated_time_between_connections = 0
                 for time_between_connections in site['times between connections']:
-                    amalgamated_time_between_connections += time_between_connections['time between connections']
+                    amalgamated_time_between_connections += \
+                        time_between_connections['time between connections']
 
                 try:
                     site['connection frequency'] = \
-                    amalgamated_time_between_connections/len(site['times between connections'])
+                        amalgamated_time_between_connections/len(site['times between connections'])
                 except ZeroDivisionError:
                     site['connection frequency'] = 0
 
@@ -322,9 +332,11 @@ class Danaides():
                 for connection_entry in site['times between connections']:
                     if connection_entry['time between connections'] > self.vim_connection_lapse_max:
                         site['long re-connect periods'].append({
-                            'previous connection time': connection_entry['previous connection time'],
+                            'previous connection time':
+                                connection_entry['previous connection time'],
                             're-connection time': connection_entry['re-connect time'],
-                            'time between connections': connection_entry['time between connections'],
+                            'time between connections':
+                                connection_entry['time between connections'],
                         })
 
             self.log.debug("... DONE Compiling ViM connection diagnostics.")
@@ -368,7 +380,8 @@ class Danaides():
                     # create output file to log to
                     file_path = "%s\\%s-%s-memory_usage_monitoring.log" \
                                 % (OUTPUT_FOLDER_PATH,
-                                   str(datetime.now()).replace(':', '_').replace(' ', '-').replace('.', '_'),
+                                   str(datetime.now()).replace(':', '_').replace(' ', '-').replace(
+                                       '.', '_'),
                                    str(process).split('.')[0])
                     output_log = open(file_path, 'w')
                     output_log.close()
@@ -416,8 +429,10 @@ class Danaides():
                                 dif_working_set = working_set - c_working_set
                                 dif_private_set = private_set - c_private_set
                                 log_msgs = ["Change in Memory Usage (after %s):" % c_time,
-                                            "Resident Set Size:\t%f MB to %f MB" % (dif_working_set, working_set),
-                                            "Virtual Memory Size:\t%f MB to %f MB" % (dif_private_set, private_set),
+                                            "Resident Set Size:\t%f MB to %f MB" % (
+                                                dif_working_set, working_set),
+                                            "Virtual Memory Size:\t%f MB to %f MB" % (
+                                                dif_private_set, private_set),
                                             '\n']
                                 for log_msg in log_msgs:
                                     self.log.trace(log_msg)
@@ -443,22 +458,26 @@ class Danaides():
                                 # update total memory usage change
                                 result['current memory used'] = {'rss': c_working_set,
                                                                  'vms': c_private_set}
-                                result['net change in memory usage'] = {'rss': (c_working_set - i_working_set),
-                                                                        'vms': (c_private_set - i_private_set)}
+                                result['net change in memory usage'] = {
+                                    'rss': (c_working_set - i_working_set),
+                                    'vms': (c_private_set - i_private_set)}
 
                                 timestamp = datetime.now()
                                 elapsed_time = timestamp - i_time
-                                log_msgs = ['\n%s\tNet Change in Memory Usage (after %s):\t%f MB (Resident Set Size),'
+                                log_msgs = ['\n%s\tNet Change in Memory Usage (after %s):\t%f MB '
+                                            '(Resident Set Size),'
                                             ' %f MB (Virtual Memory Size)'
                                             % (timestamp, elapsed_time,
                                                result['net change in memory usage']['rss'],
                                                result['net change in memory usage']['vms']),
-                                            '\n%s\tTotal Memory Allocated (after %s):\t%f MB (Resident Set Size),'
+                                            '\n%s\tTotal Memory Allocated (after %s):\t%f MB '
+                                            '(Resident Set Size),'
                                             ' %f MB (Virtual Memory Size)'
                                             % (timestamp, elapsed_time,
                                                result['total memory allocated']['rss'],
                                                result['total memory allocated']['vms']),
-                                            '\n%s\tTotal Memory De-Allocated (after %s):\t%f MB (Resident Set Size),'
+                                            '\n%s\tTotal Memory De-Allocated (after %s):\t%f MB '
+                                            '(Resident Set Size),'
                                             ' %f MB (Virtual Memory Size)'
                                             % (timestamp, elapsed_time,
                                                result['total memory de-allocated']['rss'],
@@ -475,17 +494,20 @@ class Danaides():
                             with open(file_path, 'a') as output_log:
                                 timestamp = datetime.now()
                                 elapsed_time = timestamp - i_time
-                                log_msgs = ['\n%s\tNet Change in Memory Usage (after %s):\t%f MB (Resident Set Size),'
+                                log_msgs = ['\n%s\tNet Change in Memory Usage (after %s):\t%f MB '
+                                            '(Resident Set Size),'
                                             ' %f MB (Virtual Memory Size)'
                                             % (timestamp, elapsed_time,
                                                result['net change in memory usage']['rss'],
                                                result['net change in memory usage']['vms']),
-                                            '\n%s\tTotal Memory Allocated (after %s):\t%f MB (Resident Set Size),'
+                                            '\n%s\tTotal Memory Allocated (after %s):\t%f MB '
+                                            '(Resident Set Size),'
                                             ' %f MB (Virtual Memory Size)'
                                             % (timestamp, elapsed_time,
                                                result['total memory allocated']['rss'],
                                                result['total memory allocated']['vms']),
-                                            '\n%s\tTotal Memory De-Allocated (after %s):\t%f MB (Resident Set Size),'
+                                            '\n%s\tTotal Memory De-Allocated (after %s):\t%f MB '
+                                            '(Resident Set Size),'
                                             ' %f MB (Virtual Memory Size)'
                                             % (timestamp, elapsed_time,
                                                result['total memory de-allocated']['rss'],
