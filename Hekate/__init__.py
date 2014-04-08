@@ -168,7 +168,7 @@ class Hekate():
                     result['communicating'] = False
 
                 # update result
-                result['data'] = buf
+                result['data'] = dat
 
                 if logging: self.log.trace("Received incoming messages from socket %s." % sock_name)
                 else: self.log.trace_in_line('.')
@@ -251,10 +251,11 @@ class Hekate():
         @param logging: whether data should be logged or not.
         @return: a data dictionary including
             successful: whether the function executed successfully or not.
+            data: the full data message received (automatically translated from hex).
         """
 
         operation = inspect.stack()[0][3]
-        result = {'successful': False}
+        result = {'successful': False, 'data': None}
 
         try:
             self.log.trace("%s ..." % operation.replace('_', ' '))
@@ -277,16 +278,18 @@ class Hekate():
 
             # loop to handle message traffic with socket
             running = True
+            data = ''
             while running:
 
                 result = self.receive_incoming_messages_from_socket(conn, logging=logging)
-                data = result['data']
+                data += result['data']
                 running = result['communicating']
 
-            self.log.trace(str(data))
+            self.log.trace('Data Received:\t%s' % str(data))
 
             # compile results
             result['successful'] = True
+            result['data'] = data
 
         except BaseException, e:
             self.handle_exception(self.log, e, operation)
@@ -313,11 +316,43 @@ class Hekate():
                 )
 
                 # EXECUTE ALL THREADS
-                self.sisyphus.execute_pending_threads()
+                result = self.sisyphus.execute_pending_threads()
+
+                # build list of messages received
+                messages = []
+                for datum in result['data']:
+                    messages.append(datum['data'])
+
+                # handle communication received
+                self.handle_server_commands(messages)
 
             # close sockets
             self.log.trace("Closing open sockets ...")
             self.client.close()
+
+            # compile results
+            result = None
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
+    def handle_server_commands(self, commands):
+        """ Handle any commands received from the server (Tartaros).
+        @param commands: a list of string commands received from the server.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = None
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            for command in commands:
+                self.log.trace(command)
 
             # compile results
             result = None
