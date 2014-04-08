@@ -13,6 +13,7 @@
 
 from logger import Logger
 from Database import Database
+from Hekate import Hekate
 from Hestia import Hestia
 from Ixion import Ixion
 from Minos import Minos
@@ -27,6 +28,7 @@ from os import getcwdu
 from time import sleep
 from utc import UTC
 from random import randint
+from utility import return_execution_error
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -861,6 +863,20 @@ def convert_test_to_section_with_testcases_in_testrail(test_id):
         database.update_table_field_for_entry(
             database.db_handle, "test_cases", "results_id", case_results_id, "id", testcase['id'])
 
+def handle_exception(log, e, operation=None):
+        """ Handle an exception.
+        INPUT
+            e: the exception (from BaseException, e).
+            operation: the action being attempted (that failed).
+        """
+
+        if operation is not None: log.error("Failed to %s." % operation)
+        log.error(str(e))
+        for error in e:
+            log.error(str(error))
+        exception = return_execution_error()['error']
+        log.error("Error: %s." % exception)
+
 #hestia.check_for_hyphenated_drive_entry()
 
 ####################################################################################################
@@ -871,9 +887,9 @@ def convert_test_to_section_with_testcases_in_testrail(test_id):
 #hestia.reset_vim_server()
 #connect_to_database()
 #hestia.start_vim_server()
-log_in()
+#log_in()
 #hestia.setup_server_for_manual_testing('full')
-configure_license('health')
+#configure_license('full')
 #hestia.configure_vim_license('streaming server')
 
 #testcase = HestiaTestCase(log, database, 442, debugging=False)
@@ -900,3 +916,19 @@ configure_license('health')
 #determine_number_of_failed_connections_over_time(danaides, path, start, end)
 
 #log.trace("SELECT * FROM ConnectionLog WHERE csTimeStamp > %d and csTimeStamp < %d" %(utc.convert_date_string_to_db_time(start)['db time'], utc.convert_date_string_to_db_time(end)['db time']))
+
+import socket
+from binascii import hexlify
+
+def run_client():
+    hekate = Hekate(log, handle_exception, Sisyphus)
+    hekate.listen_to_socket(hekate.client, logging=True)
+
+def send_message_to_client():
+    client_addr = ('172.22.3.43', 333)
+    server = socket.socket()
+    server.connect(client_addr)
+    server.send(hexlify('TESTING'))
+
+while True: run_client()
+send_message_to_client()

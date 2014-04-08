@@ -8,6 +8,7 @@ Submodules:
 * Cerberus: user interface (now using web2py).
 * Charon: SQLite database API.
 * Danaides: diagnostic utility.
+* Hekate: client server.
 * Hestia: ViM.
 * Ixion: GPS simulation.
 * Minos: Build management (TeamCity).
@@ -15,7 +16,11 @@ Submodules:
 * Sisyphus: Test data generation.
 * Tantalus: DVR simulation.
 
-Potential UI Functions:
+TODO:
+* unify TCP/IP socket functionality into its own inheritable submodule class object (e.g., for use
+by Tantalus and Hekate, etc.).
+
+TODO (UI-specific):
 * Make performance and stress tests referable outside of normal regression.
 * Add/edit license configurations.
 * Add/edit depot sites (DVRs).
