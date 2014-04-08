@@ -283,12 +283,44 @@ class Hekate():
                 data = result['data']
                 running = result['communicating']
 
-            # close sockets
-            self.log.trace("Closing open sockets ...")
-            sock.close()
+            self.log.trace(str(data))
 
             # compile results
             result['successful'] = True
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
+    def run(self):
+        """ Run Hekate.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = None
+
+        try:
+            self.log.trace("%sning ..." % operation.replace('_', ' '))
+
+            while True:
+
+                # DEFINE THREAD: listen for incoming communication
+                self.sisyphus.add_process_to_thread_queue(
+                    self.listen_to_socket, (self.client, True,)
+                )
+
+                # EXECUTE ALL THREADS
+                self.sisyphus.execute_pending_threads()
+
+            # close sockets
+            self.log.trace("Closing open sockets ...")
+            self.client.close()
+
+            # compile results
+            result = None
 
         except BaseException, e:
             self.handle_exception(self.log, e, operation)
