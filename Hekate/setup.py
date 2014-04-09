@@ -21,15 +21,21 @@ from time import sleep
 ####################################################################################################
 
 # determine config file path
-output_file_path = getcwdu() + "\\Danaides\\output\\dummy.txt"
+config_file_path = getcwdu() + "\\Hekate\\config.ini"
+
+# determine database file path
+db_file_path = getcwdu() + "\\web2py\\applications\\Tartaros\\databases\\tartaros.sqlite"
 
 # import DLLs necessary to run final EXE
 from glob import glob
-data_files = [("Microsoft.VC90.CRT",
-               glob(r'C:\Program Files (x86)\Common Files\microsoft shared\VSTO\10.0\*.dll'))]
+data_files = [
+    ("Microsoft.VC90.CRT",
+     glob(r'C:\Program Files (x86)\Common Files\microsoft shared\VSTO\10.0\*.dll')),
+    ("Hekate", glob(r'%s' % config_file_path)),
+    ("web2py\\applications\\Tartaros\\databases", glob(r'%s' % db_file_path))]
 
 # build application
-setup(data_files=data_files, console=['danaides.py'])
+setup(data_files=data_files, console=['hekate.py'])
 
 # move compiled build folders to artifacts directory
 root_dir = getcwdu()
@@ -41,7 +47,7 @@ dst = root_dir + "\\artifacts"
 if not path.exists(dst):
     mkdir(dst)
 
-dst += "\\Danaides"
+dst += "\\Hekate"
 if path.exists(dst):
     rmtree(dst)
 
@@ -49,7 +55,3 @@ mkdir(dst)
 
 move(build_src, dst)
 move(dist_src, dst)
-
-# add folder for logging output
-sleep(3)
-makedirs(dst + "\\dist\\Modules\\Danaides\\output\\")

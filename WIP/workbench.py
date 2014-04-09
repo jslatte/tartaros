@@ -920,15 +920,10 @@ def handle_exception(log, e, operation=None):
 import socket
 from binascii import hexlify
 
-def run_client():
-    hekate = Hekate(log, handle_exception, Sisyphus)
-    hekate.listen_to_socket(hekate.client, logging=True)
-
 def send_message_to_client():
-    client_addr = ('172.22.3.43', 333)
+    client_addr = ('172.22.2.89', 333)
     server = socket.socket()
     server.connect(client_addr)
-    server.send(hexlify('TESTING'))
+    server.send(hexlify("self.run_test('Release-Ready', 'Hard-Coded Client Test', 318, story=3, case_class=2)"))
 
-while True: run_client()
 send_message_to_client()

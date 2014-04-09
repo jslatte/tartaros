@@ -404,15 +404,16 @@ class TestRun():
             }
 
             # determine scope of test run
-            if str(case_id) is not None and str(case_id) != BLANK_SEL and str(case_id)is not '0':
+            if case_id is not None and str(case_id) != BLANK_SEL and str(case_id)is not '0':
                 scope = SCOPE_LEVELS['test case']
-            elif str(test_id) is not None and str(test_id) != BLANK_SEL and str(test_id)is not '0':
+            elif test_id is not None and str(test_id) != BLANK_SEL and str(test_id)is not '0':
                 scope = SCOPE_LEVELS['test']
-            elif str(story_id) is not None and str(story_id) != BLANK_SEL and str(story_id)is not '0':
+            elif story_id is not None and str(story_id) != BLANK_SEL and str(story_id)is not '0':
                 scope = SCOPE_LEVELS['user story']
-            elif str(feature_id) is not None and str(feature_id) != BLANK_SEL and str(feature_id)is not '0':
+            elif feature_id is not None and str(feature_id) != BLANK_SEL and str(feature_id)is not '0':
                 scope = SCOPE_LEVELS['feature']
-            elif str(module_id) is not None and str(module_id) != BLANK_SEL and str(module_id)is not '0':
+            elif str(module_id) is not None and str(module_id) != BLANK_SEL \
+                    and str(module_id)is not '0':
                 scope = SCOPE_LEVELS['module']
             else:
                 scope = SCOPE_LEVELS['full']
@@ -507,7 +508,7 @@ class TestRun():
         # return
         return result
 
-    def filter_testcases_by_class(self, testcases, testcase_class=''):
+    def filter_testcases_by_class(self, testcases, testcase_class=None):
         """
         INPUT
             testcase: a testcase object supplied when executing function as part of a testcase step.
@@ -519,22 +520,25 @@ class TestRun():
         result = {'successful': False}
 
         try:
-            if testcase_class.lower() != BLANK_SEL.lower() and testcase_class.lower() != '':
-                # filter testcases to run according to class selected
-                testcases_to_remove = []
-                for testcase in testcases:
-                    testcase_data = self.database.return_testcase_data(testcase['id'])['testcase data']
-                    if int(testcase_data['class']) != int(testcase_class):
-                        testcases_to_remove.append(testcase)
-                    if int(testcase_data['active']) == 0:
-                        testcases_to_remove.append(testcase)
+            if testcase_class is not None:
+                if str(testcase_class).lower() != BLANK_SEL.lower() \
+                        and str(testcase_class).lower() != '':
+                    # filter testcases to run according to class selected
+                    testcases_to_remove = []
+                    for testcase in testcases:
+                        testcase_data = self.database.return_testcase_data(
+                            testcase['id'])['testcase data']
+                        if int(testcase_data['class']) != int(testcase_class):
+                            testcases_to_remove.append(testcase)
+                        if int(testcase_data['active']) == 0:
+                            testcases_to_remove.append(testcase)
 
-                # remove testcases filtered out
-                for testcase in testcases_to_remove:
-                    testcases.remove(testcase)
+                    # remove testcases filtered out
+                    for testcase in testcases_to_remove:
+                        testcases.remove(testcase)
 
-            self.log.trace("Filtered testcases by class")
-            self.log.trace("Number of Test Cases:\t%d" % len(testcases))
+                self.log.trace("Filtered testcases by class")
+                self.log.trace("Number of Test Cases:\t%d" % len(testcases))
             result['successful'] = True
         except BaseException, e:
             self.log.error("Failed to filter testcases by class.")
