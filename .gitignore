@@ -46,3 +46,4 @@ Cerberus/web2py/applications/Tartaros/sessions/*.*
 .idea/dataSources.ids
 web2py/applications/Tartaros/sessions/*
 artifacts/*
+Output/*

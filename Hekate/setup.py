@@ -20,11 +20,10 @@ from time import sleep
 ####################################################################################################
 ####################################################################################################
 
-# determine config file path
+# determine paths
 config_file_path = getcwdu() + "\\Hekate\\config.ini"
-
-# determine database file path
 db_file_path = getcwdu() + "\\web2py\\applications\\Tartaros\\databases\\tartaros.sqlite"
+icon_path = "Hekate\\hekate.ico"
 
 # import DLLs necessary to run final EXE
 from glob import glob
@@ -32,10 +31,20 @@ data_files = [
     ("Microsoft.VC90.CRT",
      glob(r'C:\Program Files (x86)\Common Files\microsoft shared\VSTO\10.0\*.dll')),
     ("Hekate", glob(r'%s' % config_file_path)),
-    ("web2py\\applications\\Tartaros\\databases", glob(r'%s' % db_file_path))]
+    ("web2py\\applications\\Tartaros\\databases", glob(r'%s' % db_file_path)),
+    ("", glob(r'%s' % icon_path))]
 
 # build application
-setup(data_files=data_files, console=['hekate.py'])
+setup(
+    data_files=data_files,
+    options={'py2exe': {'bundle_files': 3, 'compressed': True}},
+    console=[{
+        "script":           "hekate.py",
+        "icon_resources":   [(0x004, icon_path)],
+        "dest_base":        "Hekate"
+    }],
+    zipfile=None
+)
 
 # move compiled build folders to artifacts directory
 root_dir = getcwdu()
