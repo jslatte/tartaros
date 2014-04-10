@@ -40,7 +40,7 @@ setup(
     options={'py2exe': {'bundle_files': 3, 'compressed': True}},
     console=[{
         "script":           "hekate.py",
-        "icon_resources":   [(0x004, icon_path)],
+        "icon_resources":   [(1, icon_path)],
         "dest_base":        "Hekate"
     }],
     zipfile=None
