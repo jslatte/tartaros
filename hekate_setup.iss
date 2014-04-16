@@ -7,8 +7,8 @@
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{44AD0631-36FF-4A3D-926D-DD17B9138AEA}
 AppName=Hekate
-AppVersion=1.0.0
-;AppVerName=Hekate 1.0.0
+AppVersion=1.0.1
+;AppVerName=Hekate 1.0.1
 AppPublisher=Apollo Video Technology, LLC.
 AppPublisherURL=www.apollovideo.com
 AppSupportURL=www.apollovideo.com
@@ -16,7 +16,7 @@ AppUpdatesURL=www.apollovideo.com
 DefaultDirName={pf}\Tartaros\Hekate
 DefaultGroupName=Tartaros\Hekate
 AllowNoIcons=yes
-OutputBaseFilename=InstallHekate
+OutputBaseFilename=Hekate-1.0.1
 Compression=lzma
 SolidCompression=yes
 

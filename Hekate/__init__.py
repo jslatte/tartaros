@@ -323,7 +323,8 @@ class Hekate():
 
                 # build list of messages received
                 messages = []
-                for datum in result['data']:
+                while len(result['data']) > 0:
+                    datum = result['data'].pop()
                     messages.append(datum['data'])
 
                 # handle communication received
@@ -354,12 +355,13 @@ class Hekate():
         try:
             self.log.trace("%s ..." % operation.replace('_', ' '))
 
-            for command in commands:
-                self.log.trace('Executing command:\t%s' % command)
+            while len(commands) > 0:
+                cmd = commands.pop()
+                self.log.trace('Executing command:\t%s' % cmd)
                 try:
-                    eval(command)
+                    eval(cmd)
                 except BaseException, e:
-                    self.handle_exception(self.log, e, 'execute command "%s"' % command)
+                    self.handle_exception(self.log, e, 'execute command "%s"' % cmd)
 
             # compile results
             result = None

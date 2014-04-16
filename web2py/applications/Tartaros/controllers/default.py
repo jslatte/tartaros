@@ -2677,6 +2677,7 @@ def run_remote_test():
         hex_cmd = hexlify(cmd)
 
         # send commands to client
+        log.trace("Sending command:\t'%s'." % cmd)
         server.send(hex_cmd)
 
     else:
