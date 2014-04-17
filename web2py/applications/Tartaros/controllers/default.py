@@ -1895,6 +1895,7 @@ class TestManager():
             inp_remote_server_addr = 'inp_remote_server'
             inp_build_addr = 'inp_build'
             btn_run_remote_test_addr = 'btn_run_remote_test'
+            inp_test_run_type_addr = 'inp_test_run_type'
             div_test_runner_addr = 'div_test_runner'
 
             # build the onclick scripts
@@ -1918,8 +1919,9 @@ class TestManager():
                         % {'function': 'run_remote_test',
                            'values': "['%s', 'module_selection', 'feature_selection', "
                                      "'user_story_selection', 'test_selection', "
-                                     "'test_case_selection', '%s', '%s']"
-                                     % (inp_plan_id_addr, inp_remote_server_addr, inp_build_addr),
+                                     "'test_case_selection', '%s', '%s', '%s']"
+                                     % (inp_plan_id_addr, inp_remote_server_addr, inp_build_addr,
+                                        inp_test_run_type_addr),
                            'target': '',
                            'remove': ''}
 
@@ -1946,6 +1948,15 @@ class TestManager():
             lbl_build = LABEL("BUILD: ")
             inp_build = INPUT(_type='string',
                               _id=inp_build_addr, _name=inp_build_addr)
+            lbl_test_run_type = LABEL("TEST RUN TYPE: ")
+            options = [
+                OPTION('Custom', _value=0),
+                OPTION('Regression Validation', _value=1),
+                OPTION('Regression Full', _value=2)
+            ]
+            inp_test_run_type = SELECT(*options,
+                                       _id=inp_test_run_type_addr,
+                                       _name=inp_test_run_type_addr)
             lbl_remote_server = LABEL("REMOTE SERVER: ")
             inp_remote_server = INPUT(_type='string',
                                       _id=inp_remote_server_addr, _name=inp_remote_server_addr)
@@ -1955,6 +1966,7 @@ class TestManager():
                                   btn_run_test, btn_push_case,
                                   lbl_remote_server, inp_remote_server,
                                   lbl_build, inp_build,
+                                  lbl_test_run_type, inp_test_run_type,
                                   btn_run_remote_test,
                                   _id=div_test_runner_addr)
 
@@ -2616,11 +2628,14 @@ def index():
 
 
 def run_remote_test():
-    # determine build
-    build = request.vars.inp_build
+    import socket
+    from binascii import hexlify
 
-    # determine test plan id
+    # determin test run variables
+    test_run_type = request.vars.inp_test_run_type
+    build = request.vars.inp_build
     plan_id = request.vars.inp_plan_id
+    remote_server_ip = request.vars.inp_remote_server
 
     # determine test suite values
     module_id = request.vars.module_selection
@@ -2636,57 +2651,78 @@ def run_remote_test():
     else:
         int_dvr_ip = None
 
-    # determine remote server
-    remote_server_ip = request.vars.inp_remote_server
+    # build list of test commands to send to client
+    commands = []
 
-    # parse vars in preparation for eval() on client end
-    if module_id is not None: module_id = "'%s'" % module_id
-    if feature_id is not None: feature_id = "'%s'" % feature_id
-    if user_story_id is not None: user_story_id = "'%s'" % user_story_id
-    if test_id is not None: test_id = "'%s'" % test_id
-    if test_case_id is not None: test_case_id = "'%s'" % test_case_id
+    # ... for custom test run (using selected suite values from UI)
+    if test_run_type == '0':
 
-    # run remote test
-    if plan_id is not None and remote_server_ip is not None and build is not None:
-        import socket
-        from binascii import hexlify
+        # parse vars in preparation for eval() on client end
+        if module_id is not None: module_id = "'%s'" % module_id
+        if feature_id is not None: feature_id = "'%s'" % feature_id
+        if user_story_id is not None: user_story_id = "'%s'" % user_story_id
+        if test_id is not None: test_id = "'%s'" % test_id
+        if test_case_id is not None: test_case_id = "'%s'" % test_case_id
 
+        # run remote test
+        if plan_id is not None and remote_server_ip is not None and build is not None:
+
+            # build server command for client
+            cmd_dict = {
+                'build':    "'%s'" % build,
+                'test name':"'Remote Test'",
+                'plan id':  plan_id,
+                'module':   module_id,
+                'feature':  feature_id,
+                'story':    user_story_id,
+                'test':     test_id,
+                'case':     test_case_id,
+                'class':    None,
+                'type':     None,
+                'dvr ip':   int_dvr_ip,
+            }
+            cmd = "self.run_test(build=%(build)s, test_name=%(test name)s, " \
+                  "results_plan_id=%(plan id)s, module=%(module)s, feature=%(feature)s, " \
+                  "story=%(story)s, test=%(test)s, case=%(case)s, " \
+                  "case_class=%(class)s, case_type=%(type)s, int_dvr_ip=%(dvr ip)s)" % cmd_dict
+            hex_cmd = hexlify(cmd)
+            commands.append(hex_cmd)
+
+        else:
+            log.warn("Failed to run remote test. "
+                     "TestRail Plan ID was %s."
+                     "Remote Server IP was %s."
+                     "Build was %s."
+                     % (plan_id, remote_server_ip, build))
+
+    # ... for regression validation test run
+    elif test_run_type == '1':
+        log.warn("Not implemented.")
+
+    elif test_run_type == '2':
+        log.warn("Not implemented.")
+
+    else:
+        log.warn("Invalid test run type %s." % test_run_type)
+
+    if len(commands) > 0:
         # connect to remote client (Hekate)
         client_addr = (remote_server_ip, 333)
+
+        log.trace("Connecting to remote client at %s ..." % str(client_addr))
+
         server = socket.socket()
         server.connect(client_addr)
 
-        # build server command for client
-        cmd_dict = {
-            'build':    "'%s'" % build,
-            'test name':"'Remote Test'",
-            'plan id':  plan_id,
-            'module':   module_id,
-            'feature':  feature_id,
-            'story':    user_story_id,
-            'test':     test_id,
-            'case':     test_case_id,
-            'class':    None,
-            'type':     None,
-            'dvr ip':   int_dvr_ip,
-        }
-        cmd = "self.run_test(build=%(build)s, test_name=%(test name)s, " \
-              "results_plan_id=%(plan id)s, module=%(module)s, feature=%(feature)s, " \
-              "story=%(story)s, test=%(test)s, case=%(case)s, " \
-              "case_class=%(class)s, case_type=%(type)s, int_dvr_ip=%(dvr ip)s)" % cmd_dict
-        hex_cmd = hexlify(cmd)
+        log.trace("... connected.")
 
         # send commands to client
-        log.trace("Sending command:\t'%s'." % cmd)
-        server.send(hex_cmd)
+        for command in commands:
+            log.trace("Sending command:\t'%s'." % cmd)
+            server.send(command)
 
-    else:
-        log.warn("Failed to run remote test. "
-                 "TestRail Plan ID was %s."
-                 "Remote Server IP was %s."
-                 "Build was %s."
-                 % (plan_id, remote_server_ip, build))
-
+        # close connection to client
+        server.close()
 
 def add_story_to_testrail():
     tmanager.add_story_to_testrail(request.vars.user_story_selection)
