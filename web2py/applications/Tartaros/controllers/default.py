@@ -2629,7 +2629,7 @@ def index():
 
 def run_remote_test():
     import socket
-    from binascii import hexlify
+    from binascii import hexlify, unhexlify
 
     # determin test run variables
     test_run_type = request.vars.inp_test_run_type
@@ -2700,7 +2700,35 @@ def run_remote_test():
         log.warn("Not implemented.")
 
     elif test_run_type == '2':
-        log.warn("Not implemented.")
+        # determine all features
+        features = db().select(db.features.ALL)
+
+        # add a test run for each feature (exclude debug)
+        for feature in features:
+            # determine all user stories for feature
+            stories = db(db.user_stories.feature_id == feature.id).select()
+
+            for story in stories:
+                # build server command for client
+                cmd_dict = {
+                    'build':    "'%s'" % build,
+                    'test name':"'Remote Test - %s'" % story.action,
+                    'plan id':  plan_id,
+                    'module':   story.module_id,
+                    'feature':  story.feature_id,
+                    'story':    story.id,
+                    'test':     None,
+                    'case':     None,
+                    'class':    None,
+                    'type':     None,
+                    'dvr ip':   int_dvr_ip,
+                }
+                cmd = "self.run_test(build=%(build)s, test_name=%(test name)s, " \
+                      "results_plan_id=%(plan id)s, module=%(module)s, feature=%(feature)s, " \
+                      "story=%(story)s, test=%(test)s, case=%(case)s, " \
+                      "case_class=%(class)s, case_type=%(type)s, int_dvr_ip=%(dvr ip)s);;" % cmd_dict
+                hex_cmd = hexlify(cmd)
+                commands.append(hex_cmd)
 
     else:
         log.warn("Invalid test run type %s." % test_run_type)
@@ -2718,7 +2746,7 @@ def run_remote_test():
 
         # send commands to client
         for command in commands:
-            log.trace("Sending command:\t'%s'." % cmd)
+            log.trace("Sending command:\t'%s'." % unhexlify(command))
             server.send(command)
 
         # close connection to client

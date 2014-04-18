@@ -8,7 +8,7 @@
 AppId={{44AD0631-36FF-4A3D-926D-DD17B9138AEA}
 AppName=Hekate
 AppVersion=1.0.1
-;AppVerName=Hekate 1.0.1
+;AppVerName=Hekate 1.0.2
 AppPublisher=Apollo Video Technology, LLC.
 AppPublisherURL=www.apollovideo.com
 AppSupportURL=www.apollovideo.com
@@ -16,7 +16,7 @@ AppUpdatesURL=www.apollovideo.com
 DefaultDirName={pf}\Tartaros\Hekate
 DefaultGroupName=Tartaros\Hekate
 AllowNoIcons=yes
-OutputBaseFilename=Hekate-1.0.1
+OutputBaseFilename=Hekate-1.0.2
 Compression=lzma
 SolidCompression=yes
 

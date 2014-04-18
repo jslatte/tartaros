@@ -325,7 +325,9 @@ class Hekate():
                 messages = []
                 while len(result['data']) > 0:
                     datum = result['data'].pop()
-                    messages.append(datum['data'])
+                    data = datum['data'].split(';;')
+                    for command in data:
+                        messages.append(command)
 
                 # handle communication received
                 self.handle_server_commands(messages)
@@ -357,11 +359,14 @@ class Hekate():
 
             while len(commands) > 0:
                 cmd = commands.pop()
-                self.log.trace('Executing command:\t%s' % cmd)
-                try:
-                    eval(cmd)
-                except BaseException, e:
-                    self.handle_exception(self.log, e, 'execute command "%s"' % cmd)
+                if cmd != '':
+                    self.log.trace('Executing command:\t%s' % cmd)
+                    try:
+                        eval(cmd)
+                    except BaseException, e:
+                        self.handle_exception(self.log, e, 'execute command "%s"' % cmd)
+                else:
+                    self.log.trace("Received empty command. Skipping ...")
 
             # compile results
             result = None
