@@ -16,6 +16,7 @@ from os import getcwdu, listdir, system, path
 from utility import move_up_windows_path
 from wmi import WMI
 from shutil import rmtree
+from time import sleep
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -213,12 +214,17 @@ class Installer():
 
             # if failed to uninstall, try doing it using build number in expected location
             if not result['verified']:
-                self.log.warn("Failed to uninstall ViM server. Re-attempting using server package.")
-                path = move_up_windows_path(getcwdu(),2)['path']+"\\artifacts\\"
-                path += "VIMServer.msi"
-                system('C:\Windows\System32\MSIEXEC.exe /x "%s" /QN /norestart'%path)
-                # verify ViM was uninstalled
-                result['verified'] = self.verify_vim_uninstalled()['verified']
+                try:
+                    self.log.warn("Failed to uninstall ViM server. "
+                                  "Re-attempting using server package.")
+                    path = move_up_windows_path(getcwdu(),2)['path']+"\\artifacts\\"
+                    path += "VIMServer.msi"
+                    system('C:\Windows\System32\MSIEXEC.exe /x "%s" /QN /norestart'%path)
+                    # verify ViM was uninstalled
+                    result['verified'] = self.verify_vim_uninstalled()['verified']
+                except BaseException, e:
+                    self.log.error(e)
+                    self.start_vim_server()
 
             # clean up files
             self.cleanup_installed_files()
@@ -245,12 +251,21 @@ class Installer():
         result = {'successful': False, 'verified':False}
 
         try:
-            # check for server application (by checking server executable)
-            if not path.exists(self.server_exe_path):
-                self.log.trace("Verified ViM Server uninstalled.")
-                result['verified'] = True
-            else:
-                self.log.error("Failed to verify ViM Server was uninstalled.")
+            attempts = 1
+            while attempts <= 5:
+                # check for server application (by checking server executable)
+                if not path.exists(self.server_exe_path):
+                    self.log.trace("Verified ViM Server uninstalled.")
+                    result['verified'] = True
+                    break
+                elif attempts < 5:
+                    self.log.trace("ViM Server executable found. Re-checking in 5 seconds ...")
+                    sleep(5)
+                else:
+                    self.log.error("Failed to verify ViM Server was uninstalled.")
+                    break
+
+                attempts += 1
             result['successful'] = True
         except BaseException, e:
             self.handle_exception(e, operation="verify ViM uninstalled")

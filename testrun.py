@@ -11,7 +11,7 @@
 ####################################################################################################
 ####################################################################################################
 
-from time import clock
+from time import clock, sleep
 from utility import move_up_windows_path
 from os import getcwdu, path, mkdir
 from mapping import TARTAROS
@@ -587,7 +587,7 @@ class TestRun():
         # return
         return result
 
-    def setup_test_environment(self, build, test_name):
+    def setup_test_environment(self, build, test_name, installing=True):
         """ Setup the test environment for the product under test.
         OUPUT
             successful: whether the function executed successfully or not.
@@ -602,22 +602,23 @@ class TestRun():
                 from Hestia import Hestia
                 self.hestia = Hestia(self.log, self.database)
 
-                # uninstall previous builds
-                self.hestia.uninstall_vim_server()
+                if installing:
+                    # uninstall previous builds
+                    self.hestia.uninstall_vim_server()
 
-                # determine path to save downloaded build to
-                current_directory = getcwdu()
-                save_path = move_up_windows_path(current_directory, 2)['path']+"\\artifacts\\"
-                if not path.exists(save_path):
-                    self.log.trace("Artifacts folders does not exist. Creating ...")
-                    mkdir(save_path)
+                    # determine path to save downloaded build to
+                    current_directory = getcwdu()
+                    save_path = move_up_windows_path(current_directory, 2)['path']+"\\artifacts\\"
+                    if not path.exists(save_path):
+                        self.log.trace("Artifacts folders does not exist. Creating ...")
+                        mkdir(save_path)
 
-                # download last successful build for specified build line
-                file_path = self.build_manager.download_last_successful_build(build,
-                    save_path)['file path']
+                    # download last successful build for specified build line
+                    file_path = self.build_manager.download_last_successful_build(build,
+                        save_path)['file path']
 
-                # install server build under test
-                self.hestia.install_vim_server(file_path)
+                    # install server build under test
+                    self.hestia.install_vim_server(file_path)
 
                 # check the server version
                 version = self.hestia.return_vim_server_version()['version']

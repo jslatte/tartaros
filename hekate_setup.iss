@@ -7,8 +7,8 @@
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{44AD0631-36FF-4A3D-926D-DD17B9138AEA}
 AppName=Hekate
-AppVersion=1.0.1
-;AppVerName=Hekate 1.0.2
+AppVersion=1.0.2
+;AppVerName=Hekate
 AppPublisher=Apollo Video Technology, LLC.
 AppPublisherURL=www.apollovideo.com
 AppSupportURL=www.apollovideo.com
@@ -40,5 +40,5 @@ Name: "{commondesktop}\Hekate"; Filename: "{app}\hekate.exe"; Tasks: desktopicon
 Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\Hekate"; Filename: "{app}\hekate.exe"; Tasks: quicklaunchicon; IconFilename: "{app}\hekate.ico"
 
 [Run]
-Filename: "{app}\hekate.exe"; Description: "{cm:LaunchProgram,Hekate}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\hekate.exe"; Description: "{cm:LaunchProgram,Hekate}"; Flags: nowait postinstall skipifsilent runascurrentuser shellexec
 

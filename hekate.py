@@ -15,6 +15,7 @@ from Hekate import Hekate
 from Sisyphus import Sisyphus
 from logger import Logger
 from utility import return_execution_error
+from time import sleep
 
 ####################################################################################################
 # Globals ##########################################################################################
