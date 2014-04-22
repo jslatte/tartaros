@@ -24,6 +24,7 @@ from time import sleep
 config_file_path = getcwdu() + "\\Hekate\\config.ini"
 db_file_path = getcwdu() + "\\web2py\\applications\\Tartaros\\databases\\tartaros.sqlite"
 icon_path = "Hekate\\hekate.ico"
+bat_path = "Hekate\\hekate.bat"
 
 # import DLLs necessary to run final EXE
 from glob import glob
@@ -32,7 +33,8 @@ data_files = [
      glob(r'C:\Program Files (x86)\Common Files\microsoft shared\VSTO\10.0\*.dll')),
     ("Hekate", glob(r'%s' % config_file_path)),
     ("web2py\\applications\\Tartaros\\databases", glob(r'%s' % db_file_path)),
-    ("", glob(r'%s' % icon_path))]
+    ("", glob(r'%s' % icon_path)),
+    ("", glob(r'%s' % bat_path))]
 
 # build application
 setup(
