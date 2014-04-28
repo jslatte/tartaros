@@ -116,10 +116,15 @@ class TestManager():
                 obj_type = 'user story'
 
                 # determine user story options for selection
-                options = db(db.user_stories.module_id == request.vars.module_selection).select(db.user_stories.ALL)
+                options = db(
+                    db.user_stories.module_id ==
+                    request.vars.module_selection).select(db.user_stories.ALL
+                )
 
                 # filter by selected feature
-                options.exclude(lambda entry: str(entry.feature_id) != str(request.vars.feature_selection))
+                options.exclude(
+                    lambda entry: str(entry.feature_id) != str(request.vars.feature_selection)
+                )
 
             # if user story field changed, then update the test field
             elif request.vars.user_story_selection:
@@ -133,7 +138,9 @@ class TestManager():
                 if str(request.vars.user_story_selection) is '0':
                     options = []
                 else:
-                    options =  db(db.tests.user_story_id == request.vars.user_story_selection).select(db.tests.ALL)
+                    options = db(
+                        db.tests.user_story_id == request.vars.user_story_selection
+                    ).select(db.tests.ALL)
 
             # if test field changed, then update the test case field
             elif request.vars.test_selection:
