@@ -23,7 +23,9 @@ from Orpheus import Orpheus
 import subprocess
 from os import getcwdu
 from utility import move_up_windows_path
-from mapping import HESTIA
+from mapping import HESTIA, TARTAROS_DB_PATH
+import socket
+from binascii import hexlify, unhexlify
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -2635,9 +2637,6 @@ def index():
 
 
 def run_remote_test():
-    import socket
-    from binascii import hexlify, unhexlify
-
     # determin test run variables
     test_run_type = request.vars.inp_test_run_type
     build = request.vars.inp_build

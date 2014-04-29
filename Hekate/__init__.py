@@ -163,7 +163,8 @@ class Hekate():
                 except BaseException:
                     dat = buf
 
-                if logging: self.log.trace("Received Data: %s." % dat)
+                if logging: self.log.trace("Received data.")
+                #if logging: self.log.trace("Received Data: %s." % dat)
 
                 # wait until remote client is done communicating
                 if len(buf) == 0:
@@ -288,7 +289,8 @@ class Hekate():
                 data += result['data']
                 running = result['communicating']
 
-            self.log.trace('Data Received:\t%s' % str(data))
+            self.log.trace("Data received.")
+            #self.log.trace('Data Received:\t%s' % str(data))
 
             # compile results
             result['successful'] = True
@@ -312,6 +314,8 @@ class Hekate():
             self.log.trace("%sning ..." % operation.replace('_', ' '))
 
             while True:
+                updating_database = False
+                i = 1
 
                 # DEFINE THREAD: listen for incoming communication
                 self.sisyphus.add_process_to_thread_queue(
@@ -325,9 +329,25 @@ class Hekate():
                 messages = []
                 while len(result['data']) > 0:
                     datum = result['data'].pop()
-                    data = datum['data'].split(';;')
-                    for command in data:
-                        messages.append(command)
+
+                    # check for database update
+                    if 'SQLite' in datum['data']:
+
+                        # update database
+                        self.log.trace("Updating database ...")
+
+                        # create updated database file
+                        f = open("tartaros.db", 'wb')
+
+                        # write to updated database file
+                        f.write(datum['data'])
+
+                        # close file
+                        f.close()
+                    else:
+                        data = datum['data'].split(';;')
+                        for command in data:
+                            messages.append(command)
 
                 # handle communication received
                 self.handle_server_commands(messages)
@@ -357,6 +377,7 @@ class Hekate():
         try:
             self.log.trace("%s ..." % operation.replace('_', ' '))
 
+            # check if data includes database
             while len(commands) > 0:
                 cmd = commands.pop()
                 if cmd != '':
@@ -364,9 +385,9 @@ class Hekate():
                     try:
                         eval(cmd)
                     except BaseException, e:
-                        self.handle_exception(self.log, e, 'execute command "%s"' % cmd)
+                        self.handle_exception(self.log, e, 'processing command "%s"' % cmd)
                 else:
-                    self.log.trace("Received empty command. Skipping ...")
+                    self.log.trace("Received invalid command '%s'. Skipping ..." % cmd)
 
             # compile results
             result = None

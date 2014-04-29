@@ -23,12 +23,14 @@ from Tantalus import Tantalus
 #from Danaides import Danaides
 from testcase import HestiaTestCase
 from testrun import TestRun
-from mapping import TARTAROS, HESTIA
+from mapping import TARTAROS, HESTIA, TARTAROS_DB_PATH
 from os import getcwdu
 from time import sleep
 from utc import UTC
 from random import randint
 from utility import return_execution_error
+import socket
+from binascii import hexlify, unhexlify
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -903,27 +905,29 @@ def handle_exception(log, e, operation=None):
 #hestia.add_number_of_fake_sites(250, start_id=751, ip_schema="172.22.63.", start_ip=1)
 #hestia.add_number_of_fake_sites(200, start_id=1001, ip_schema="172.22.63.", start_ip=1)
 
-#run_dvr_simulation_test()
+# connect to remote client (Hekate)
+client_addr = ("172.22.3.43", 333)
 
-#tantalus.build_gps_event_data_packet(2)
+log.trace("Connecting to remote client at %s ..." % str(client_addr))
 
-#perform_vim_connections_post_mortem()
+server = socket.socket()
+server.connect(client_addr)
 
-#start = "2013-11-1 00:00:00"
-#end = "2013-11-4 23:59:59"
-#path = "C:\\Program Files (x86)\\ViM\\log parsing\\Whatcom\\WhatcomTest\\"
-#parse_vim_logs_for_total_connections(danaides, path, start, end)
-#determine_number_of_failed_connections_over_time(danaides, path, start, end)
+log.trace("... connected.")
 
-#log.trace("SELECT * FROM ConnectionLog WHERE csTimeStamp > %d and csTimeStamp < %d" %(utc.convert_date_string_to_db_time(start)['db time'], utc.convert_date_string_to_db_time(end)['db time']))
+# send commands to client
+#log.trace("Sending command:\t'%s'." % unhexlify(command))
+#server.send(hexlify("UPDATE APP DATABASE"))
+f = open(TARTAROS_DB_PATH, 'rb')
+l = f.read(1024)
+while l:
+    server.send(l)
+    l = f.read(1024)
 
-import socket
-from binascii import hexlify
+#server.send(hexlify("DONE UPDATING APP DATABASE"))
 
-def send_message_to_client():
-    client_addr = ('172.22.2.89', 333)
-    server = socket.socket()
-    server.connect(client_addr)
-    server.send(hexlify("self.run_test('Release-Ready', 'Hard-Coded Client Test', 318, story=3, case_class=2)"))
+# close file
+f.close()
 
-send_message_to_client()
+# close connection to client
+server.close()
