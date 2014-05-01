@@ -13,14 +13,15 @@
 
 from utility import return_execution_error, read_file_into_list, return_machine_ip_address
 import inspect
-from os import getcwdu
-from time import sleep
+from os import getcwdu, rename
+from time import sleep, time
 import socket
 from binascii import hexlify, unhexlify
 from select import select
 from Database import Database
 from logger import Logger
 from testrun import TestRun
+from mapping import TARTAROS_DB_PATH
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -314,6 +315,7 @@ class Hekate():
             self.log.trace("%sning ..." % operation.replace('_', ' '))
 
             while True:
+                database_path = TARTAROS_DB_PATH
                 updating_database = False
                 i = 1
 
@@ -332,12 +334,16 @@ class Hekate():
 
                     # check for database update
                     if 'SQLite' in datum['data']:
+                        # backup previous database
+                        self.log.trace("Backing up old database ...")
+                        timestamp = str(time())
+                        rename(database_path, "%s%s.db" % (database_path[:-7], timestamp))
 
                         # update database
                         self.log.trace("Updating database ...")
 
                         # create updated database file
-                        f = open("tartaros.db", 'wb')
+                        f = open(database_path, 'wb')
 
                         # write to updated database file
                         f.write(datum['data'])
