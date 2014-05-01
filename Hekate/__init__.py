@@ -274,7 +274,7 @@ class Hekate():
                 except BaseException:
                     sock_name = str(sock)
 
-            if logging: self.log.trace_in_line("%s ..." % sock_name)
+            if logging: self.log.trace_in_line(" %s ..." % sock_name)
 
             # listen
             sock.listen(1)

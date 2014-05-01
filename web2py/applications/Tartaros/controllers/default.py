@@ -23,7 +23,7 @@ from Orpheus import Orpheus
 import subprocess
 from os import getcwdu
 from utility import move_up_windows_path
-from mapping import HESTIA, TARTAROS_DB_PATH
+from mapping import HESTIA, TARTAROS_DB_PATH, TARTAROS_WEB_DB_PATH
 import socket
 from binascii import hexlify, unhexlify
 
@@ -36,6 +36,7 @@ log = Logger()
 DVR_MODELS = HESTIA['dvr models']
 LICENSES = HESTIA['licenses']
 RUNNING_TESTS = []
+handle_exception = ExceptionHandler
 
 ####################################################################################################
 # Test Manager #####################################################################################
@@ -1905,6 +1906,7 @@ class TestManager():
             inp_build_addr = 'inp_build'
             btn_run_remote_test_addr = 'btn_run_remote_test'
             inp_test_run_type_addr = 'inp_test_run_type'
+            btn_update_remote_db_addr = 'btn_update_remote_db'
             div_test_runner_addr = 'div_test_runner'
 
             # build the onclick scripts
@@ -1931,6 +1933,12 @@ class TestManager():
                                      "'test_case_selection', '%s', '%s', '%s']"
                                      % (inp_plan_id_addr, inp_remote_server_addr, inp_build_addr,
                                         inp_test_run_type_addr),
+                           'target': '',
+                           'remove': ''}
+            db_script = "ajax('%(function)s', %(values)s, '%(target)s');" \
+                        "jQuery(%(remove)s).remove();" \
+                        % {'function': 'update_remote_database',
+                           'values': "['%s']" % inp_remote_server_addr,
                            'target': '',
                            'remove': ''}
 
@@ -1969,6 +1977,10 @@ class TestManager():
             lbl_remote_server = LABEL("REMOTE SERVER: ")
             inp_remote_server = INPUT(_type='string',
                                       _id=inp_remote_server_addr, _name=inp_remote_server_addr)
+            btn_update_remote_db = INPUT(_type='button', _value="Update Remote DB", _class='btn',
+                                         _id=btn_update_remote_db_addr,
+                                         _name=btn_update_remote_db_addr,
+                                         _onclick=db_script)
 
             div_test_runner = DIV(lbl_plan_id, inp_plan_id,
                                   lbl_int_dvr_id, inp_int_dvr_id,
@@ -1977,6 +1989,7 @@ class TestManager():
                                   lbl_build, inp_build,
                                   lbl_test_run_type, inp_test_run_type,
                                   btn_run_remote_test,
+                                  btn_update_remote_db,
                                   _id=div_test_runner_addr)
 
             # compile results
@@ -2634,6 +2647,35 @@ def index():
         pass
 
     return dict(tmanager_form=tmanager_form)
+
+
+def update_remote_database():
+    try:
+        # connect to remote client (Hekate)
+        remote_server_ip = request.vars.inp_remote_server
+        client_addr = (remote_server_ip, 333)
+
+        log.trace("Connecting to remote client at %s ..." % str(client_addr))
+
+        server = socket.socket()
+        server.connect(client_addr)
+
+        log.trace("... connected.")
+
+        # send commands to client
+        f = open(TARTAROS_WEB_DB_PATH, 'rb')
+        l = f.read(1024)
+        while l:
+            server.send(l)
+            l = f.read(1024)
+
+        # close file
+        f.close()
+
+        # close connection to client
+        server.close()
+    except BaseException, e:
+        handle_exception(log, e, 'updating remote database')
 
 
 def run_remote_test():
