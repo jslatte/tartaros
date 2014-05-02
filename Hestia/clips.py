@@ -65,6 +65,39 @@ class Clips():
     """ Sub-library for ViM server clip requests and download functionality.
     """
 
+    def verify_custom_clip_requests_not_allowed(self, testcase=None):
+        """ Verify that custom clip requests are not allowed.
+        @param testcase: a testcase object supplied when executing function as part of
+            a testcase step.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'verified' - whether the operation was verified or not.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'verified': False}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # query clip request, and verify server response is None
+            response = self.query_page("clip request")['query response']
+
+            if response is None:
+                self.log.trace("Verified custom clip requests currently not allowed.")
+                result['verified'] = True
+            else:
+                self.log.error("Failed to verify custom clip requests currently not allowed.")
+
+            self.log.trace("... done %s." % operation)
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if testcase is not None: testcase.processing = result['successful']
+        return result
+
     def add_note_to_clip(self, clip_id, note, clip_type=None, testcase=None):
         """ Add a note to specified clip.
         @param clip_id: the id of the clip to which to add a note.
@@ -926,7 +959,8 @@ class Clips():
             testcase.clip_id = result['clip id']
         return result
 
-    def continuously_request_clips_from_sites_over_time(self, num_sites, duration=60, testcase=None):
+    def continuously_request_clips_from_sites_over_time(self, num_sites, duration=60,
+                                                        testcase=None):
         """
         INPUT
             num sites: the number of sites being tested (requests will correspond to num = site id).
@@ -988,7 +1022,8 @@ class Clips():
         if testcase is not None: testcase.processing = result['successful']
         return result
 
-    def lock_clip_file(self, clip_id, file_type='bin', file_name=None, generate=True, testcase=None):
+    def lock_clip_file(self, clip_id, file_type='bin', file_name=None, generate=True,
+                       testcase=None):
         """ Lock the file for the given clip.
         INPUT
             clip id: the id of the clip that will have its file locked.

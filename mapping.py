@@ -638,6 +638,9 @@ HESTIA = {
         },
         'clip request': {
             'path':                     '/vimcustomclip',
+            'query path':               '/vimcustomclip',
+            'entry id':                 'site id',
+            'parameters':               {},
             'fields': {
                 'site id':                  'SiteID',
                 'site name':                'SiteName',
@@ -656,7 +659,15 @@ HESTIA = {
                 'cameras':                  'CameraSelection',
                 'notes':                    'Notes',
                 'notification':             'NotifyUser',
+                'dvr model':                'DvrModel',
             },
+            'columns': [
+                'site id',
+                'site name',
+                'dvr model',
+                'unknown',
+                'unknown2',
+            ],
         },
         'clip status info': {
             'query path':               '/clipStatusInfo',
@@ -1409,6 +1420,7 @@ HESTIA_PAGE_TO_CONFIG = {
     'category values':      HESTIA['server']['category values'],
     'custody':              HESTIA['server']['custody'],
     'clip status info':     HESTIA['server']['clip status info'],
+    'clip request':         HESTIA['server']['clip request'],
 }
 
 HESTIA_PAGE_TO_PAGE_FIELDS = {
@@ -1430,6 +1442,7 @@ HESTIA_PAGE_TO_PAGE_FIELDS = {
     'category values':      HESTIA_PAGE_TO_CONFIG['category values']['fields'],
     'custody':              HESTIA_PAGE_TO_CONFIG['custody']['fields'],
     'clip status info':     HESTIA_PAGE_TO_CONFIG['clip status info']['fields'],
+    'clip request':         HESTIA_PAGE_TO_CONFIG['clip request']['fields'],
 }
 
 ORPHEUS = {

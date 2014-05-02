@@ -523,10 +523,14 @@ class SiteConfiguration():
                     testcase.site_settings = result['settings']
                     testcase.site_id = result['site id']
                     testcase.site_name = result['site name']
-                else:
+                elif hasattr(testcase, 'site_id') and not hasattr(testcase, 'site2_id'):
                     testcase.site2_settings = result['settings']
                     testcase.site2_id = result['site id']
                     testcase.site2_name = result['site name']
+                else:
+                    testcase.site3_settings = result['settings']
+                    testcase.site3_id = result['site id']
+                    testcase.site3_name = result['site name']
             else:
                 testcase.site_settings = result['settings']
                 testcase.site_id = result['site id']
