@@ -1,4 +1,4 @@
-###################################################################################################
+####################################################################################################
 #
 # Copyright (c) by Jonathan Slattery for Apollo Video Technology
 #
@@ -74,7 +74,7 @@ class Hestia(ClipClassification, Clips, DriveStatus, EmailNotification, Events, 
         self.log = logger
 
         self.module_name = self.__class__.__name__
-        self.log.info("Initializing %s module ..." % self.module_name)
+        self.log.info("Initializing %s submodule ..." % self.module_name)
 
         # define default attributes
         self.dir = dir
@@ -102,6 +102,9 @@ class Hestia(ClipClassification, Clips, DriveStatus, EmailNotification, Events, 
         self.site2_id = None
         self.site2_name = None
         self.site2_settings = None
+        self.site3_id = None
+        self.site3_name = None
+        self.site3_settings = None
 
         # imap connection
         self.imap_connection = None
@@ -207,7 +210,7 @@ class Hestia(ClipClassification, Clips, DriveStatus, EmailNotification, Events, 
         try:
             self.log.trace("%s ..." % operation.replace('_', ' '))
 
-            self.log.trace("... done %s." % operation)
+            self.log.trace("... done %s." % operation.replace('_', ' '))
             result['successful'] = True
         except BaseException, e:
             self.handle_exception(e, operation=operation)
