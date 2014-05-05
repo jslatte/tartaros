@@ -1,6 +1,6 @@
 ####################################################################################################
 #
-# Copyright (c) by Martin Olevnik and Jonathan Slattery for Apollo Video Technology
+# Copyright (c) by Apollo Video Technology
 #
 ####################################################################################################
 
@@ -13,6 +13,7 @@
 
 import inspect
 from utility import return_execution_error
+from config import *
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -30,7 +31,7 @@ from utility import return_execution_error
 class Styx():
     """ Library for SDK interaction and testing. """
 
-    def __init__(self, logger, dir):
+    def __init__(self, logger, dir=SDK_PATH):
         """
         @param logger: an initialized instance of a logging class to use.
         @param dir: the path to the folder containing the SDK(s).
@@ -47,6 +48,8 @@ class Styx():
 
         # define default attributes
         self.dir = dir
+        self.admin_sdk_path = self.dir + "idisadmin.dll"
+        self.search_sdk_path = self.dir + "idissearch.dll"
         self.admin_sdk_version = '0.0.0.0'
         self.search_sdk_version = '0.0.0.0'
         self.watch_sdk_version = '0.0.0.0'
