@@ -13,7 +13,7 @@
 
 import inspect
 from utility import return_execution_error
-from config import *
+from mapping import SDK_PATH
 
 ####################################################################################################
 # Globals ##########################################################################################

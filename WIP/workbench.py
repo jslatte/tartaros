@@ -19,8 +19,9 @@ from Ixion import Ixion
 from Minos import Minos
 from Orpheus import Orpheus
 from Sisyphus import Sisyphus
+from Styx import Styx
 from Tantalus import Tantalus
-#from Danaides import Danaides
+from Danaides import Danaides
 from testcase import HestiaTestCase
 from testrun import TestRun
 from mapping import TARTAROS, HESTIA, TARTAROS_DB_PATH
@@ -31,6 +32,8 @@ from random import randint
 from utility import return_execution_error
 import socket
 from binascii import hexlify, unhexlify
+from utility import *
+import inspect
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -42,15 +45,16 @@ log = Logger(logging_level='trace')
 # database
 database = Database(log)
 # utilities
-#utc = UTC(log)
+utc = UTC(log)
 # modules
 #ixion = Ixion(log)
 #minos = Minos(log)
-orpheus = Orpheus(log)
+#orpheus = Orpheus(log)
 #sisyphus = Sisyphus(log)
 #tantalus = Tantalus(log, Sisyphus, num_sites=1)
 #danaides = Danaides(log, database)
 hestia = Hestia(log, database)
+styx = Styx(log)
 
 ####################################################################################################
 # Functions ########################################################################################
@@ -905,29 +909,19 @@ def handle_exception(log, e, operation=None):
 #hestia.add_number_of_fake_sites(250, start_id=751, ip_schema="172.22.63.", start_ip=1)
 #hestia.add_number_of_fake_sites(200, start_id=1001, ip_schema="172.22.63.", start_ip=1)
 
-# connect to remote client (Hekate)
-client_addr = ("172.22.3.43", 333)
+#hestia.verify_custom_clip_requests_not_allowed()
 
-log.trace("Connecting to remote client at %s ..." % str(client_addr))
-
-server = socket.socket()
-server.connect(client_addr)
-
-log.trace("... connected.")
-
-# send commands to client
-#log.trace("Sending command:\t'%s'." % unhexlify(command))
-#server.send(hexlify("UPDATE APP DATABASE"))
-f = open(TARTAROS_DB_PATH, 'rb')
-l = f.read(1024)
-while l:
-    server.send(l)
-    l = f.read(1024)
-
-#server.send(hexlify("DONE UPDATING APP DATABASE"))
-
-# close file
-f.close()
-
-# close connection to client
-server.close()
+from Styx.sdk import SDK
+from Styx.mapping import *
+import ctypes
+sdk = SDK(log, styx.handle_exception, "admin", styx.admin_sdk_path)
+sdk.initialize()
+sdk.startup()
+sdk.connect("Depot 139", "172.22.48.139")
+sdk.requestStatus()
+while not sdk.isConnected()['connected']:
+    sleep(3)
+sdk.requestStatus()
+sdk.getStatus()
+sdk.requestRemoteDeviceInfo()
+sdk.getRemoteDiskInfo(DISK_INFO(), 1, ctypes.pointer(c_int()))
