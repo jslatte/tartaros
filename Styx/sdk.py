@@ -11,9 +11,11 @@
 ####################################################################################################
 ####################################################################################################
 
-from mapping import CONNECTION_STATE_TO_ID, STATUS_INFO, DISK_INFO
-from ctypes import WinDLL, c_int, c_wchar_p, c_bool, c_void_p, POINTER, byref
+from mapping import CONNECTION_STATE_TO_ID, STATUS_INFO, DISK_INFO, VERSION_INFO
+from mapping import CALLBACK_ADMIN
+from ctypes import WinDLL, c_int, c_wchar_p, c_bool, c_void_p, POINTER, byref, c_long, WINFUNCTYPE
 import inspect
+from time import sleep
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -62,6 +64,12 @@ class SDK():
         self.handle = CONNECTION_STATE_TO_ID['indeterminant']
         self.channel = CONNECTION_STATE_TO_ID['indeterminant']
         self.flag = CONNECTION_STATE_TO_ID['indeterminant']
+
+        # prototypes
+        self.connected_callback_prototype = WINFUNCTYPE(c_int, c_int, c_int, c_int)
+
+        # callbacks
+        self.onconnected_callback = None
 
         # load DLL
         self.dll = WinDLL(self.sdk_path)
@@ -174,40 +182,6 @@ class SDK():
         if self.testcase is not None: self.testcase.processing = result['successful']
         return result
 
-    def registerCallback(self, message_id, callback_code, handle=None):
-        """ <DESCRIPTION NEEDED>
-        @param message_id: <DESCRIPTION NEEDED>
-        @param callback_code: <DESCRIPTION NEEDED>
-        @param handle: (optional) a specific handle to use, otherwise uses default self.handle.
-        @return: a data dict containing:
-            'successful' - whether the function executed successfully or not.
-        """
-
-        operation = self.inspect.stack()[0][3]
-        result = {'successful': False}
-
-        try:
-            self.log.trace("calling '_%s' ..." % operation.replace('_', ' '))
-
-            # define SDK function(s) to call (by type)
-            _funct = eval("self.dll.%s_%s" % (self.sdk_type.lower(), operation))
-
-            # define SDK function parameters (ctypes)
-            if handle is None: handle = self.handle
-            params = [message_id, callback_code]
-
-            # execute SDK function
-            _funct(handle, *params)
-
-            self.log.trace("... done %s." % operation.replace('_', ' '))
-            result['successful'] = True
-        except BaseException, e:
-            self.handle_exception(e, operation=operation)
-
-        # return
-        if self.testcase is not None: self.testcase.processing = result['successful']
-        return result
-
     def connect(self, site_name, site_ip, username='admin', password='', admin_port=8200,
                 watch_port=8016, search_port=10016, encrypted=False, attachment=None, handle=None):
         """ Registers a connection configuration for connecting to a DVR (does not actually connect).
@@ -239,7 +213,6 @@ class SDK():
             _funct.argtypes = [
                 c_int, c_wchar_p, c_wchar_p, c_wchar_p, c_wchar_p, c_int, c_int, c_bool, c_void_p
             ]
-            #_funct.restype = c_int
 
             # define SDK function parameters (ctypes)
             if handle is None: handle = self.handle
@@ -249,6 +222,12 @@ class SDK():
             else:
                 raise AssertionError("Not implemented for SDK type '%s'." % self.sdk_type)
 
+            # register callback
+            self.onconnected_callback = self.connected_callback_prototype(
+                self.callback('on connected')['val'])
+            self.registerCallback(CALLBACK_ADMIN['ONCONNECTED'], self.onconnected_callback)
+            sleep(5)
+
             # execute SDK function
             response = _funct(handle, *params)
             self.log.trace("... response: %s ..." % response)
@@ -256,8 +235,14 @@ class SDK():
             result['channel'] = response
             self.channel = response
 
+            # determine if connection succeeded
+            if self.channel >= 0:
+                self.log.trace("... connection succeeded.")
+                result['successful'] = True
+            else:
+                self.log.trace("... connection failed.")
+
             self.log.trace("... done %s." % operation.replace('_', ' '))
-            result['successful'] = True
         except BaseException, e:
             self.handle_exception(e, operation=operation)
 
@@ -455,6 +440,360 @@ class SDK():
             response = _funct(handle, channel, *params)
             self.log.trace("... response: %s ..." % response)
             result['response'] = response
+
+            self.log.trace("... done %s." % operation.replace('_', ' '))
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if self.testcase is not None: self.testcase.processing = result['successful']
+        return result
+
+    def disconnect(self, handle=None, channel=None):
+        """ <NEEDS DESCRIPTION>
+        @param handle: a specific handle to use, otherwise defaults self.handle.
+        @param channel: a specific channel to use, otherwise defaults to self.channel.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'response' - the raw SDK response.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'response': None}
+
+        try:
+            self.log.trace("calling '_%s' ..." % operation.replace('_', ' '))
+
+            # define SDK function(s) to call (by type)
+            _funct = eval("self.dll.%s_%s" % (self.sdk_type.lower(), operation))
+            _funct.argtypes = [c_int, c_int]
+
+            # define SDK function parameters (ctypes)
+            if handle is None: handle = self.handle
+            if channel is None: channel = self.channel
+            params = []
+
+            # execute SDK function
+            response = _funct(handle, channel, *params)
+            self.log.trace("... response: %s ..." % response)
+            result['response'] = response
+
+            self.log.trace("... done %s." % operation.replace('_', ' '))
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if self.testcase is not None: self.testcase.processing = result['successful']
+        return result
+
+    def registerCallback(self, message_id, callback_funct, handle=None):
+        """ <DESCRIPTION NEEDED>
+        @param message_id: <DESCRIPTION NEEDED>
+        @param callback_funct: <DESCRIPTION NEEDED>
+        @param handle: (optional) a specific handle to use, otherwise uses default self.handle.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'response' - the raw SDK response.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'response': None}
+
+        try:
+            self.log.trace("calling '_%s' ..." % operation.replace('_', ' '))
+
+            # define SDK function(s) to call (by type)
+            _funct = eval("self.dll.%s_%s" % (self.sdk_type.lower(), operation))
+
+            # define SDK function parameters (ctypes)
+            if handle is None: handle = self.handle
+            params = [message_id, callback_funct]
+
+            # execute SDK function
+            response = _funct(handle, *params)
+            self.log.trace("... response: %s ..." % response)
+            result['response'] = response
+
+            self.log.trace("... done %s." % operation.replace('_', ' '))
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if self.testcase is not None: self.testcase.processing = result['successful']
+        return result
+
+    def isConnecting(self, handle=None, channel=None):
+        """ <NEEDS DESCRIPTION>
+        @param handle: a specific handle to use, otherwise defaults self.handle.
+        @param channel: a specific channel to use, otherwise defaults to self.channel.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'response' - the raw SDK response.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'response': None}
+
+        try:
+            self.log.trace("calling '_%s' ..." % operation.replace('_', ' '))
+
+            # define SDK function(s) to call (by type)
+            _funct = eval("self.dll.%s_%s" % (self.sdk_type.lower(), operation))
+            _funct.argtypes = [c_int, c_int]
+
+            # define SDK function parameters (ctypes)
+            if handle is None: handle = self.handle
+            if channel is None: channel = self.channel
+            params = []
+
+            # execute SDK function
+            response = _funct(handle, channel, *params)
+            self.log.trace("... response: %s ..." % response)
+            result['response'] = response
+
+            self.log.trace("... done %s." % operation.replace('_', ' '))
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if self.testcase is not None: self.testcase.processing = result['successful']
+        return result
+
+    def cleanup(self, handle=None):
+        """ <NEEDS DESCRIPTION>
+        @param handle: a specific handle to use, otherwise defaults self.handle.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'response' - the raw SDK response.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'response': None}
+
+        try:
+            self.log.trace("calling '_%s' ..." % operation.replace('_', ' '))
+
+            # define SDK function(s) to call (by type)
+            _funct = eval("self.dll.%s_%s" % (self.sdk_type.lower(), operation))
+
+            # define SDK function parameters (ctypes)
+            if handle is None: handle = self.handle
+            params = []
+
+            # execute SDK function
+            response = _funct(handle, *params)
+            self.log.trace("... response: %s ..." % response)
+            result['response'] = response
+
+            self.log.trace("... done %s." % operation.replace('_', ' '))
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if self.testcase is not None: self.testcase.processing = result['successful']
+        return result
+
+    def finalize(self, handle=None):
+        """ <NEEDS DESCRIPTION>
+        @param handle: a specific handle to use, otherwise defaults self.handle.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'response' - the raw SDK response.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'response': None}
+
+        try:
+            self.log.trace("calling '_%s' ..." % operation.replace('_', ' '))
+
+            # define SDK function(s) to call (by type)
+            _funct = eval("self.dll.%s_%s" % (self.sdk_type.lower(), operation))
+
+            # define SDK function parameters (ctypes)
+            if handle is None: handle = self.handle
+            params = []
+
+            # execute SDK function
+            response = _funct(handle, *params)
+            self.log.trace("... response: %s ..." % response)
+            result['response'] = response
+
+            self.log.trace("... done %s." % operation.replace('_', ' '))
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if self.testcase is not None: self.testcase.processing = result['successful']
+        return result
+
+    def getPeerVersion(self, version_info=None, handle=None, channel=None):
+        """ <NEEDS DESCRIPTION>
+        @param version_info: <NEEDS DESCRIPTION>
+        @param handle: a specific handle to use, otherwise defaults self.handle.
+        @param channel: a specific channel to use, otherwise defaults to self.channel.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'response' - the raw SDK response.
+            'version info' - the struct with updated attributes .classInfo, .typeInfo, and .version.
+        @return version_info: struct with attributes .classInfo, .typeInfo, and .version.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'response': None, 'version info': version_info}
+
+        try:
+            self.log.trace("calling '_%s' ..." % operation.replace('_', ' '))
+
+            # define SDK function(s) to call (by type)
+            _funct = eval("self.dll.%s_%s" % (self.sdk_type.lower(), operation))
+            _funct.argtypes = [c_long, c_int, POINTER(VERSION_INFO)]
+
+            # define SDK function parameters (ctypes)
+            if handle is None: handle = self.handle
+            if channel is None: channel = self.channel
+            if version_info is None: version_info = VERSION_INFO()
+            params = [byref(version_info)]
+
+            # execute SDK function
+            response = _funct(handle, channel, *params)
+            self.log.trace("... response: %s, (class info: %s), (type info: %s), (version: %s) ..."
+                           % (response, version_info.classInfo, version_info.typeInfo,
+                              version_info.version))
+            result['response'] = response
+            result['version info'] = version_info
+
+            self.log.trace("... done %s." % operation.replace('_', ' '))
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if self.testcase is not None: self.testcase.processing = result['successful']
+        return result
+
+    def requestSystemLog(self, time_from, time_to, req_page, reload, type, handle=None,
+                         channel=None):
+        """ <NEEDS DESCRIPTION>
+        @param time_from: <NEEDS DESCRIPTION>
+        @param time_to: <NEEDS DESCRIPTION>
+        @param req_page: <NEEDS DESCRIPTION>
+        @param reload: <NEEDS DESCRIPTION>
+        @param type: <NEEDS DESCRIPTION>
+        @param handle: a specific handle to use, otherwise defaults self.handle.
+        @param channel: a specific channel to use, otherwise defaults to self.channel.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'response' - the raw SDK response.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'response': None}
+
+        try:
+            self.log.trace("calling '_%s' ..." % operation.replace('_', ' '))
+
+            # define SDK function(s) to call (by type)
+            _funct = eval("self.dll.%s_%s" % (self.sdk_type.lower(), operation))
+            #_funct.argtypes = [c_int, c_int]
+
+            # define SDK function parameters (ctypes)
+            if handle is None: handle = self.handle
+            if channel is None: channel = self.channel
+            params = [time_from, time_to, req_page, reload, type]
+
+            # execute SDK function
+            response = _funct(handle, channel, *params)
+            self.log.trace("... response: %s ..." % response)
+            result['response'] = response
+
+            self.log.trace("... done %s." % operation.replace('_', ' '))
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if self.testcase is not None: self.testcase.processing = result['successful']
+        return result
+
+    def getSystemLogEx(self, index, p_log, handle=None, channel=None):
+        """ <NEEDS DESCRIPTION>
+        @param index: <NEEDS DESCRIPTION>
+        @param p_log: <pointer() to log?>
+        @param handle: a specific handle to use, otherwise defaults self.handle.
+        @param channel: a specific channel to use, otherwise defaults to self.channel.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'response' - the raw SDK response.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'response': None}
+
+        try:
+            self.log.trace("calling '_%s' ..." % operation.replace('_', ' '))
+
+            # define SDK function(s) to call (by type)
+            _funct = eval("self.dll.%s_%s" % (self.sdk_type.lower(), operation))
+            _funct.argtypes = [c_int, c_int]
+
+            # define SDK function parameters (ctypes)
+            if handle is None: handle = self.handle
+            if channel is None: channel = self.channel
+            params = [index, p_log]
+
+            # execute SDK function
+            response = _funct(handle, channel, *params)
+            self.log.trace("... response: %s ..." % response)
+            result['response'] = response
+
+            self.log.trace("... done %s." % operation.replace('_', ' '))
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if self.testcase is not None: self.testcase.processing = result['successful']
+        return result
+
+    def callback(self, callback_type, *args):
+        """ <NEEDS DESCRIPTION>
+        @param callback_type: the type of callback function (e.g., "on connect", "on disconnect",
+            etc.)
+        @param *args: any additional arguments for the callback function type.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'val' - the callback type-specific return value.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'val': None}
+
+        try:
+            self.log.trace("... %s ..." % operation.replace('_', ' '))
+
+            # execute type-specific callback function
+            if callback_type.lower() == 'on connected':
+                # update flag to 'connected' state
+                self.log.trace("... OnConnected (%s) ..." % str(*args))
+                self.flag = CONNECTION_STATE_TO_ID['connected']
+                result['val'] = self.flag
+            elif callback_type.lower() == 'on disconnected':
+                raise AssertionError("Not implemented for callback type %s." % callback_type)
+            elif callback_type.lower() == '':
+                raise AssertionError("Not implemented for callback type %s." % callback_type)
+            elif callback_type.lower() == '':
+                raise AssertionError("Not implemented for callback type %s." % callback_type)
+            elif callback_type.lower() == '':
+                raise AssertionError("Not implemented for callback type %s." % callback_type)
+            else:
+                raise AssertionError("Unrecognized callback type %s." % callback_type)
 
             self.log.trace("... done %s." % operation.replace('_', ' '))
             result['successful'] = True
