@@ -554,7 +554,7 @@ class DriveStatus():
         if testcase is not None: testcase.processing = result['successful']
         return result
 
-    def verify_site_drive_status(self, site_id, site=None, testcase=None):
+    def verify_site_drive_status(self, site_id, site=None, timeout=30, testcase=None):
         """ Verify the current hard drive status of a site.
         INPUT
             site id: id of the added site for which to verify the drive status.
@@ -588,7 +588,7 @@ class DriveStatus():
 
             # verify current drive status of the site
             attempt = 1
-            while attempt <= 5 and not result['verified']:
+            while attempt <= timeout/5 and not result['verified']:
                 # counter to track failed verifications
                 invalids = 0
 

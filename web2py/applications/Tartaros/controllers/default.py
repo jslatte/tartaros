@@ -3130,7 +3130,7 @@ def run_test():
                 args += ' "int_dvr_ip=%(int dvr ip)s"' % {'int dvr ip': int_dvr_ip}
             path = move_up_windows_path(getcwdu())['path'] + 'tartaros.py'
             running_test = \
-                subprocess.Popen('C:\\Python27\\python.exe %s %s' % (path, args), shell=True,
+                subprocess.Popen('C:\\Python27_32\\python.exe %s %s' % (path, args), shell=True,
                                  close_fds=True)
             RUNNING_TESTS.append(running_test)
         except BaseException, e:
