@@ -131,6 +131,10 @@ class Sisyphus():
                     # append return data from thread
                     self.data.append(thread.join())
 
+                # pause loop to avoid CPU pinging (tested as working as low as 0.001, 0.0001 causes
+                #   CPU to be maxed out)
+                time.sleep(0.01)
+
         # end timer and report elapsed time
         t = time.time() - t0
         result['time'] = t
