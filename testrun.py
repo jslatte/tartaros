@@ -146,7 +146,7 @@ class TestRun():
             self.duration = clock() - t0
 
             # publish results
-            self.publish_results()
+            #self.publish_results()
 
             # send testcase end message to build server
             self.log.build_test_end(self.name)
