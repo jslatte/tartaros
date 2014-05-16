@@ -23,6 +23,7 @@ from random import randint
 ####################################################################################################
 
 SERVER = HESTIA['server']
+DB = HESTIA['database']
 CLIPREQ = SERVER['clip request']
 CLIPREQ_PATH = CLIPREQ['path']
 CLIPREQ_FIELDS = CLIPREQ['fields']
@@ -54,6 +55,16 @@ CLIPACT_CANCEL = CLIPACT['cancel path']
 NOTES = SERVER['clip notations']
 NOTES_FIELDS = NOTES['fields']
 NOTES_PATH = NOTES['path']
+GEOCLIP = SERVER['geo clip']
+GEOCLIP_PATH = GEOCLIP['request path']
+GEOCLIP_FIELDS = GEOCLIP['fields']
+GEOEVENT_LABEL = "Custom Location Clip"
+DB_GEOCLIPREQ = DB['geoclip requests']
+DB_GEOCLIPREQ_TABLE = DB_GEOCLIPREQ['table']
+DB_GEOCLIPREQ_FIELDS = DB_GEOCLIPREQ['fields']
+DB_GEOCLIPREQ_PENDING = DB['geoclip requests pending']
+DB_GEOCLIPREQ_PENDING_TABLE = DB_GEOCLIPREQ_PENDING['table']
+DB_GEOCLIPREQ_PENDING_FIELDS = DB_GEOCLIPREQ_PENDING['fields']
 
 ####################################################################################################
 # Clips ############################################################################################
@@ -64,6 +75,375 @@ NOTES_PATH = NOTES['path']
 class Clips():
     """ Sub-library for ViM server clip requests and download functionality.
     """
+
+    def request_geoclip(self, gps_point, start='1 hour ago', end='15 minutes ago',
+                        pre_time=15, post_time=45, notify=False, expected=[], timeout=30,
+                        testcase=None):
+        """ Request a GeoClip.
+        @param gps_point: the point around which the area to look for the clip is located
+            (box drawn at +- 0.0005 around point) in format [lat,long].
+        @param start: the start time to look for clip in location.
+        @param end: the end time to look for clip in location.
+        @param pre_time: the time from before each event to download video.
+        @param post_time: the time from after each event to download video.
+        @param notify: whether or not to send a notification email to current logged in user.
+        @param expected: a list of site IDs for sites expected to have a clip scheduled based
+            on the GeoClip request.
+        @param timeout: the timeout on attempting to make a successful request.
+        @param testcase: a testcase object supplied when executing function as part of
+            a testcase step.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'verified' - whether the operation was verified or not.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'verified': False}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # define default data packet to send to server
+            packet = {
+                GEOCLIP_FIELDS['start']:                    self.utc.convert_string_to_time(start),
+                GEOCLIP_FIELDS['end']:                      self.utc.convert_string_to_time(end),
+                GEOCLIP_FIELDS['start date/time']:          '',
+                GEOCLIP_FIELDS['end date/time']:            '',
+                GEOCLIP_FIELDS['ne latitude']:              '',
+                GEOCLIP_FIELDS['ne longitude']:             '',
+                GEOCLIP_FIELDS['sw latitude']:              '',
+                GEOCLIP_FIELDS['sw longitude']:             '',
+                GEOCLIP_FIELDS['cameras']:                  -1,
+                GEOCLIP_FIELDS['event label']:              GEOEVENT_LABEL,
+                GEOCLIP_FIELDS['notes']:                    'Request Location: lat:%s, lon:%s'
+                                                            % (gps_point[0], gps_point[1]),
+                GEOCLIP_FIELDS['notification']:             'false',
+                GEOCLIP_FIELDS['pre-event time']:                 pre_time,
+                GEOCLIP_FIELDS['post-event time']:                post_time,
+            }
+
+            # update date/time values
+            packet[GEOCLIP_FIELDS['start date/time']] = \
+                self.utc.convert_database_time_to_server_date(packet[GEOCLIP_FIELDS['start']])
+            packet[GEOCLIP_FIELDS['end date/time']] = \
+                self.utc.convert_database_time_to_server_date(packet[GEOCLIP_FIELDS['end']])
+
+            # update GPS values
+            packet[GEOCLIP_FIELDS['ne latitude']] = str(float(gps_point[0])+0.001)
+            packet[GEOCLIP_FIELDS['sw latitude']] = str(float(gps_point[0])-0.001)
+            packet[GEOCLIP_FIELDS['ne longitude']] = str(float(gps_point[1])+0.001)
+            packet[GEOCLIP_FIELDS['sw longitude']] = str(float(gps_point[1])-0.001)
+
+            # update notification value
+            if notify: packet[GEOCLIP_FIELDS['notification']] = 'true'
+
+            successful = False
+            attempt = 1
+            interval = 5
+            while not successful and attempt <= timeout/interval:
+                # send data packet to server
+                url = self.server_url + GEOCLIP_PATH
+                response = self.post_http_request(url, packet, testcase=testcase)['response']
+
+                # verify clip request successful
+                if response is not None:
+                    if response.lower() == 'ok':
+                        self.log.trace("Verified GeoClip request was successful.")
+                        successful = True
+                        result['verified'] = True
+                    else:
+                        self.log.trace("Failed to verify GeoClip request was successful. "
+                                      "Expect server response to be 'Ok', but was %s." % response)
+                else:
+                    self.log.warn("Failed to verify GeoClip request was successful. No response.")
+
+                # re-attempt
+                if not successful and attempt < timeout/interval:
+                    self.log.trace("Re-attempting in %s seconds ..." % interval)
+                    attempt += 1
+                    sleep(interval)
+                elif not successful and attempt >= timeout/interval:
+                    self.log.warn("Failed to verify GeoClip request was successful.")
+                    break
+
+            # determine GeoClip Request ID
+            gcr_id = None
+            if successful:
+                attempt = 1
+                interval = 5
+                while gcr_id is None and attempt <= timeout/interval:
+                    handle = self.db.db_handle
+                    start = packet[GEOCLIP_FIELDS['start']]
+                    end = packet[GEOCLIP_FIELDS['end']]
+                    max_lat = packet[GEOCLIP_FIELDS['ne latitude']]
+                    min_lat = packet[GEOCLIP_FIELDS['sw latitude']]
+                    max_long = packet[GEOCLIP_FIELDS['ne longitude']]
+                    min_long = packet[GEOCLIP_FIELDS['sw longitude']]
+                    table = DB_GEOCLIPREQ_TABLE
+                    return_field = DB_GEOCLIPREQ_FIELDS['id']
+                    known_field = DB_GEOCLIPREQ_FIELDS['start time']
+                    known_value = start
+                    addendum = \
+                        " AND %s = '%s' AND %s = '%s' AND %s = '%s' AND %s = '%s' AND %s = '%s'" \
+                        " AND %s = '%s' AND %s = '%s'" \
+                        % (
+                            DB_GEOCLIPREQ_FIELDS['end time'], end,
+                            DB_GEOCLIPREQ_FIELDS['minimum latitude'], min_lat,
+                            DB_GEOCLIPREQ_FIELDS['minimum longitude'], min_long,
+                            DB_GEOCLIPREQ_FIELDS['maximum latitude'], max_lat,
+                            DB_GEOCLIPREQ_FIELDS['maximum longitude'], max_long,
+                            DB_GEOCLIPREQ_FIELDS['pre-event time'], pre_time,
+                            DB_GEOCLIPREQ_FIELDS['post-event time'], post_time,
+                        )
+                    gcr_id = self.db.query_database_table_for_single_value(
+                        handle, table, return_field, known_field, known_value,
+                        addendum=addendum, max=True)['value']
+
+                    if gcr_id is not None:
+                        self.log.trace("Found GeoClip request entry.")
+                    elif gcr_id is None and attempt < timeout/interval:
+                        self.log.trace("No GeoClip request entry found. "
+                                       "Re-attempting in %s seconds ..." % interval)
+                        attempt += 1
+                        sleep(interval)
+                    elif gcr_id is None and attempt >= timeout/interval:
+                        self.log.warn("Failed to verify GeoClip request was successful.")
+                        break
+
+            # verify GeoClip downloaded for each expected site
+            if successful and gcr_id is not None and len(expected) > 0:
+                result['verified'] = self.verify_geoclips_downloaded_for_sites(expected, gcr_id)
+
+            self.log.trace("... done %s." % operation.replace('_', ' '))
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if testcase is not None:
+            testcase.gcr_id = gcr_id if gcr_id else None
+            testcase.processing = result['successful']
+            testcase.gcr_pretime = pre_time
+            testcase.gcr_posttime = post_time
+        return result
+
+    def verify_geoclips_downloaded_for_sites(self, sites, gcr_id, expected_length=None,
+                                             testcase=None):
+        """ Verify all GeoClips downloaded for sites for specified GeoClip request ID.
+        @param sites: a list of site ids in [site_id, site2_id, etc.] format.
+        @param gcr_id: the id of the GeoClip request.
+        @param expected_length: what the expected length of the clips should be verified as
+            (in total seconds).
+        @param testcase: a testcase object supplied when executing function as part of
+            a testcase step.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'verified' - whether the operation was verified or not.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'verified': False}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # pre-emptive restart (this forces reconnections to move process along more quickly
+            self.restart_vim_server(testcase=testcase)
+            self.log_in_to_vim(user_name=self.logged_in_user_name,
+                               password=self.logged_in_user_password,
+                               testcase=testcase)
+            self.check_if_vim_server_is_running(testcase=testcase)
+            sleep(30)
+
+            # verify GeoClips scheduled for each expected site
+            self.restart_vim_server(testcase=testcase)
+            self.log_in_to_vim(user_name=self.logged_in_user_name,
+                               password=self.logged_in_user_password,
+                               testcase=testcase)
+            self.check_if_vim_server_is_running(testcase=testcase)
+            clips_to_verify = []
+            for site_id in sites:
+                # verify GeoEvent exists for site
+                event_id = self.verify_geoevent_exists_for_site(
+                    site_id, testcase=testcase)['event id']
+                self.restart_vim_server(testcase=testcase)
+
+                # verify clip scheduled for GeoEvent
+                clip_id = self.verify_clip_scheduled_for_event(
+                    event_id, expected_length=expected_length, testcase=testcase)['clip id']
+                clips_to_verify.append([site_id, event_id, clip_id])
+
+            # verify GeoClips downloaded for each expected site
+            self.restart_vim_server(testcase=testcase)
+            self.log_in_to_vim(user_name=self.logged_in_user_name,
+                               password=self.logged_in_user_password,
+                               testcase=testcase)
+            self.check_if_vim_server_is_running(testcase=testcase)
+            failures = 0
+            for clip in clips_to_verify:
+                site_id = clip[0]
+                event_id = clip[1]
+                clip_id = clip[2]
+                verified = self.verify_clip_downloaded(
+                    clip_id, site_id=site_id, event_id=event_id, wait=600,
+                    testcase=testcase)['verified']
+                if not verified:
+                    self.log.warn("Failed to verify GeoClip %s downloaded for site %s."
+                                  % (clip_id, site_id))
+                    failures += 1
+
+            if failures == 0:
+                self.log.trace("Verified GeoClips downloaded for all expected sites.")
+                result['verified'] = True
+            else:
+                self.log.error("Failed to verify GeoClips downloaded for all expected sites.")
+
+            self.log.trace("... done %s." % operation.replace('_', ' '))
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if testcase is not None: testcase.processing = result['successful']
+        return result
+
+    def verify_geoevent_exists_for_site(self, site_id, timeout=900, testcase=None):
+        """ Verify that a GeoEvent exists for specified site.
+        @param site_id: the site for which to verify a GeoClip was scheduled.
+        @param timeout: how long (s) to keep checking for the GeoClip to be scheduled for site.
+        @param testcase: a testcase object supplied when executing function as part of
+            a testcase step.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'verified' - whether the operation was verified or not.
+            'event id' - the id of the GeoEvent found for the specified site.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'verified': False, 'event id': None}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # query event log for GeoClip entry for site
+            attempt = 1
+            interval = 15
+            event_id = None
+            while event_id is None and attempt < timeout/interval:
+                handle = self.db.db_handle
+                table = DB_EVENTLOG_TABLE
+                return_field = DB_EVENTLOG_FIELDS['id']
+                known_field = DB_EVENTLOG_FIELDS['site id']
+                known_value = site_id
+                addendum = " AND %s = '%s'"%(DB_EVENTLOG_FIELDS['label'], GEOEVENT_LABEL)
+                event_id = self.db.query_database_table_for_single_value(
+                    handle, table, return_field, known_field, known_value, addendum)['value']
+
+                if event_id is not None:
+                    self.log.trace("GeoEvent found for site: event %s." % event_id)
+                    result['verified'] = True
+                    result['event id'] = event_id
+                    break
+
+                elif event_id is None and attempt < timeout/interval:
+                    self.log.trace("No GeoEvent found for site (attempt %s). "
+                                   "Re-attempting in %s seconds ..." % (attempt, interval))
+                    sleep(interval)
+                    attempt += 1
+
+                elif event_id is None and attempt >= timeout/interval:
+                    self.log.warn("No GeoEvent found for site.")
+                    break
+
+            self.log.trace("... done %s." % operation.replace('_', ' '))
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if testcase is not None: testcase.processing = result['successful']
+        return result
+
+    def verify_clip_scheduled_for_event(self, event_id, timeout=300, expected_length=None,
+                                        testcase=None):
+        """ Verify that a clip entry exists for specified event.
+        @param event_id: the event for which to verify a clip was scheduled.
+        @param timeout: how long (s) to keep checking for the GeoClip to be scheduled for site.
+        @param expected_length: what the expected length of the clip should be verified as
+            (in total seconds).
+        @param testcase: a testcase object supplied when executing function as part of
+            a testcase step.
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'verified' - whether the operation was verified or not.
+            'clip id' - the id of the clip entry found for the specified event.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'verified': False, 'clip id': None}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # query clip log for clip entry for event
+            attempt = 1
+            interval = 15
+            clip_id = None
+            while clip_id is None and attempt < timeout/interval:
+                handle = self.db.db_handle
+                table = DB_CLIPLOG_TABLE
+                return_field = DB_CLIPLOG_FIELDS['id']
+                known_field = DB_CLIPLOG_FIELDS['event id']
+                known_value = event_id
+                clip_id = self.db.query_database_table_for_single_value(
+                    handle, table, return_field, known_field, known_value, max=True)['value']
+
+                if clip_id is not None:
+                    self.log.trace("Clip entry found for event: clip %s." % clip_id)
+                    result['verified'] = True
+                    result['clip id'] = clip_id
+                    break
+
+                elif clip_id is None and attempt < timeout/interval:
+                    self.log.trace("No clip entry found for event (attempt %s). "
+                                   "Re-attempting in %s seconds ..." % (attempt, interval))
+                    sleep(interval)
+                    attempt += 1
+
+                elif clip_id is None and attempt >= timeout/interval:
+                    self.log.warn("No clip entry found for site.")
+                    break
+
+            # verify expected clip length
+            if expected_length is not None and clip_id is not None:
+                # return scheduled clip length from database
+                handle = self.db.db_handle
+                table = DB_CLIPLOG_TABLE
+                return_field = DB_CLIPLOG_FIELDS['length']
+                known_field = DB_CLIPLOG_FIELDS['id']
+                known_value = clip_id
+                actual_length = self.db.query_database_table_for_single_value(
+                    handle, table, return_field, known_field, known_value, max=True)['value']
+
+                if str(actual_length) == str(expected_length):
+                    self.log.trace("Verified actual clip length matches expected clip length of"
+                                   "%s seconds." % expected_length)
+                else:
+                    self.log.warn("Failed to verify actual clip length %s matches expected"
+                                  "clip length of %s seconds." % actual_length, expected_length)
+                    result['verified'] = False
+            elif expected_length is not None and clip_id is None:
+                self.log.warn("Failed to verify clip length. No clip scheduled.")
+                result['verified'] = False
+
+            self.log.trace("... done %s." % operation.replace('_', ' '))
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if testcase is not None: testcase.processing = result['successful']
+        return result
 
     def verify_custom_clip_requests_not_allowed(self, testcase=None):
         """ Verify that custom clip requests are not allowed.

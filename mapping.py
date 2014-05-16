@@ -321,8 +321,8 @@ HESTIA = {
                 'event id':                 'EventLogID',
                 'start time':               'ReqFrmtime',
                 'end time':                 'ReqTotime',
-                'post time':                'PostTime',
-                'pre time':                 'PreTime',
+                'post-event time':          'PostTime',
+                'pre-event time':           'PreTime',
                 'minimum latitude':         'MinLatitude',
                 'maximum latitude':         'MaxLatitude',
                 'minimum longitude':        'MinLongitude',
@@ -795,7 +795,9 @@ HESTIA = {
                 'event label':              'EventLabel',
                 'notes':                    'Notes',
                 'notification':             'Notify',
-                }
+                'pre-event time':           'PreTime',
+                'post-event time':          'PostTime',
+            }
         },
         'health clip log': {
             'query path':               '/hthcliplog',

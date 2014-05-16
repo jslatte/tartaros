@@ -143,5 +143,6 @@ class GPS():
         if testcase is not None:
             testcase.gps_id = result['id']
             if result['avl id'] is not None: testcase.avl_id = result['avl id']
+            testcase.gps_point = [latitude, longitude]
             testcase.processing = result['successful']
         return result

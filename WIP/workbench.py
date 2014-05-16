@@ -891,9 +891,9 @@ def handle_exception(log, e, operation=None):
 ####################################################################################################
 
 #hestia.reset_vim_server()
-#connect_to_database()
+connect_to_database()
 #hestia.start_vim_server()
-#log_in()
+log_in()
 #hestia.setup_server_for_manual_testing('full')
 #configure_license('full')
 #hestia.configure_vim_license('streaming server')
@@ -914,14 +914,25 @@ def handle_exception(log, e, operation=None):
 from Styx.sdk import SDK
 from Styx.mapping import *
 import ctypes
-sdk = SDK(log, styx.handle_exception, "admin", styx.admin_sdk_path)
-sdk.initialize()
-sdk.startup()
-sdk.connect("Depot 139", "172.22.48.139")
-sdk.requestStatus()
-while not sdk.isConnected()['connected']:
-    sleep(3)
-sdk.requestStatus()
-sdk.getStatus()
-sdk.requestRemoteDeviceInfo()
-sdk.getRemoteDiskInfo(DISK_INFO(), 1, ctypes.pointer(c_int()))
+#sdk = SDK(log, styx.handle_exception, "admin", styx.admin_sdk_path)
+
+#sdk.initialize()
+#sdk.startup()
+#sdk.connect("Depot 139", "172.22.48.139")
+#sdk.isConnecting()
+
+#while not sdk.isConnected()['connected']:
+#    sleep(3)
+
+#sdk.requestStatus()
+#sdk.getStatus()
+#sdk.requestRemoteDeviceInfo()
+#sdk.getRemoteDiskInfo(DISK_INFO(), 1, ctypes.pointer(c_int()))
+#sdk.getPeerVersion()
+
+#sdk.disconnect()
+#sdk.cleanup()
+#sdk.finalize()
+
+#hestia.request_geoclip(gps_point=[47.767,-122.151], expected=[1])
+hestia.generate_gps_event_for_site(1, 1)
