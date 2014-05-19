@@ -47,3 +47,5 @@ Cerberus/web2py/applications/Tartaros/sessions/*.*
 web2py/applications/Tartaros/sessions/*
 artifacts/*
 Output/*
+idissearch.dll
+idisadmin.dll
