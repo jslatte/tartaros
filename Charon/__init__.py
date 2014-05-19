@@ -176,7 +176,7 @@ class Charon():
                 # execute SQL
                 statement = statement.replace('"NULL"','NULL').replace("'NULL'",'NULL')
                 statement += ';'
-                response = handle.execute(statement)
+                response = handle.execute(statement) # system-wide crash caused when using 3.8.1.2
                 # return row id
                 if return_id:
                     statement = "SELECT last_insert_rowid();"
