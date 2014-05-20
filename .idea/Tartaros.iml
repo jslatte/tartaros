@@ -5,7 +5,7 @@
       <sourceFolder url="file://$MODULE_DIR$/web2py/site-packages" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/web2py" isTestSource="false" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 2.7.2 (C:/Python27/python.exe)" jdkType="Python SDK" />
+    <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PyDocumentationSettings">
@@ -13,10 +13,6 @@
   </component>
   <component name="TemplatesService">
     <option name="TEMPLATE_CONFIGURATION" value="Web2Py" />
-  </component>
-  <component name="TestRunnerService">
-    <option name="projectConfiguration" value="Unittests" />
-    <option name="PROJECT_TEST_RUNNER" value="Unittests" />
   </component>
 </module>
 

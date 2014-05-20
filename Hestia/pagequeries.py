@@ -178,6 +178,12 @@ class PageQueries():
                         self.log.trace("Failed to verify page query response entry (attempt %s). "
                             "Re-attempting in 5 seconds ..." % attempt)
                         sleep(5)
+                        self.log.trace("Re-querying (just in case) ...")
+                        response = self.query_server_table(url, fieldNames, params)['response']
+                        verified = self.verify_page_query_response_entry(
+                            page, response, entryID, expected)['verified']
+                        if verified:
+                            break
                     elif not verified and attempt >= maxAttempts:
                         self.log.warn("Failed to verify page query response entry. ")
                         break

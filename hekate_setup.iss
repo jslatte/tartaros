@@ -7,7 +7,7 @@
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{44AD0631-36FF-4A3D-926D-DD17B9138AEA}
 AppName=Hekate
-AppVersion=1.0.9
+AppVersion=1.0.10
 ;AppVerName=Hekate
 AppPublisher=Apollo Video Technology, LLC.
 AppPublisherURL=www.apollovideo.com
