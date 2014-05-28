@@ -1508,20 +1508,20 @@ class Clips():
 
     def request_custom_clip(self, site_id, start_time=None, length=1, settings=[], event_id=None,
                             max_attempts=5, testcase=None):
-        """
-        INPUT
-            site id: the id of the site to request the clip from.
-            start time: the time from which to request the video in string format
+        """ Request a custom clip from specified site.
+        @param site_id: the id of the site to request the clip from.
+        @param start_time: the time from which to request the video in string format
                 (e.g. "5 minutes ago").
-            length: the length of the clip in seconds.
-            settings: any additional settings in [field, value] format.
-            event id: id of an event (used when requesting custom event clip).
-                NOTE: only custom event clips (for video events) currently supported.
-            testcase: a testcase object supplied when executing function as part of a testcase step.
-        OUPUT
-            successful: whether the function executed successfully or not.
-            verified: whether the operation was verified or not.
-            clip id: the clip id of the clip requested.
+        @param length: the length of the clip in seconds.
+        @param settings: any additional settings in [field, value] format.
+        @param event_id: id of an event (used when requesting custom event clip).
+            NOTE: only custom event clips (for video events) currently supported.
+        @param testcase: a testcase object supplied when executing function as part of a
+            testcase step.
+        @return: a data dictionary containing ...
+            'successful' - whether the function executed successfully or not.
+            'verified' - whether the operation was verified or not.
+            'clip id' - the clip id of the clip requested.
         """
 
         self.log.debug("Requesting custom clip from site %s ..." % site_id)
