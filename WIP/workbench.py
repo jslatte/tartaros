@@ -891,9 +891,9 @@ def handle_exception(log, e, operation=None):
 ####################################################################################################
 
 #hestia.reset_vim_server()
-#connect_to_database()
+connect_to_database()
 #hestia.start_vim_server()
-#log_in()
+log_in()
 #hestia.setup_server_for_manual_testing('full')
 #configure_license('health')
 #hestia.configure_vim_license('streaming server')
@@ -934,15 +934,18 @@ def handle_exception(log, e, operation=None):
 #sdk.cleanup()
 #sdk.finalize()
 
-import re
+#import re
 
-line = "Cats are smarter than dogs"
-pattern = r'(.*) are (.*) .*'
+#line = "Cats are smarter than dogs"
+#pattern = r'(.*) are (.*) .*'
 
-match_obj = re.match(pattern, line, re.M|re.I)
-if match_obj: print "\nMatch Object:\t", match_obj.group()
-else: print "\nMatch Object:\tno match."
+#match_obj = re.match(pattern, line, re.M|re.I)
+#if match_obj: print "\nMatch Object:\t", match_obj.group()
+#else: print "\nMatch Object:\tno match."
 
-search_obj = re.search(pattern, line, re.M|re.I)
-if search_obj: print "Search Object:\t", search_obj.group()
-else: print "No search."
+#search_obj = re.search(pattern, line, re.M|re.I)
+#if search_obj: print "Search Object:\t", search_obj.group()
+#else: print "No search."
+
+#log.trace(hestia.return_vim_server_version())
+hestia.request_custom_clip(44, start_time="1 minute ago")
