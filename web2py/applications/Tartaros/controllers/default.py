@@ -2512,9 +2512,9 @@ class TestManager():
             log.trace("Adding story section to parent ...")
             # build name
             if str(story.user_type) == '2':
-                story_name = "The server can %s" % story.name
+                story_name = "The server can %s" % story.action
             else:
-                story_name = "A user can %s" % story.name
+                story_name = "A user can %s" % story.action
             # give unique story name (to avoid issues when attempting to return correct sect id)
             story_name_q = story_name + ' %s' % str(story_id)
             sect_id = self.orpheus.add_section(

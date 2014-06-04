@@ -660,6 +660,7 @@ HESTIA = {
                 'notes':                    'Notes',
                 'notification':             'NotifyUser',
                 'dvr model':                'DvrModel',
+                'high quality':             'ClipQuality',
             },
             'columns': [
                 'site id',

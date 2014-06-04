@@ -1546,6 +1546,13 @@ class Clips():
             data[CLIPREQ_FIELDS['notification']] = 'false'
             data[CLIPREQ_FIELDS['notes']] = ''
 
+            # update for HQ clips if version > 4.2
+            try:
+                if self.release_version > 4.2:
+                    data[CLIPREQ_FIELDS['high quality']] = 'false'
+            except AttributeError:
+                self.log.warn("Failed to set high quality parameter for clip request.")
+
             # update data packet with event parameters if event id given
             if event_id is not None:
                 data['event duration'] = '00:00:01'
