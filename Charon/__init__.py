@@ -158,13 +158,13 @@ class Charon():
         # return
         return result
 
-    def execute_SQL(self, handle, statement, return_id=False, max_attempts=5):
+    def execute_SQL(self, handle, statement, return_id=False, return_ex='', max_attempts=5):
         """ Execute the given SQL statement.
-        INPUT
-            handle: an active handle to the database.
-            statement: a line of SQL code to execute.
-        OUTPUT
-            response: the response from the database
+        @param handle: an active handle to the database.
+        @param statement: a line of SQL code to execute.
+        @return: a dict containing:
+            response: the response from the database.
+            id: if return_id is True, the id of the entry inserted.
         """
 
         self.log.trace("Executing SQL %s ..." % statement)
@@ -174,13 +174,15 @@ class Charon():
         while response is None:
             try:
                 # execute SQL
-                statement = statement.replace('"NULL"','NULL').replace("'NULL'",'NULL')
+                statement = statement.replace('"NULL"', 'NULL').replace("'NULL'", 'NULL')
                 statement += ';'
                 response = handle.execute(statement) # system-wide crash caused when using 3.8.1.2
                 # return row id
                 if return_id:
-                    statement = "SELECT last_insert_rowid();"
+                    statement = "SELECT last_insert_rowid() " + return_ex + ";"
+                    self.log.trace("Executing:\t%s" % statement)
                     result['id'] = handle.execute(statement).next()[0]
+                    self.log.trace("Returned ID:\t%s" % result['id'])
             except BaseException, e:
                 self.log.error("Failed to execute SQL.")
                 self.log.error(str(e))

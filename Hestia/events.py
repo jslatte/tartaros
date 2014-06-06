@@ -619,12 +619,18 @@ class Events():
         result = {'successful': False, 'event id': None, 'event start': None}
 
         try:
+            # translate event type string to id
+            event_type_id = EVENT_TYPES[type.lower()]
+
+            # determine event start
+            event_start = self.utc.convert_string_to_time('now', silent=generated)
+
             # define default attributes of event
             event = {
-                DB_EVENTLOG_FIELDS['site id']:          site_id,
-                DB_EVENTLOG_FIELDS['type']:          EVENT_TYPES[type.lower()],
+                DB_EVENTLOG_FIELDS['site id']:       site_id,
+                DB_EVENTLOG_FIELDS['type']:          event_type_id,
                 DB_EVENTLOG_FIELDS['event id']:      '0',
-                DB_EVENTLOG_FIELDS['start']:         "strftime('%s','now')",
+                DB_EVENTLOG_FIELDS['start']:         event_start,
                 DB_EVENTLOG_FIELDS['duration']:      '1',#'NULL',
                 DB_EVENTLOG_FIELDS['cameras']:       '0',
                 DB_EVENTLOG_FIELDS['label']:         '',
@@ -697,8 +703,8 @@ class Events():
                     self.log.trace("Setting '%(field)s' to '%(value)s' ..."
                                    % {'field':parameter[0], 'value':str(parameter[1])})
                 if parameter[0].lower() == 'start':
-                    event[DB_EVENTLOG_FIELDS[parameter[0].lower()]] = \
-                    self.utc.convert_string_to_time(parameter[1],silent=generated)
+                    event_start = self.utc.convert_string_to_time(parameter[1],silent=generated)
+                    event[DB_EVENTLOG_FIELDS[parameter[0].lower()]] = event_start
                 elif parameter[0].lower() == 'event id':
                     event[DB_EVENTLOG_FIELDS[parameter[0].lower()]] = parameter[1]
                     if type.lower() == 'video loss':
@@ -734,7 +740,11 @@ class Events():
                            event[DB_EVENTLOG_FIELDS['download clip']],
                            event[DB_EVENTLOG_FIELDS['disk id']])
             # insert event into database and return ID
-            eventID = self.db.execute_SQL(self.db.db_handle, statement, return_id=True)['id']
+            explicit = 'FROM %s WHERE %s = "%s" AND %s = "%s"' % (
+                DB_EVENTLOG_TABLE, DB_EVENTLOG_FIELDS['type'], event_type_id,
+                DB_EVENTLOG_FIELDS['start'], event_start)
+            eventID = self.db.execute_SQL(
+                self.db.db_handle, statement, return_id=True, return_ex=explicit)['id']
             # return event start time
             eventStart = self.db.query_database_table_for_single_value(self.db.db_handle,
                 DB_EVENTLOG_TABLE, DB_EVENTLOG_FIELDS['start'], DB_EVENTLOG_FIELDS['id'],

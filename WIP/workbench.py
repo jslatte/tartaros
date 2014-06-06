@@ -893,9 +893,9 @@ def handle_exception(log, e, operation=None):
 #hestia.reset_vim_server()
 connect_to_database()
 #hestia.start_vim_server()
-log_in()
+#log_in()
 #hestia.setup_server_for_manual_testing('full')
-#configure_license('health')
+#configure_license('full')
 #hestia.configure_vim_license('streaming server')
 
 #testcase = HestiaTestCase(log, database, 442, debugging=False)
@@ -946,6 +946,8 @@ log_in()
 #search_obj = re.search(pattern, line, re.M|re.I)
 #if search_obj: print "Search Object:\t", search_obj.group()
 #else: print "No search."
-
-#log.trace(hestia.return_vim_server_version())
-hestia.request_custom_clip(44, start_time="1 minute ago")
+statement = "INSERT INTO EventLog (SiteID, EventType, EventId, EventStart, EventDuration, " \
+            "CameraId, EventLabel, EventLevel, DownloadClip, DiskID) " \
+            "VALUES ('1', '23', '0', strftime('%s', 'now'), '1', '0', '', '16', '0', '1');"
+return_ex = 'FROM EventLog WHERE EventType = "23"'
+log.trace(hestia.db.execute_SQL(hestia.db.db_handle, statement, return_id=True, return_ex=return_ex))

@@ -798,6 +798,7 @@ HESTIA = {
                 'notification':             'Notify',
                 'pre-event time':           'PreTime',
                 'post-event time':          'PostTime',
+                'high quality':             'ClipQuality',
             }
         },
         'health clip log': {

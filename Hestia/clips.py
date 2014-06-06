@@ -48,6 +48,7 @@ DB_SITES_TABLE = HESTIA['database']['sites']['table']
 DB_SITES_FIELDS = HESTIA['database']['sites']['fields']
 DB_EVENTLOG_TABLE = HESTIA['database']['event log']['table']
 DB_EVENTLOG_FIELDS = HESTIA['database']['event log']['fields']
+EVENT_TYPE_TO_ID = DB['event log']['event types']
 CLIPACT = SERVER['clip actions']
 CLIPACT_SCHEDULE_DELETE = CLIPACT['schedule for delete path']
 CLIPACT_PRESERVE = CLIPACT['preserve path']
@@ -78,7 +79,7 @@ class Clips():
 
     def request_geoclip(self, gps_point, start='1 hour ago', end='15 minutes ago',
                         pre_time=15, post_time=45, notify=False, expected=[], timeout=30,
-                        testcase=None):
+                        settings=[], testcase=None):
         """ Request a GeoClip.
         @param gps_point: the point around which the area to look for the clip is located
             (box drawn at +- 0.0005 around point) in format [lat,long].
@@ -90,6 +91,7 @@ class Clips():
         @param expected: a list of site IDs for sites expected to have a clip scheduled based
             on the GeoClip request.
         @param timeout: the timeout on attempting to make a successful request.
+        @param settings: list of any additional settings in [field, value] format.
         @param testcase: a testcase object supplied when executing function as part of
             a testcase step.
         @return: a data dict containing:
@@ -136,6 +138,12 @@ class Clips():
 
             # update notification value
             if notify: packet[GEOCLIP_FIELDS['notification']] = 'true'
+
+            # update data packet with any additional parameters given
+            for setting in settings:
+                self.log.trace("Setting '%(field)s' to '%(value)s' ..."%{'field':setting[0],
+                                                              'value':str(setting[1])})
+                packet[GEOCLIP_FIELDS[setting[0].lower()]] = setting[1]
 
             successful = False
             attempt = 1
@@ -1555,21 +1563,56 @@ class Clips():
 
             # update data packet with event parameters if event id given
             if event_id is not None:
-                data['event duration'] = '00:00:01'
-                data['event type id'] = -1
-                data['event id'] = event_id
-                data['event type'] = 32767
-
-                # determine event time
+                # database query parameters
                 handle = self.db.db_handle
                 table = DB_EVENTLOG_TABLE
-                return_field = DB_EVENTLOG_FIELDS['start']
                 known_field = DB_EVENTLOG_FIELDS['id']
                 known_value = event_id
+
+                # determine event id
+                data[CLIPREQ_FIELDS['event id']] = event_id
+
+                # determine event label
+                return_field = DB_EVENTLOG_FIELDS['label']
+                data[CLIPREQ_FIELDS['event label']] = self.db.query_database_table_for_single_value(
+                    handle, table, return_field, known_field, known_value)['value']
+
+                # determine event type id
+                return_field = DB_EVENTLOG_FIELDS['event id']
+                data[CLIPREQ_FIELDS['event type id']] = \
+                    self.db.query_database_table_for_single_value(
+                    handle, table, return_field, known_field, known_value)['value']
+
+                # determine event type
+                return_field = DB_EVENTLOG_FIELDS['type']
+                data[CLIPREQ_FIELDS['event type']] = self.db.query_database_table_for_single_value(
+                    handle, table, return_field, known_field, known_value)['value']
+
+                # update health vs other clip specific values
+                if str(data[CLIPREQ_FIELDS['event type']]) in EVENT_TYPE_TO_ID.values()[1:-2]:
+                    duration = '60'
+                    length = 60
+                    data[CLIPREQ_FIELDS['time buffer']] = '+/- 30 sec'
+                    data[CLIPREQ_FIELDS['camera label']] = 'All'
+                else:
+                    duration = '1'
+                    length = 1
+                data[CLIPREQ_FIELDS['duration']] = duration
+                data[CLIPREQ_FIELDS['end date/time']] = \
+                    self.utc.convert_database_time_to_server_date(
+                    data[CLIPREQ_FIELDS['start']] + length)
+
+                # determine event duration
+                return_field = DB_EVENTLOG_FIELDS['duration']
+                data[CLIPREQ_FIELDS['event duration']] = \
+                    self.db.query_database_table_for_single_value(
+                    handle, table, return_field, known_field, known_value)['value']
+
+                # determine event time
+                return_field = DB_EVENTLOG_FIELDS['start']
                 event_time = self.db.query_database_table_for_single_value(handle, table,
                     return_field, known_field, known_value)['value']
-
-                data['event start'] = event_time
+                data[CLIPREQ_FIELDS['event start']] = event_time
 
             # update data packet with any additional parameters given
             for setting in settings:
