@@ -2629,7 +2629,7 @@ def index():
     # build smanager form
     #smanager_form = smanager.build_smanager_form()['form']
 
-    # handle add crafting material form submission
+    # handle add form submission
     if tmanager_form.process(keepvalues=True).accepted:
         # insert record into database
         try:
