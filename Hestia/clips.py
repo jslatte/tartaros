@@ -77,6 +77,50 @@ class Clips():
     """ Sub-library for ViM server clip requests and download functionality.
     """
 
+    def verify_downloaded_clip_quality(self, clip_id, quality, testcase=None):
+        """ Verify the quality of the downloaded clip.
+        @param clip_id: the id of the downloaded clip.
+        @param quality: the quality to check for (e.g., 'high', 'low', 'standard').
+        @param testcase: a testcase object supplied when executing function as part of
+            a testcase step.
+        :return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'verified' - whether the operation was verified or not.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'verified': False}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # query the clip log
+            clip = self.query_page('video clip log', data={'entry id': clip_id})['entry']
+
+            # check quality
+            if quality.lower() == 'high' and 'HQ-' in clip['file name']:
+                self.log.trace("Verified clip was downloaded as high quality.")
+                result['verified'] = True
+            elif quality.lower() == 'low' and 'LT-' in clip['file name']:
+                self.log.trace("Verified clip was downloaded as low quality.")
+                result['verified'] = True
+            elif quality.lower() == 'standard' and 'HQ-' not in clip['file name'] \
+                    and 'LT-' not in clip['file name']:
+                self.log.trace("Verified clip was downloaded as standard quality.")
+                result['verified'] = True
+            else:
+                self.log.warn("Failed to verify clip was downloaded as %s quality." % quality)
+                self.log.warn("Clip File Name:\t%s" % clip['file name'])
+
+            self.log.trace("... done %s." % operation.replace('_', ' '))
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if testcase is not None: testcase.processing = result['successful']
+        return result
+
     def request_geoclip(self, gps_point, start='1 hour ago', end='15 minutes ago',
                         pre_time=15, post_time=45, notify=False, expected=[], timeout=30,
                         settings=[], testcase=None):
