@@ -26,7 +26,7 @@ from testcase import HestiaTestCase
 from testrun import TestRun
 from mapping import TARTAROS, HESTIA, TARTAROS_DB_PATH
 from os import getcwdu
-from time import sleep
+from time import sleep, mktime
 from utc import UTC
 from random import randint
 from utility import return_execution_error
@@ -34,6 +34,7 @@ import socket
 from binascii import hexlify, unhexlify
 from utility import *
 import inspect
+from datetime import datetime
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -891,7 +892,7 @@ def handle_exception(log, e, operation=None):
 ####################################################################################################
 
 #hestia.reset_vim_server()
-connect_to_database()
+#connect_to_database()
 #hestia.start_vim_server()
 #log_in()
 #hestia.setup_server_for_manual_testing('full')
@@ -900,54 +901,73 @@ connect_to_database()
 
 #testcase = HestiaTestCase(log, database, 442, debugging=False)
 #testcase.run()
+#event_id = 6030675
+#clip_id = hestia.request_custom_clip(
+#    1, length=300, start_time="1 hour ago")['clip id']
+#hestia.verify_clip_downloaded(clip_id, site_id=1)
 
-#hestia.configure_all_lab_depot_sites()
+root = "Output\\"
+file_path = root + "sdg_avail_log.txt"
+data = read_file_into_list(file_path)['list']
+avail_data = []
+for line in data:
+    str_data = line.split(' ')
+    date_time = str_data[0] + ' ' + str_data[1]
+    timestamp = int(
+        mktime(datetime.utctimetuple(datetime.strptime(date_time, "%Y-%m-%d %H:%M:%S.%f")))
+    )
+    if 'no longer available' in line:
+        available = False
+    else:
+        available = True
+    avail_data.append({'date/time': date_time, 'timestamp': timestamp, 'available': available})
 
-#hestia.add_number_of_fake_sites(250, start_id=1, ip_schema="172.22.60.", start_ip=1)
-#hestia.add_number_of_fake_sites(250, start_id=251, ip_schema="172.22.61.", start_ip=1)
-#hestia.add_number_of_fake_sites(250, start_id=501, ip_schema="172.22.62.", start_ip=1)
-#hestia.add_number_of_fake_sites(250, start_id=751, ip_schema="172.22.63.", start_ip=1)
-#hestia.add_number_of_fake_sites(200, start_id=1001, ip_schema="172.22.63.", start_ip=1)
+sessions = []
+start_date = None
+start_time = None
+last_date = None
+last_time = None
+for entry in avail_data:
+    if entry['available']:
+        start_date = entry['date/time']
+        start_time = entry['timestamp']
 
-#hestia.verify_custom_clip_requests_not_allowed()
+    if not entry['available'] and start_time is not None:
+        duration = entry['timestamp'] - start_time
+        if last_time is not None:
+            time_to_reconnect = start_time - last_time
+        else:
+            time_to_reconnect = 'Unknown'
+        sessions.append(
+            {'date/time': start_date, 'duration': duration,
+             'last date/time': last_date, 'last time': last_time,
+             'time to reconnect': time_to_reconnect})
+        start_date = None
+        start_time = None
+        last_date = entry['date/time']
+        last_time = entry['timestamp']
 
-#from Styx.sdk import SDK
-#from Styx.mapping import *
-#import ctypes
-#sdk = SDK(log, styx.handle_exception, "admin", styx.admin_sdk_path)
+total_sessions = len(sessions)
+total_duration = 0
+longest_time = 0
+total_lapse = 0
+longest_lapse = 0
+for session in sessions:
+    total_duration += session['duration']
+    if session['duration'] > longest_time: longest_time = session['duration']
+    if session['time to reconnect'] is not 'Unknown':
+        total_lapse += session['time to reconnect']
+        if session['time to reconnect'] > longest_lapse:
+            longest_lapse = session['time to reconnect']
+avg_session = total_duration/total_sessions
+avg_lapse = total_lapse/(total_sessions-1)
 
-#sdk.initialize()
-#sdk.startup()
-#sdk.connect("Depot 139", "172.22.48.139")
-#sdk.isConnecting()
-
-#while not sdk.isConnected()['connected']:
-#    sleep(3)
-
-#sdk.requestStatus()
-#sdk.getStatus()
-#sdk.requestRemoteDeviceInfo()
-#sdk.getRemoteDiskInfo(DISK_INFO(), 1, ctypes.pointer(c_int()))
-#sdk.getPeerVersion()
-
-#sdk.disconnect()
-#sdk.cleanup()
-#sdk.finalize()
-
-#import re
-
-#line = "Cats are smarter than dogs"
-#pattern = r'(.*) are (.*) .*'
-
-#match_obj = re.match(pattern, line, re.M|re.I)
-#if match_obj: print "\nMatch Object:\t", match_obj.group()
-#else: print "\nMatch Object:\tno match."
-
-#search_obj = re.search(pattern, line, re.M|re.I)
-#if search_obj: print "Search Object:\t", search_obj.group()
-#else: print "No search."
-statement = "INSERT INTO EventLog (SiteID, EventType, EventId, EventStart, EventDuration, " \
-            "CameraId, EventLabel, EventLevel, DownloadClip, DiskID) " \
-            "VALUES ('1', '23', '0', strftime('%s', 'now'), '1', '0', '', '16', '0', '1');"
-return_ex = 'FROM EventLog WHERE EventType = "23"'
-log.trace(hestia.db.execute_SQL(hestia.db.db_handle, statement, return_id=True, return_ex=return_ex))
+display_data = sessions
+print
+for entry in display_data:
+    print entry
+print "Total Sessions:\t%d" % total_sessions
+print "Average Time Connected:\t%d min %d s" % (avg_session/60, avg_session%60)
+print "Longest Time Connected:\t%d min %d s" % (longest_time/60, longest_time%60)
+print "Average Time Between Connections:\t%d min %d s" % (avg_lapse/60, avg_lapse%60)
+print "Longest Time Between Connections:\t%d min %d s" % (longest_lapse/60, longest_lapse%60)
