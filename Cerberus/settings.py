@@ -62,8 +62,8 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'polls',
-    'erinyes',
+    'tmanager',
+    'Erinyes',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -83,10 +83,17 @@ WSGI_APPLICATION = 'Cerberus.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases
 
+DATABASE_ROUTERS = ['Cerberus.router.DatabaseAppsRouter']
+DATABASE_APPS_MAPPING = {'erinyes': 'erinyes_db'}
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'tartaros.sqlite'),
+    },
+    'erinyes_db': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'Erinyes\\erinyes.sqlite'),
     }
 }
 

@@ -1934,7 +1934,7 @@ class Clips():
                     else:
                         self.log.trace("Downloaded clip file not found (attempt %d). "
                                        "Retrying in 5 seconds ..." % i)
-                        sleep(5)
+                        sleep(1)
                         i += 1
 
                 # if testing downloaded from site

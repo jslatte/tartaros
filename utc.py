@@ -149,47 +149,52 @@ class UTC():
     def convert_database_time_to_server_date(self,databaseTime,abbrev=False):
         """ Convert a database time value to server date string. """
 
-        # variable dictionary
-        vars = {'time':         databaseTime,
-                'abbreviated':  abbrev}
-        # ancillary variables
-        weekDays = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
-        months = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-        # declaration
-        #self.log.debug('Converting database time %(time)s to server date ...' % vars)
-        # convert seconds to date/time dictionary (local)
-        dateData = self.convert_database_time_to_date(vars['time'],'local')
-        # update date dictionary with returned values
-        dateData['week day'] = weekDays[dateData['week day']]
-        dateData['month abbr'] = months[dateData['month']]
-        dateData['year abbr'] = int(dateData['year'])-2000
-        # stringify seconds
-        if dateData['second'] is 0: dateData['second'] = '00'
-        elif dateData['second'] < 10: dateData['second'] = '0%s'%str(dateData['second'])
-        else: dateData['second'] = str(dateData['second'])
-        # stringify minutes
-        if dateData['minute'] is 0: dateData['minute'] = '00'
-        elif dateData['minute'] < 10: dateData['minute'] = '0%s'%str(dateData['minute'])
-        else: dateData['minute'] = str(dateData['minute'])
-        # stringify hours
-        if dateData['hour'] is 0:   dateData['hour']   = '00'
-        elif dateData['hour'] < 10: dateData['hour'] = '0%s'%str(dateData['hour'])
-        else: dateData['hour'] = str(dateData['hour'])
-        # create date/time string in server format
-        if abbrev is True:
-            date = '%(month)s/%(day)s/%(year abbr)s %(hour)s:%(minute)s:%(second)s'%dateData
-        elif abbrev == 'clip status':
-            if dateData['month'] < 10: dateData['month'] = '0%d'%dateData['month']
-            if dateData['day'] < 10: dateData['day'] = '0%d'%dateData['day']
-            date = '%(year)s-%(month)s-%(day)s %(hour)s:%(minute)s:%(second)s'%dateData
-        elif DST:
-            date = '%(week day)s %(month abbr)s %(day)s %(year)s %(hour)s:%(minute)s:%(second)s '\
-                   'GMT-0700 (Pacific Daylight Time)'%dateData
-        else:
-            date = '%(week day)s %(month abbr)s %(day)s %(year)s %(hour)s:%(minute)s:%(second)s '\
-                   'GMT-0800 (Pacific Standard Time)'%dateData
-            # Footer
-        #self.log.trace('Date: %s'%date)
+        try:
+            # variable dictionary
+            vars = {'time':         databaseTime,
+                    'abbreviated':  abbrev}
+            # ancillary variables
+            weekDays = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+            months = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+            # declaration
+            #self.log.debug('Converting database time %(time)s to server date ...' % vars)
+            # convert seconds to date/time dictionary (local)
+            dateData = self.convert_database_time_to_date(vars['time'],'local')
+            # update date dictionary with returned values
+            dateData['week day'] = weekDays[dateData['week day']]
+            dateData['month abbr'] = months[dateData['month']]
+            dateData['year abbr'] = int(dateData['year'])-2000
+            # stringify seconds
+            if dateData['second'] is 0: dateData['second'] = '00'
+            elif dateData['second'] < 10: dateData['second'] = '0%s'%str(dateData['second'])
+            else: dateData['second'] = str(dateData['second'])
+            # stringify minutes
+            if dateData['minute'] is 0: dateData['minute'] = '00'
+            elif dateData['minute'] < 10: dateData['minute'] = '0%s'%str(dateData['minute'])
+            else: dateData['minute'] = str(dateData['minute'])
+            # stringify hours
+            if dateData['hour'] is 0:   dateData['hour']   = '00'
+            elif dateData['hour'] < 10: dateData['hour'] = '0%s'%str(dateData['hour'])
+            else: dateData['hour'] = str(dateData['hour'])
+            # create date/time string in server format
+            if abbrev is True:
+                date = '%(month)s/%(day)s/%(year abbr)s %(hour)s:%(minute)s:%(second)s'%dateData
+            elif abbrev == 'clip status':
+                if dateData['month'] < 10: dateData['month'] = '0%d'%dateData['month']
+                if dateData['day'] < 10: dateData['day'] = '0%d'%dateData['day']
+                date = '%(year)s-%(month)s-%(day)s %(hour)s:%(minute)s:%(second)s'%dateData
+            elif DST:
+                date = '%(week day)s %(month abbr)s %(day)s %(year)s %(hour)s:%(minute)s:%(second)s '\
+                       'GMT-0700 (Pacific Daylight Time)'%dateData
+            else:
+                date = '%(week day)s %(month abbr)s %(day)s %(year)s %(hour)s:%(minute)s:%(second)s '\
+                       'GMT-0800 (Pacific Standard Time)'%dateData
+                # Footer
+            #self.log.trace('Date: %s'%date)
+
+        except BaseException, e:
+            date = ''
+
         return date
 
     def convert_date_to_database_time(self, date):

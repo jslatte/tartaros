@@ -884,7 +884,79 @@ def handle_exception(log, e, operation=None):
         exception = return_execution_error()['error']
         log.error("Error: %s." % exception)
 
-#hestia.check_for_hyphenated_drive_entry()
+def parse_erinyes_output():
+    root = "Output\\"
+    file_path = root + "evt_avail_log.txt"
+    data = read_file_into_list(file_path)['list']
+    avail_data = []
+    for line in data:
+        str_data = line.split(' ')
+        date_time = str_data[0] + ' ' + str_data[1]
+        try:
+            timestamp = int(
+                mktime(datetime.utctimetuple(datetime.strptime(date_time, "%Y-%m-%d %H:%M:%S.%f")))
+            )
+        except ValueError:
+            timestamp = int(
+                mktime(datetime.utctimetuple(datetime.strptime(date_time, "%Y-%m-%d %H:%M:%S")))
+            )
+        if 'no longer available' in line:
+            available = False
+        else:
+            available = True
+        avail_data.append({'date/time': date_time, 'timestamp': timestamp, 'available': available})
+
+    sessions = []
+    start_date = None
+    start_time = None
+    last_date = None
+    last_time = None
+    for entry in avail_data:
+        if entry['available']:
+            start_date = entry['date/time']
+            start_time = entry['timestamp']
+
+        if not entry['available'] and start_time is not None:
+            duration = entry['timestamp'] - start_time
+            if last_time is not None:
+                time_to_reconnect = start_time - last_time
+            else:
+                time_to_reconnect = 'Unknown'
+            sessions.append(
+                {'date/time': start_date, 'duration': duration,
+                 'last date/time': last_date, 'last time': last_time,
+                 'time to reconnect': time_to_reconnect})
+            start_date = None
+            start_time = None
+            last_date = entry['date/time']
+            last_time = entry['timestamp']
+
+    total_sessions = len(sessions)
+    total_duration = 0
+    longest_time = 0
+    total_lapse = 0
+    longest_lapse = 0
+    for session in sessions:
+        total_duration += session['duration']
+        if session['duration'] > longest_time: longest_time = session['duration']
+        if session['time to reconnect'] is not 'Unknown':
+            total_lapse += session['time to reconnect']
+            if session['time to reconnect'] > longest_lapse:
+                longest_lapse = session['time to reconnect']
+    avg_session = total_duration/total_sessions
+    avg_lapse = total_lapse/(total_sessions-1)
+
+    display_data = sessions
+    print
+    for entry in display_data:
+        print entry
+    print "Total Sessions:\t%d" % total_sessions
+    print "Average Time Connected:\t%d min %d s" % (avg_session/60, avg_session%60)
+    print "Longest Time Connected:\t%d min %d s" % (longest_time/60, longest_time%60)
+    print "Average Time Between Connections:\t%d min %d s" % (avg_lapse/60, avg_lapse%60)
+    print "Longest Time Between Connections:\t%d min %d s" % (longest_lapse/60, longest_lapse%60)
+
+print
 
 ####################################################################################################
 # Workbench ########################################################################################
@@ -905,69 +977,3 @@ def handle_exception(log, e, operation=None):
 #clip_id = hestia.request_custom_clip(
 #    1, length=300, start_time="1 hour ago")['clip id']
 #hestia.verify_clip_downloaded(clip_id, site_id=1)
-
-root = "Output\\"
-file_path = root + "sdg_avail_log.txt"
-data = read_file_into_list(file_path)['list']
-avail_data = []
-for line in data:
-    str_data = line.split(' ')
-    date_time = str_data[0] + ' ' + str_data[1]
-    timestamp = int(
-        mktime(datetime.utctimetuple(datetime.strptime(date_time, "%Y-%m-%d %H:%M:%S.%f")))
-    )
-    if 'no longer available' in line:
-        available = False
-    else:
-        available = True
-    avail_data.append({'date/time': date_time, 'timestamp': timestamp, 'available': available})
-
-sessions = []
-start_date = None
-start_time = None
-last_date = None
-last_time = None
-for entry in avail_data:
-    if entry['available']:
-        start_date = entry['date/time']
-        start_time = entry['timestamp']
-
-    if not entry['available'] and start_time is not None:
-        duration = entry['timestamp'] - start_time
-        if last_time is not None:
-            time_to_reconnect = start_time - last_time
-        else:
-            time_to_reconnect = 'Unknown'
-        sessions.append(
-            {'date/time': start_date, 'duration': duration,
-             'last date/time': last_date, 'last time': last_time,
-             'time to reconnect': time_to_reconnect})
-        start_date = None
-        start_time = None
-        last_date = entry['date/time']
-        last_time = entry['timestamp']
-
-total_sessions = len(sessions)
-total_duration = 0
-longest_time = 0
-total_lapse = 0
-longest_lapse = 0
-for session in sessions:
-    total_duration += session['duration']
-    if session['duration'] > longest_time: longest_time = session['duration']
-    if session['time to reconnect'] is not 'Unknown':
-        total_lapse += session['time to reconnect']
-        if session['time to reconnect'] > longest_lapse:
-            longest_lapse = session['time to reconnect']
-avg_session = total_duration/total_sessions
-avg_lapse = total_lapse/(total_sessions-1)
-
-display_data = sessions
-print
-for entry in display_data:
-    print entry
-print "Total Sessions:\t%d" % total_sessions
-print "Average Time Connected:\t%d min %d s" % (avg_session/60, avg_session%60)
-print "Longest Time Connected:\t%d min %d s" % (longest_time/60, longest_time%60)
-print "Average Time Between Connections:\t%d min %d s" % (avg_lapse/60, avg_lapse%60)
-print "Longest Time Between Connections:\t%d min %d s" % (longest_lapse/60, longest_lapse%60)

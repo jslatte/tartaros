@@ -9,9 +9,9 @@
 ####################################################################################################
 ####################################################################################################
 
-from utility import return_execution_error, read_file_into_list
+from utility import read_file_into_list
 import inspect
-from os import getcwdu, system, popen
+from os import getcwdu, popen
 from time import sleep
 from logger import Logger
 
@@ -20,25 +20,10 @@ from logger import Logger
 ####################################################################################################
 ####################################################################################################
 
-ROOT_PATH = getcwdu() #+ '\\Erinyes'
+ROOT_PATH = getcwdu() + '\\Erinyes'
 CONFIG_FILE_PATH = ROOT_PATH + "\\config.ini"
 
 log = Logger()
-
-
-def handle_exception(log, e, operation=None):
-    """ Handle an exception.
-    INPUT
-        e: the exception (from BaseException, e).
-        operation: the action being attempted (that failed).
-    """
-
-    if operation is not None: log.error("Failed to %s." % operation)
-    log.error(str(e))
-    for error in e:
-        log.error(str(error))
-    exception = return_execution_error()['error']
-    log.error("Error: %s." % exception)
 
 ####################################################################################################
 # Main #############################################################################################
@@ -85,9 +70,6 @@ class Erinyes():
 
         # load configuration
         self.load_config()
-
-        # run the main method
-        self.check_availability_of_sites()
 
     def TEMPLATE(self):
         """
@@ -229,10 +211,3 @@ class Erinyes():
         # return
         self.log.trace("... DONE %s." % operation.replace('_', ' '))
         return result
-
-####################################################################################################
-# Execute ##########################################################################################
-####################################################################################################
-####################################################################################################
-
-Erinyes(log, handle_exception)

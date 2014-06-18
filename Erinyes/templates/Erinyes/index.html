@@ -1,0 +1,48 @@
+<!DOCTYPE HTML>
+
+<html lang="en">
+
+	<head>
+
+		<title>Erinyes{%block pagetitle %}{% endblock %}</title>
+
+	</head>
+
+
+
+	<body>
+
+		<div id="header">Erinyes</div>
+
+		<div id="nav">
+
+			<ul>
+
+				<li><a href="/Erinyes">Home</a></li>
+
+				<li><a href="/links/">Links</a></li>
+
+				<li><a href="/about/">About</a></li>
+
+			</ul>
+
+		</div>
+
+		<div id="content">
+
+			<div id="primary">
+
+				<h1>{% block title %}Erinyes{% endblock %}</h1>
+
+                <button onclick={{  }}>Test Button</button>
+
+				{% block primary %}{% endblock %}
+
+			</div>
+
+
+		</div>
+
+	</body>
+
+</html>
