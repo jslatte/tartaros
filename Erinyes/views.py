@@ -9,9 +9,10 @@
 ####################################################################################################
 ####################################################################################################
 
-from django.shortcuts import render
+from django.shortcuts import render, RequestContext
 from django.views.generic import View
-from django.http import HttpResponse
+from django.template import Context, loader
+from django.http import HttpResponse, Http404
 from models import *
 from logger import Logger
 from exceptionhandler import ExceptionHandler
@@ -31,7 +32,8 @@ erinyes = Erinyes(log, ExceptionHandler)
 ####################################################################################################
 
 
-class Index(View):
-
-    def get(self, request, *args, **kwargs):
-        return render(request, 'Erinyes/index.html')
+def index(request):
+    site_statuses = ConnectionStatus.objects.all()
+    t = loader.get_template('Erinyes/index.html')
+    c = Context({'object_list': site_statuses})
+    return HttpResponse(t.render(c))

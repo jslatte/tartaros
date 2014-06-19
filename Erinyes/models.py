@@ -115,3 +115,31 @@ class Connection(models.Model):
     class Meta:
         app_label = 'erinyes'
         db_table = 'connection_log'
+
+
+class ConnectionStatus(models.Model):
+    site = models.ForeignKey(
+        to=Site,
+        help_text="The site.",
+    )
+    available = models.BooleanField(
+        help_text="Whether the site is currently available or not."
+    )
+    last_time_pinged_available = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="The date/time the site was last pinged and available (UTC in seconds).",
+    )
+    last_time_pinged_unavailable = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="The date/time the site was last pinged and unavailable (UTC in seconds).",
+    )
+
+    def __unicode__(self):
+        return "%s (%s)" % (self.site, self.available)
+
+    class Meta:
+        app_label = 'erinyes'
+        db_table = 'connection_statuses'
+        verbose_name_plural = 'Connection Statuses'

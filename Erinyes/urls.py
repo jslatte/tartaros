@@ -51,5 +51,5 @@ urlpatterns = patterns('',
     #url(r'^(?P<poll_id>\d+)/vote/$', views.vote, name='vote')
 
     # using generic views
-    url(r'^$', views.Index.as_view(), name='index'),
+    url(r'^$', views.index, name='index'),
 )

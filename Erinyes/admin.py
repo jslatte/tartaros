@@ -76,6 +76,23 @@ class AdminConnection(admin.ModelAdmin):
     # what field(s) the search field will look in
     search_fields = ['site', 'connection_type']
 
+
+class AdminConnectionStatus(admin.ModelAdmin):
+
+    # the field set parameters control the layout of admin pages
+    fieldsets = [
+        ('Site',                {'fields': ['site']}),
+        ('Available',           {'fields': ['available']}),
+        ('Last Time Available', {'fields': ['last_time_pinged_available']}),
+        ('Unavailable Since',   {'fields': ['last_time_pinged_unavailable']}),
+    ]
+    # what to display in the admin table list
+    list_display = ('site', 'available')
+    # what field(s) to filter the list by (side panel)
+    list_filter = ['site', 'available']
+    # what field(s) the search field will look in
+    search_fields = ['site']
+
 ####################################################################################################
 # Register Models ##################################################################################
 ####################################################################################################
@@ -86,6 +103,7 @@ models_to_register = [
     (Site, AdminSite),
     (Connection, AdminConnection),
     ConnectionType,
+    (ConnectionStatus, AdminConnectionStatus),
 ]
 
 for model in models_to_register:

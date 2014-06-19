@@ -884,28 +884,36 @@ def handle_exception(log, e, operation=None):
         exception = return_execution_error()['error']
         log.error("Error: %s." % exception)
 
-def parse_erinyes_output():
+def parse_erinyes_output_per_site(site_address):
     root = "Output\\"
-    file_path = root + "evt_avail_log.txt"
+    file_path = root + "erinyes.txt"
+
+    # parse availability data for site from output
     data = read_file_into_list(file_path)['list']
     avail_data = []
     for line in data:
-        str_data = line.split(' ')
-        date_time = str_data[0] + ' ' + str_data[1]
-        try:
-            timestamp = int(
-                mktime(datetime.utctimetuple(datetime.strptime(date_time, "%Y-%m-%d %H:%M:%S.%f")))
-            )
-        except ValueError:
-            timestamp = int(
-                mktime(datetime.utctimetuple(datetime.strptime(date_time, "%Y-%m-%d %H:%M:%S")))
-            )
-        if 'no longer available' in line:
-            available = False
-        else:
-            available = True
-        avail_data.append({'date/time': date_time, 'timestamp': timestamp, 'available': available})
+        if site_address in line:
+            str_data = line.split(' ')
+            date_time = str_data[0] + ' ' + str_data[1]
+            try:
+                timestamp = int(
+                    mktime(datetime.utctimetuple(datetime.strptime(
+                        date_time, "%Y-%m-%d %H:%M:%S.%f")))
+                )
+            except ValueError:
+                timestamp = int(
+                    mktime(datetime.utctimetuple(datetime.strptime(
+                        date_time, "%Y-%m-%d %H:%M:%S")))
+                )
+            if 'no longer available' in line:
+                available = False
+            else:
+                available = True
+            avail_data.append({
+                'date/time': date_time, 'timestamp': timestamp, 'available': available
+            })
 
+    # determine availability sessions
     sessions = []
     start_date = None
     start_time = None
@@ -931,6 +939,7 @@ def parse_erinyes_output():
             last_date = entry['date/time']
             last_time = entry['timestamp']
 
+    # summarize
     total_sessions = len(sessions)
     total_duration = 0
     longest_time = 0
@@ -956,6 +965,16 @@ def parse_erinyes_output():
     print "Average Time Between Connections:\t%d min %d s" % (avg_lapse/60, avg_lapse%60)
     print "Longest Time Between Connections:\t%d min %d s" % (longest_lapse/60, longest_lapse%60)
 
+    # export
+    output = open("Output\\output.txt", 'w')
+    header = 'Date/Time\tTime Connected\t Time Since Previous Connect\n'
+    lines = [header]
+    for session in sessions:
+        line = '\n%(date/time)s\t%(duration)s\t%(time to reconnect)s' % session
+        lines.append(line)
+    output.writelines(lines)
+    output.close()
+
 print
 
 ####################################################################################################
@@ -977,3 +996,5 @@ print
 #clip_id = hestia.request_custom_clip(
 #    1, length=300, start_time="1 hour ago")['clip id']
 #hestia.verify_clip_downloaded(clip_id, site_id=1)
+
+parse_erinyes_output_per_site('166.154.247.142')
