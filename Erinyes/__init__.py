@@ -204,6 +204,9 @@ class Erinyes():
                         site.available = True
                         self.log.info("Site %s is available." % site.address)
 
+                        # log connection
+
+
                         # log new connect in database
                         #self.db.add_entry_to_table(
                         #    handle=self.db_handle,

@@ -18,6 +18,7 @@ from os import getcwdu
 ####################################################################################################
 
 ERINYES_DB_PATH = getcwdu() + "\\Erinyes\\erinyes.sqlite"
+ERINYES_LOGGING_PATH = getcwdu() +"\\Erinyes\\logs"
 
 ERINYES = {
     'database': {

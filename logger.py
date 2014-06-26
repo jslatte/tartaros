@@ -11,8 +11,9 @@
 ####################################################################################################
 ####################################################################################################
 
-import sys
+import sys, os, shutil
 from datetime import datetime
+from mapping import TARTAROS_LOGGING_PATH
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -45,9 +46,30 @@ TEST_STATUSES = {
 class Logger():
     """ Library for logging messages. """
 
-    def __init__(self, logging_level='trace'):
+    def __init__(
+            self, logging_level='trace', output_path=TARTAROS_LOGGING_PATH,
+            output_filename="Tartaros.log"):
 
         self.logging_level = LEVELS[logging_level.lower()]
+
+        # validate output path
+        self.output_path = output_path
+        self.output_filename = output_filename
+        try:
+            if not os.path.exists(self.output_path):
+                self.output_path = None
+                sys.stderr.write("Failed to validate output path: '%s'." % self.output_path)
+            if os.path.exists(self.output_path + "\\" + self.output_filename):
+                self.archive_active_logging_file()
+
+        except BaseException, e:
+            sys.stderr.write("Failed to handle output path.")
+            sys.stderr.write(str(e))
+            self.output_path = None
+            self.output = None
+
+        # logger tracking
+        self.active_output_start = datetime.now().day
 
     def log_message(self, message, level, new_line=True):
         """ Log message according to level. """
@@ -59,15 +81,15 @@ class Logger():
         if not new_line:
             sys.stdout.write(message_to_log)
         elif level == 'info' and self.logging_level >= LEVELS['info']:
-            message_to_log = '\033[95m*INFO* ' + message_to_log
+            message_to_log = '\033[95m*INFO*\t' + message_to_log
         elif level == 'debug' and self.logging_level >= LEVELS['debug']:
-            message_to_log = '\033[94m*DEBUG* \t' + message_to_log
+            message_to_log = '\033[94m*DEBUG*\t\t' + message_to_log
         elif level == 'trace' and self.logging_level >= LEVELS['trace']:
-            message_to_log = '\033[92m*TRACE* \t\t' + message_to_log
+            message_to_log = '\033[92m*TRACE*\t\t\t' + message_to_log
         elif level == 'warn' and self.logging_level >= LEVELS['warn']:
-            message_to_log = '\033[93m*WARN* ' + message_to_log
+            message_to_log = '\033[93m*WARN*\t\t' + message_to_log
         elif level == 'error' and self.logging_level >= LEVELS['error']:
-            message_to_log = '\033[91m*ERROR* ' + message_to_log
+            message_to_log = '\033[91m*ERROR*\t' + message_to_log
         else:
             message_to_log = None
 
@@ -82,6 +104,30 @@ class Logger():
             sys.stdout.write(message_to_log)
             #if level == 'warn' or level == 'error':
             #    sys.stderr.write(message_to_log)
+
+            try:
+                if self.output_path is not None:
+                    # check for roll-over at end of day
+                    if datetime.now().day > self.active_output_start:
+                        self.archive_active_logging_file()
+
+                    # append output
+                    self.output = open(self.output_path + "\\" + self.output_filename, 'a')
+                    self.output.write(message_to_log)
+                    self.output.close()
+
+            except BaseException, e:
+                sys.stderr.write("Failed to write to output file.")
+                sys.stderr.write(str(e))
+    def archive_active_logging_file(self):
+        try:
+            filepath = self.output_path + "\\" + self.output_filename
+            filepath_list = filepath.split('.')
+            filepath_list[0] += str(datetime.now()).replace(' ', '_').replace(':', '_').replace('.', '_')
+            new_filepath = '.'.join(filepath_list)
+            shutil.move(filepath, new_filepath)
+        except BaseException, e:
+            sys.stderr.write(str(e))
 
     def info(self, message):
         self.log_message(message, 'info')
