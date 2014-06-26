@@ -985,9 +985,9 @@ print
 #hestia.reset_vim_server()
 #connect_to_database()
 #hestia.start_vim_server()
-#log_in()
+log_in()
 #hestia.setup_server_for_manual_testing('full')
-#configure_license('full')
+configure_license('full 3.2')
 #hestia.configure_vim_license('streaming server')
 
 #testcase = HestiaTestCase(log, database, 442, debugging=False)
@@ -997,4 +997,4 @@ print
 #    1, length=300, start_time="1 hour ago")['clip id']
 #hestia.verify_clip_downloaded(clip_id, site_id=1)
 
-parse_erinyes_output_per_site('166.154.247.142')
+#parse_erinyes_output_per_site('166.154.247.142')

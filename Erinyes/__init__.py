@@ -14,6 +14,8 @@ import inspect
 from os import getcwdu, popen
 from time import sleep
 from logger import Logger
+from database import Database
+from mapping import ERINYES
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -22,6 +24,16 @@ from logger import Logger
 
 ROOT_PATH = getcwdu() + '\\Erinyes'
 CONFIG_FILE_PATH = ROOT_PATH + "\\config.ini"
+DB = ERINYES['database']
+DB_TABLES = DB['tables']
+DB_CONNLOG = DB['connection log']
+DB_CONNLOG_FIELDS = DB_CONNLOG['fields']
+DB_SITES = DB['sites']
+DB_SITES_FIELDS = DB_SITES['fields']
+DB_CONNTYPES = DB['connection types']
+DB_CONNTYPES_FIELDS = DB_CONNTYPES['fields']
+DB_CONNSTATUS = DB['connection statuses']
+DB_CONNSTATUS_FIELDS = DB_CONNSTATUS['fields']
 
 log = Logger()
 
@@ -35,11 +47,12 @@ class Site():
     """
     """
 
-    def __init__(self, address):
+    def __init__(self, site_id, address):
         """
         """
 
         # default attributes
+        self.site_id = site_id
         self.address = address
         self.available = False
 
@@ -70,6 +83,10 @@ class Erinyes():
 
         # load configuration
         self.load_config()
+
+        # connect to erinyes database
+        self.db = Database(self.log)
+        self.db_handle = self.db.establish_handle_to_database()
 
     def TEMPLATE(self):
         """
@@ -168,7 +185,7 @@ class Erinyes():
 
             # initialize an object to represent each site
             for address in self.sites_to_ping:
-                site = Site(address)
+                site = Site(id, address)
                 self.sites.append(site)
 
             # loop pinging sites for availability
@@ -186,6 +203,15 @@ class Erinyes():
                     if not site.available and responded:
                         site.available = True
                         self.log.info("Site %s is available." % site.address)
+
+                        # log new connect in database
+                        #self.db.add_entry_to_table(
+                        #    handle=self.db_handle,
+                        #    table=DB_TABLES['connection log'],
+                        #    entry={
+                        #        'site id':  site.id,
+                        #    }
+                        #)
 
                     elif not site.available and not responded:
                         pass
