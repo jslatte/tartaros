@@ -1391,14 +1391,17 @@ class Clips():
             testcase.clip_id = result['clip id']
         return result
 
-    def continuously_request_clips_from_sites_over_time(self, num_sites, duration=60,
-                                                        testcase=None):
+    def continuously_request_clips_from_sites_over_time(
+            self, num_sites, duration=60, length=None, interval=1, testcase=None):
         """
-        INPUT
-            num sites: the number of sites being tested (requests will correspond to num = site id).
-            duration: the number of seconds the test should run for.
-            testcase: a testcase object supplied when executing function as part of a testcase step.
-        OUPUT
+        @param num_sites: the number of sites being tested (requests will correspond
+            to num = site id).
+        @param duration: the number of seconds the test should run for.
+        @param length: the length of the clip to request (random length if None).
+        @param interval: the amount of time to wait between requests.
+        @param testcase: a testcase object supplied when executing function as part
+            of a testcase step.
+        :return:
             successful: whether the function executed successfully or not.
             verified: whether the operation was verified or not.
         """
@@ -1417,7 +1420,8 @@ class Clips():
                 for i in range(1, num_sites+1):
 
                     # determine random clip length (up to 10 seconds)
-                    length = randint(1, 10)
+                    if length is None:
+                        length = randint(1, 10)
 
                     # determine random request time (within 3 days)
                     start = "%d minutes ago" % randint(5, 4320)
@@ -1444,6 +1448,9 @@ class Clips():
 
                     # end loop
                     break
+
+                # pause for interval
+                sleep(interval)
 
             self.log.trace("Finished requesting clips for elapsed time.")
             result['successful'] = True
@@ -1934,7 +1941,7 @@ class Clips():
                     else:
                         self.log.trace("Downloaded clip file not found (attempt %d). "
                                        "Retrying in 5 seconds ..." % i)
-                        sleep(1)
+                        sleep(5)
                         i += 1
 
                 # if testing downloaded from site

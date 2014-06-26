@@ -443,18 +443,20 @@ class Hekate():
             # set testcase list for test run
             testrun.testcases = testcases
 
-            if build is not None:
+            if str(build).lower() != 'none':
                 # setup test environment
                 testrun.setup_test_environment(build, test_name)
-
-                # execute test run
-                testrun.run()
-
-                # teardown test environment
-                testrun.teardown_test_environment()
-
             else:
-                self.log.error("Failed to setup test environment. %s is not a valid build." % build)
+                testrun.setup_test_environment(build, test_name, installing=False)
+
+            # execute test run
+            testrun.run()
+
+            # teardown test environment
+            testrun.teardown_test_environment()
+
+            #else:
+            #    self.log.error("Failed to setup test environment. %s is not a valid build." % build)
 
             # compile results
             result = None
