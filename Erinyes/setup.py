@@ -56,6 +56,9 @@ root_dir = getcwdu()
 build_src = root_dir + "\\build"
 dist_src = root_dir + "\\dist"
 
+# add logs\ directory
+mkdir(dist_src + "\\logs\\")
+
 # determine destination
 dst = root_dir + "\\artifacts"
 if not path.exists(dst):

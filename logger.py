@@ -13,7 +13,7 @@
 
 import sys, os, shutil
 from datetime import datetime
-from mapping import TARTAROS_LOGGING_PATH
+#from mapping import TARTAROS_LOGGING_PATH
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -47,7 +47,7 @@ class Logger():
     """ Library for logging messages. """
 
     def __init__(
-            self, logging_level='trace', output_path=TARTAROS_LOGGING_PATH,
+            self, logging_level='trace', output_path=os.getcwdu() + "\\logs",
             output_filename="Tartaros.log"):
 
         self.logging_level = LEVELS[logging_level.lower()]
