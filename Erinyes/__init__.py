@@ -16,6 +16,7 @@ from time import sleep
 from logger import Logger
 from database import Database
 from mapping import ERINYES
+from Sisyphus import Sisyphus
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -47,12 +48,12 @@ class Site():
     """
     """
 
-    def __init__(self, site_id, address):
+    def __init__(self, address):
         """
         """
 
         # default attributes
-        self.site_id = site_id
+        self.site_id = None
         self.address = address
         self.available = False
         self.pinged_at_least_once = False
@@ -62,10 +63,11 @@ class Erinyes():
     """ A library of functions for pinging site availability.
     """
 
-    def __init__(self, logger, exception_handler):
+    def __init__(self, logger, exception_handler, sisyphus=Sisyphus):
         """
         @param logger: an initialized Logger() to inherit.
         @param exception_handler: an un-initialized ExceptionHandler() to inherit.
+        @param sisyphus: an unitialized sisyphus class object.
         """
 
         # instance logger (initialized instance)
@@ -82,6 +84,7 @@ class Erinyes():
         self.sites = []
         self.email_recipients = []
         self.traceroute = False
+        self.multithreaded = False
 
         # load configuration
         self.load_config()
@@ -89,6 +92,12 @@ class Erinyes():
         # connect to erinyes database
         self.db = Database(self.log)
         self.db_handle = self.db.establish_handle_to_database()
+
+        # initialize sisyphus
+        if self.multithreaded:
+            self.sisyphus = sisyphus(self.log)
+        else:
+            self.sisyphus = None
 
     def TEMPLATE(self):
         """
@@ -137,6 +146,10 @@ class Erinyes():
                     if 'true' in line.lower():
                         parameters.append(['TRACEROUTE', 'True'])
                         self.traceroute = True
+                if 'MULTITHREADED = ' in line:
+                    if 'true' in line.lower():
+                        parameters.append(['MULTITHREADED', 'True'])
+                        self.multithreaded = True
                 if 'RECIPIENTS = ' in line:
                     recipients = line.strip().split('RECIPIENTS = ')[1].split(',')
                     parameters.append(['RECIPIENTS', str(recipients)])
@@ -179,6 +192,100 @@ class Erinyes():
         self.log.trace("... DONE %s." % operation.replace('_', ' '))
         return result
 
+    def check_availability_of_site(self, site):
+        """
+        @param site: a site object that the availability will be checked for.
+        """
+
+        operation = inspect.stack()[0][3]
+        result = None
+
+        try:
+            #self.log.trace("%s %s ..." % (operation.replace('_', ' '), site.address))
+
+            while True:
+                # ping the site
+                if self.traceroute:
+                    # using traceroute
+                    response = popen('tracert -d -h 15 -w 5 %s' % site.address).read()
+
+                else:
+                    # using standard ping
+                    response = popen("ping -n 1 %s" % site.address).read()
+
+                # determine if site responded as available to ping request
+                if self.traceroute and 'Request timed out.' not in response.splitlines()[-3]:
+                    responded = True
+
+                elif not self.traceroute \
+                        and 'Sent = 1, Received = 1, Lost = 0 (0% loss)' in response:
+                    #self.log.trace("Site %s responded." % site.address)
+                    responded = True
+                else:
+                    responded = False
+
+                # determine availability of site based on ping response
+
+                # case: site pinged for first time but not available
+                if not site.available and not responded and not site.pinged_at_least_once:
+                    self.log.info("Site %s is not available." % site.address)
+                    self.log.trace("Site %s Response:\n%s" % (site.address, str(response)))
+                    site.pinged_at_least_once = True
+
+                # case: site pinged for first time and available
+                elif not site.available and responded and not site.pinged_at_least_once:
+                    site.available = True
+                    self.log.info("Site %s is available." % site.address)
+                    self.log.trace("Site %s Response:\n%s" % (site.address, str(response)))
+                    site.pinged_at_least_once = True
+
+                # case: unavailable site now available
+                elif not site.available and responded:
+                    site.available = True
+                    self.log.info("Site %s is available." % site.address)
+                    self.log.trace("Site %s Response:\n%s" % (site.address, str(response)))
+
+                    # log connection
+
+
+                    # log new connect in database
+                    #self.db.add_entry_to_table(
+                    #    handle=self.db_handle,
+                    #    table=DB_TABLES['connection log'],
+                    #    entry={
+                    #        'site id':  site.id,
+                    #    }
+                    #)
+
+                # case: available site still available
+                elif not site.available and not responded:
+                    pass
+
+                # case: unavailable site still unavailable
+                elif site.available and responded:
+                    pass
+
+                # case: available site now unavailable
+                elif site.available and not responded:
+                    site.available = False
+                    self.log.info("Site %s is no longer available." % site.address)
+                    self.log.trace("Site %s Response:\n%s" % (site.address, str(response)))
+
+                else:
+                    self.log.warn("Unknown response '%s' from ping request." % response)
+
+                sleep(1)
+
+            # compile results
+            result = None
+
+        except BaseException, e:
+            self.handle_exception(self.log, e, operation)
+
+        # return
+        self.log.trace("... DONE %s." % operation.replace('_', ' '))
+        return result
+
     def check_availability_of_sites(self):
         """
         """
@@ -191,83 +298,22 @@ class Erinyes():
 
             # initialize an object to represent each site
             for address in self.sites_to_ping:
-                site = Site(id, address)
+                site = Site(address)
                 self.sites.append(site)
 
-            # loop pinging sites for availability
-            while True:
+            if self.multithreaded:
+                # create a thread loop for each site
                 for site in self.sites:
-                    # ping the site
-                    if self.traceroute:
-                        # using traceroute
-                        response = popen('tracert -d -h 15 -w 5 %s' % site.address).read()
+                    self.sisyphus.add_process_to_thread_queue(
+                        self.check_availability_of_site, (site, )
+                    )
+                # execute all threads
+                self.sisyphus.execute_pending_threads()
 
-                    else:
-                        # using standard ping
-                        response = popen("ping -n 1 %s" % site.address).read()
-
-                    # determine if site responded as available to ping request
-                    if self.traceroute and 'Request timed out.' not in response.splitlines()[-3]:
-                        responded = True
-
-                    elif not self.traceroute \
-                            and 'Sent = 1, Received = 1, Lost = 0 (0% loss)' in response:
-                        #self.log.trace("Site %s responded." % site.address)
-                        responded = True
-                    else:
-                        responded = False
-
-                    # determine availability of site based on ping response
-
-                    # case: site pinged for first time but not available
-                    if not site.available and not responded and not site.pinged_at_least_once:
-                        self.log.info("Site %s is not available." % site.address)
-                        self.log.trace("Site %s Response:\n%s" % (site.address, str(response)))
-                        site.pinged_at_least_once = True
-
-                    # case: site pinged for first time and available
-                    elif not site.available and responded and not site.pinged_at_least_once:
-                        site.available = True
-                        self.log.info("Site %s is available." % site.address)
-                        self.log.trace("Site %s Response:\n%s" % (site.address, str(response)))
-                        site.pinged_at_least_once = True
-
-                    # case: unavailable site now available
-                    elif not site.available and responded:
-                        site.available = True
-                        self.log.info("Site %s is available." % site.address)
-                        self.log.trace("Site %s Response:\n%s" % (site.address, str(response)))
-
-                        # log connection
-
-
-                        # log new connect in database
-                        #self.db.add_entry_to_table(
-                        #    handle=self.db_handle,
-                        #    table=DB_TABLES['connection log'],
-                        #    entry={
-                        #        'site id':  site.id,
-                        #    }
-                        #)
-
-                    # case: available site still available
-                    elif not site.available and not responded:
-                        pass
-
-                    # case: unavailable site still unavailable
-                    elif site.available and responded:
-                        pass
-
-                    # case: available site now unavailable
-                    elif site.available and not responded:
-                        site.available = False
-                        self.log.info("Site %s is no longer available." % site.address)
-                        self.log.trace("Site %s Response:\n%s" % (site.address, str(response)))
-
-                    else:
-                        self.log.warn("Unknown response '%s' from ping request." % response)
-
-                sleep(1)
+            else:
+                # loop pinging sites for availability
+                for site in self.sites:
+                    self.check_availability_of_site(site)
 
             # compile results
             result = None

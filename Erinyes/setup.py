@@ -57,7 +57,11 @@ build_src = root_dir + "\\build"
 dist_src = root_dir + "\\dist"
 
 # add logs\ directory
-mkdir(dist_src + "\\logs\\")
+try:
+    mkdir(dist_src + "\\logs\\")
+except WindowsError, e:
+    print "Failed to make logs directory."
+    print str(e)
 
 # determine destination
 dst = root_dir + "\\artifacts"
