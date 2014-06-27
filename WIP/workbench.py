@@ -25,6 +25,7 @@ from Danaides import Danaides
 from testcase import HestiaTestCase
 from testrun import TestRun
 from mapping import TARTAROS, HESTIA, TARTAROS_DB_PATH
+import os
 from os import getcwdu
 from time import sleep, mktime
 from utc import UTC
@@ -998,3 +999,7 @@ print
 #hestia.verify_clip_downloaded(clip_id, site_id=1)
 
 #parse_erinyes_output_per_site('166.154.247.142')
+#target = '172.22.48.139'
+target = '155.166.204.3'
+response = os.popen('tracert -d -h 15 -w 5 %s' % target).read()
+log.trace(str(response.splitlines()))

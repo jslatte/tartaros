@@ -55,6 +55,7 @@ class Site():
         self.site_id = site_id
         self.address = address
         self.available = False
+        self.pinged_at_least_once = False
 
 
 class Erinyes():
@@ -80,6 +81,7 @@ class Erinyes():
         self.sites_to_ping = []
         self.sites = []
         self.email_recipients = []
+        self.traceroute = False
 
         # load configuration
         self.load_config()
@@ -131,6 +133,10 @@ class Erinyes():
                     parameters.append(['SITES', str(sites)])
                     for site in sites:
                         self.sites_to_ping.append(site.strip())
+                if 'TRACEROUTE = ' in line:
+                    if 'true' in line.lower():
+                        parameters.append(['TRACEROUTE', 'True'])
+                        self.traceroute = True
                 if 'RECIPIENTS = ' in line:
                     recipients = line.strip().split('RECIPIENTS = ')[1].split(',')
                     parameters.append(['RECIPIENTS', str(recipients)])
@@ -192,17 +198,45 @@ class Erinyes():
             while True:
                 for site in self.sites:
                     # ping the site
-                    response = popen("ping -n 1 %s" % site.address).read()
+                    if self.traceroute:
+                        # using traceroute
+                        response = popen('tracert -d -h 15 -w 5 %s' % site.address).read()
 
-                    # determine if site responded to ping request
-                    responded = False
-                    if 'Sent = 1, Received = 1, Lost = 0 (0% loss)' in response:
-                        #self.log.trace("Site %s responded." % site.address)
+                    else:
+                        # using standard ping
+                        response = popen("ping -n 1 %s" % site.address).read()
+
+                    # determine if site responded as available to ping request
+                    if self.traceroute and 'Request timed out.' not in response.splitlines()[-3]:
                         responded = True
 
-                    if not site.available and responded:
+                    elif not self.traceroute \
+                            and 'Sent = 1, Received = 1, Lost = 0 (0% loss)' in response:
+                        #self.log.trace("Site %s responded." % site.address)
+                        responded = True
+                    else:
+                        responded = False
+
+                    # determine availability of site based on ping response
+
+                    # case: site pinged for first time but not available
+                    if not site.available and not responded and not site.pinged_at_least_once:
+                        self.log.info("Site %s is not available." % site.address)
+                        self.log.trace("Site %s Response:\n%s" % (site.address, str(response)))
+                        site.pinged_at_least_once = True
+
+                    # case: site pinged for first time and available
+                    elif not site.available and responded and not site.pinged_at_least_once:
                         site.available = True
                         self.log.info("Site %s is available." % site.address)
+                        self.log.trace("Site %s Response:\n%s" % (site.address, str(response)))
+                        site.pinged_at_least_once = True
+
+                    # case: unavailable site now available
+                    elif not site.available and responded:
+                        site.available = True
+                        self.log.info("Site %s is available." % site.address)
+                        self.log.trace("Site %s Response:\n%s" % (site.address, str(response)))
 
                         # log connection
 
@@ -216,15 +250,19 @@ class Erinyes():
                         #    }
                         #)
 
+                    # case: available site still available
                     elif not site.available and not responded:
                         pass
 
+                    # case: unavailable site still unavailable
                     elif site.available and responded:
                         pass
 
+                    # case: available site now unavailable
                     elif site.available and not responded:
                         site.available = False
                         self.log.info("Site %s is no longer available." % site.address)
+                        self.log.trace("Site %s Response:\n%s" % (site.address, str(response)))
 
                     else:
                         self.log.warn("Unknown response '%s' from ping request." % response)
