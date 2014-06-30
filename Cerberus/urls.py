@@ -30,5 +30,6 @@ urlpatterns = patterns('',
     #   NOTE: whenever Django encounters include(), it chops off whatever part of the URL
     #       matched up to the '/' point and sends the remaining string to the included URLconf
     #       for further processing.
+    url(r'^Thanatos/', include('Thanatos.urls', namespace="Thanatos")),
     url(r'^Erinyes/', include('Erinyes.urls', namespace="Erinyes"))
 )

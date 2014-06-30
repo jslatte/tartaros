@@ -11,11 +11,17 @@
 
 from django.shortcuts import render
 from models import *
+from logger import Logger
+from exceptionhandler import ExceptionHandler
+from django.http import HttpResponse
+from django.template import Context, loader
 
 ####################################################################################################
 # Globals ##########################################################################################
 ####################################################################################################
 ####################################################################################################
+
+log = Logger()
 
 ####################################################################################################
 # Views ############################################################################################
@@ -24,4 +30,13 @@ from models import *
 
 
 def index(request):
-    pass
+    products = Products.objects.all()
+    t = loader.get_template('Thanatos/index.html')
+    c = Context({'products': products})
+    return HttpResponse(t.render(c))
+
+
+def run_test(request):
+    #log.trace("Running test ...")
+    #log.trace(request)
+    return HttpResponse(render(request, "Running test ..."))

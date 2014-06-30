@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block pagetitle %}Thanatos{% endblock %}
+{% block title %}<h1>Thanatos</h1>{% endblock %}
+
+{% block content %}
+<p><b>Product: </b><select>
+    <option value="" selected="selected">No Product</option>
+    {% for product in products %}
+    <option value={{ product.id }}>{{ product.name }} </option>
+    {% endfor %}
+</select></p>
+
+<form action="/Thanatos/run_test/" method="post">
+    <input type="submit" class="btn" value="Run Test" name="than_runtest_btn">
+</form>
+{% endblock %}
