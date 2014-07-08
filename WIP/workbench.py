@@ -12,6 +12,7 @@
 ####################################################################################################
 
 from logger import Logger
+from Charon import Charon
 from Database import Database
 from Hekate import Hekate
 from Hestia import Hestia
@@ -993,13 +994,3 @@ print
 
 #testcase = HestiaTestCase(log, database, 442, debugging=False)
 #testcase.run()
-#event_id = 6030675
-#clip_id = hestia.request_custom_clip(
-#    1, length=300, start_time="1 hour ago")['clip id']
-#hestia.verify_clip_downloaded(clip_id, site_id=1)
-
-#parse_erinyes_output_per_site('166.154.247.142')
-#target = '172.22.48.139'
-target = '155.166.204.3'
-response = os.popen('tracert -d -h 15 -w 5 %s' % target).read()
-log.trace(str(response.splitlines()))

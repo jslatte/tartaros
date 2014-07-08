@@ -63,7 +63,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'Thanatos',
-    'Erinyes',
+    #'Erinyes',
 )
 
 MIDDLEWARE_CLASSES = (

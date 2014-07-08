@@ -1,17 +1,30 @@
 {% extends "base.html" %}
 
+{% block scripts %}
+        <script>
+            // wait for the DOM to be loaded
+            $(document).ready(function() {
+                // bind 'test_run_form' and provide a simple callback function
+                $('#test_run_form').ajaxForm(function() {
+                    //alert("Form submitted.");
+                });
+            });
+        </script>
+{% endblock %}
+
 {% block pagetitle %}Thanatos{% endblock %}
 {% block title %}<h1>Thanatos</h1>{% endblock %}
 
 {% block content %}
-<p><b>Product: </b><select>
+<form action="/Thanatos/process_test_run_form" method="post" name="test_run_form" id="test_run_form">
+    <p><b>Product: </b><select name="product">
     <option value="" selected="selected">No Product</option>
     {% for product in products %}
     <option value={{ product.id }}>{{ product.name }} </option>
     {% endfor %}
-</select></p>
-
-<form action="/Thanatos/run_test/" method="post">
-    <input type="submit" class="btn" value="Run Test" name="than_runtest_btn">
+    </select></p>
+    <input type="submit" class="btn" value="Run Test" name="runtest_btn">
+    <input type="submit" class="btn" value="Push Test" name="pushtest_btn">
 </form>
+<div>{{ action }}</div>
 {% endblock %}

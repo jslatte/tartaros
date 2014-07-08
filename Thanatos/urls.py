@@ -52,5 +52,5 @@ urlpatterns = patterns('',
 
     # using generic views
     url(r'^$', views.index, name='index'),
-    url(r'^run_test/$', views.run_test, name='run_test')
+    url(r'^process_test_run_form$', views.process_test_run_form, name='process_test_run_form')
 )
