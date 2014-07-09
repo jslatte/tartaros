@@ -20,6 +20,7 @@ from django.template import Context, loader
 from django import forms
 from Database import Database
 from testcase import TestCase
+from collections import OrderedDict
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -41,9 +42,10 @@ METHODS = {
 class ThanatosTestCase(TestCase):
 
     def get_testcase_data_from_database(self, testcase_id):
-        """ Initialize the test case and update attributes with database references.
+        """
         :return: a data dict containing:
             'successful' - whether the function executed successfully or not.
+            'testcase data' - a dictionary packet containing the testcase data.
         """
 
         operation = inspect.stack()[0][3]
@@ -53,8 +55,6 @@ class ThanatosTestCase(TestCase):
 
             # retrieve test case
             testcase = TestCases.objects.get(pk=testcase_id)
-
-            from collections import OrderedDict
 
             # determine test data
             result['testcase data'] = OrderedDict([
@@ -69,12 +69,62 @@ class ThanatosTestCase(TestCase):
                 ('results id', testcase.testrail_id),
             ])
 
+            # update testcase attributes
+            self.name = testcase.name
+            self.test_id = testcase.test_id
+            self.case_results_id = testcase.case_results_id
+
             log.trace("... done %s." % operation.replace('_', ' '))
             result['successful'] = True
         except BaseException, e:
             self.handle_exception(e, operation=operation)
 
         return
+
+    def get_procedure_step_data_from_database(self, step_id):
+        """
+        @param step_id: the id of the procedure step.
+        :return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'step data' - a dictionary packet containing the step data.
+            'function data' - a dictionary packet containing the function data.
+            'submodule data' - a dictionary packet containing the submodule data.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'step data': {}, 'function data': {}, 'submodule data': {}}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            data = self.database.return_procedure_step_data(step_id)
+            result['step data'] = data['step data']
+            result['function data'] = data['function data']
+            result['submodule data'] = data['submodule data']
+
+            # retrieve test case
+            testcase = TestCases.objects.get(pk=testcase_id)
+
+            # determine test data
+            result['testcase data'] = OrderedDict([
+                ('id', testcase.id),
+                ('name', testcase.name),
+                ('test', testcase.test_id),
+                ('procedure', testcase.procedure),
+                ('minimum version', testcase.min_version),
+                ('class', testcase.level),
+                ('active', testcase.active),
+                ('type', testcase.type),
+                ('results id', testcase.testrail_id),
+            ])
+
+            self.log.trace("... done %s." % operation.replace('_', ' '))
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        return result
 
 ####################################################################################################
 # Views ############################################################################################

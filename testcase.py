@@ -66,6 +66,12 @@ class TestCase():
         self.int_dvr_ip = int_dvr_ip
         self.results_plan_id = results_plan_id
 
+        # naming attributes
+        self.module = ''
+        self.feature = ''
+        self.story = ''
+        self.test = ''
+
         # instance testcase
         self.initialize()
 
@@ -122,7 +128,8 @@ class TestCase():
         """
 
         operation = self.inspect.stack()[0][3]
-        result = {'successful': False, 'verified': False}
+        result = {'successful': False, 'testcase data': {}, 'test data': {},
+                  'user story data': {}, 'feature data': {}, 'module data': {}}
 
         try:
             self.log.trace("%s ..." % operation.replace('_', ' '))
@@ -152,20 +159,26 @@ class TestCase():
         # return
         return result
 
-    def update_attributes_with_testcase_data_from_database(self, testcase_data):
+    def get_procedure_step_data_from_database(self, step_id):
         """
+        @param step_id: the id of the procedure step.
         :return: a data dict containing:
             'successful' - whether the function executed successfully or not.
-            'verified' - whether the operation was verified or not.
+            'step data'
+            'function data'
+            'submodule data'
         """
 
         operation = self.inspect.stack()[0][3]
-        result = {'successful': False, 'verified': False}
+        result = {'successful': False, 'step data': {}, 'function data': {}, 'submodule data': {}}
 
         try:
             self.log.trace("%s ..." % operation.replace('_', ' '))
 
-
+            data = self.database.return_procedure_step_data(step_id)
+            result['step data'] = data['step data']
+            result['function data'] = data['function data']
+            result['submodule data'] = data['submodule data']
 
             self.log.trace("... done %s." % operation.replace('_', ' '))
             result['successful'] = True
@@ -192,7 +205,7 @@ class TestCase():
 
             # assign procedure
             #   parse procedure data
-            procedure_data = result['testcase data']['procedure']
+            procedure_data = returned['testcase data']['procedure']
             procedure_raw_list = procedure_data.split(',')
             #   build procedure data list
             procedure_list = []
@@ -200,7 +213,7 @@ class TestCase():
                 procedure_list.append(int(item.strip()))
             #   build procedure function list
             for procedure_step_id in procedure_list:
-                data = self.database.return_procedure_step_data(procedure_step_id)
+                data = self.get_procedure_step_data_from_database(procedure_step_id)
                 # parse the data
                 step_data = data['step data']
                 function_data = data['function data']
