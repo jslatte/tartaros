@@ -15,6 +15,7 @@ from time import clock
 from mapping import TARTAROS
 from utility import return_execution_error
 from Orpheus import Orpheus
+import inspect
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -68,6 +69,9 @@ class TestCase():
         # instance testcase
         self.initialize()
 
+        # inspection
+        self.inspect = inspect
+
         # product-specific setup
         self.setup_for_product()
 
@@ -85,6 +89,92 @@ class TestCase():
         exception = return_execution_error()['error']
         self.log.error("Error: %s." % exception)
 
+    def TEMPLATE_FUNCTION(self):
+        """
+        :return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'verified' - whether the operation was verified or not.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'verified': False}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            self.log.trace("... done %s." % operation.replace('_', ' '))
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        return result
+
+    def get_testcase_data_from_database(self, testcase_id):
+        """ Get testcase data from the database
+        @return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'testcase data'
+            'test data'
+            'user story data'
+            'feature data'
+            'module data'
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'verified': False}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            returned = self.database.return_testcase_data(self.id)
+            result['testcase data'] = returned['testcase data']
+            result['test data'] = returned['test data']
+            result['story data'] = returned['user story data']
+            result['feature data'] = returned['feature data']
+            result['module data'] = returned['module data']
+
+            # update testcase attributes
+            self.name = str(result['testcase data']['name'])
+            self.test = str(result['test data']['name'])
+            self.test_id = result['testcase data']['test']
+            self.story = str(result['story data']['action'])
+            self.feature = str(result['feature data']['name'])
+            self.module = str(result['module data']['name'])
+            self.module_id = int(result['module data']['id'])
+            self.case_results_id = result['testcase data']['results id']
+
+            self.log.trace("... done %s." % operation.replace('_', ' '))
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        return result
+
+    def update_attributes_with_testcase_data_from_database(self, testcase_data):
+        """
+        :return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'verified' - whether the operation was verified or not.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'verified': False}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+
+
+            self.log.trace("... done %s." % operation.replace('_', ' '))
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        return result
+
     def initialize(self):
         """ Instance test case object by reference ID in database and assigning associated attributes.
         """
@@ -94,22 +184,7 @@ class TestCase():
 
         try:
             # get testcase data from database
-            returned = self.database.return_testcase_data(self.id)
-            testcase_data = returned['testcase data']
-            test_data = returned['test data']
-            story_data = returned['user story data']
-            feature_data = returned['feature data']
-            module_data = returned['module data']
-
-            # assign attributes to testcase
-            self.name = str(testcase_data['name'])
-            self.test = str(test_data['name'])
-            self.test_id = testcase_data['test']
-            self.story = str(story_data['action'])
-            self.feature = str(feature_data['name'])
-            self.module = str(module_data['name'])
-            self.module_id = int(module_data['id'])
-            self.case_results_id = testcase_data['results id']
+            returned = self.get_testcase_data_from_database(self.id)
 
             # assign unique name for build server test result tracking
             self.build_test_name = "%s: %s: %s: %s: %s" % (self.module, self.feature, self.story,
@@ -117,7 +192,7 @@ class TestCase():
 
             # assign procedure
             #   parse procedure data
-            procedure_data = testcase_data['procedure']
+            procedure_data = result['testcase data']['procedure']
             procedure_raw_list = procedure_data.split(',')
             #   build procedure data list
             procedure_list = []
