@@ -181,6 +181,7 @@ class Erinyes():
             # wrap the check availability method in a loop in case it crashes
             while True:
                 self.check_availability_of_sites()
+                sleep(1)
 
             # compile results
             result = None
