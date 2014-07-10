@@ -11,6 +11,9 @@
 
 import os
 import inspect
+import time
+import socket
+from binascii import hexlify, unhexlify
 from django.shortcuts import render
 from models import *
 from logger import Logger
@@ -240,14 +243,10 @@ def process_test_run_form(request):
         elif method == METHODS['run full regression test']:
             log.trace("Executing '%s' method ..." % method['name'])
 
-            # instantiate database object for testcases
-            log.trace("Instantiating database object for testcases ...")
-            database = Database(log, path=os.getcwdu()+'\\tartaros.sqlite')
-
             # run each testcase
             log.trace("Running testcases ...")
             for testcase in testcases:
-                testcase = ThanatosTestCase(log, database, testcase.id)
+                testcase = ThanatosTestCase(log, None, testcase.id)
                 testcase.run()
 
         log.trace("... done %s." % operation.replace('_', ' '))
