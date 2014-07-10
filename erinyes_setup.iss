@@ -7,7 +7,7 @@
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{F715EF54-D289-4853-A0F5-5D4477AE8EC9}
 AppName=Erinyes
-AppVersion=1.1.1
+AppVersion=1.1.2
 ;AppVerName=Erinyes 1.0.0
 AppPublisher=Apollo Video Technology, LLC.
 DefaultDirName={pf}\Tartaros\Erinyes
