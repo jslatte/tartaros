@@ -17,14 +17,31 @@
 
 {% block content %}
 <form action="/Thanatos/process_test_run_form" method="post" name="test_run_form" id="test_run_form">
-    <p><b>Product: </b><select name="product">
-    <option value="" selected="selected">No Product</option>
-    {% for product in products %}
-    <option value={{ product.id }}>{{ product.name }} </option>
-    {% endfor %}
-    </select></p>
-    <input type="submit" class="btn" value="Run Full Regression Test" name="runfregtest_btn">
-    <input type="submit" class="btn" value="Push Test" name="pushtest_btn">
+    <table>
+        <tr>
+            <td><b>Server: </b></td>
+            <td><select name="server">
+                <option value="" selected="selected">Local (localhost)</option>
+            {% for server in servers %}
+            <option value={{ server.id }}>{{ server.name }} </option>
+            {% endfor %}
+            </select></td>
+        </tr>
+
+        <tr>
+            <td><b>Product: </b></td>
+            <td><select name="product">
+                <option value="" selected="selected">No Product</option>
+                {% for product in products %}
+                <option value={{ product.id }}>{{ product.name }} </option>
+                {% endfor %}
+                </select></td>
+        </tr>
+    </table>
+
+    <div>
+        <input type="submit" class="btn" value="Run Full Regression Test" name="runfregtest_btn">
+    </div>
 </form>
 <div>{{ action }}</div>
 {% endblock %}

@@ -68,6 +68,7 @@ models_to_register = [
     ProcedureSteps,
     Functions,
     TestTypes,
+    RemoteServers,
 ]
 
 for model in models_to_register:

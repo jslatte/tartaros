@@ -72,11 +72,11 @@ class TestCase():
         self.story = ''
         self.test = ''
 
-        # instance testcase
-        self.initialize()
-
         # inspection
         self.inspect = inspect
+
+        # instance testcase
+        self.initialize()
 
         # product-specific setup
         self.setup_for_product()
@@ -192,6 +192,7 @@ class TestCase():
         """ Instance test case object by reference ID in database and assigning associated attributes.
         """
 
+        operation = self.inspect.stack()[0][3]
         self.log.info("Initializing Testcase %s ..." % self.id)
         result = {'successful': False}
 
@@ -249,12 +250,7 @@ class TestCase():
                 self.log.trace("\t\t%s" % step['name'])
             result['successful'] = True
         except BaseException, e:
-            self.log.error("Failed to initialize testcase.")
-            self.log.error(str(e))
-            for error in e:
-                self.log.error(str(error))
-            exception = return_execution_error()['error']
-            self.log.error("Error: %s." % exception)
+            self.handle_exception(e, operation)
 
         # return
         return result

@@ -236,3 +236,24 @@ class TestCases(models.Model):
     class Meta:
         db_table = 'test_cases'
         verbose_name_plural = 'Test Cases'
+
+
+class RemoteServers(models.Model):
+    name = models.CharField(
+        max_length=200,
+        unique=False,
+        help_text="The name of the remote server.",
+    )
+    ip_address = models.CharField(
+        verbose_name="IP Address",
+        max_length=200,
+        unique=False,
+        help_text="The IP address of the remote server.",
+    )
+
+    def __unicode__(self):
+        return '%s (%s)' % (self.name, self.ip_address)
+
+    class Meta:
+        db_table = 'remote_servers'
+        verbose_name_plural = 'Remote Servers'

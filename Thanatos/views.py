@@ -10,6 +10,7 @@
 ####################################################################################################
 
 import os
+import inspect
 from django.shortcuts import render
 from models import *
 from logger import Logger
@@ -39,6 +40,15 @@ METHODS = {
 ####################################################################################################
 
 
+class DebugProduct():
+
+    def debug_function(self, debug_argument=True, testcase=None):
+        result = {'successful': debug_argument, 'verified': debug_argument}
+        if testcase is not None:
+            testcase.processing = debug_argument
+        return result
+
+
 class ThanatosTestCase(TestCase):
 
     def get_testcase_data_from_database(self, testcase_id):
@@ -48,10 +58,11 @@ class ThanatosTestCase(TestCase):
             'testcase data' - a dictionary packet containing the testcase data.
         """
 
-        operation = inspect.stack()[0][3]
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'testcase data': {}}
+
         try:
             log.trace("%s ..." % operation.replace('_', ' '))
-            result = {'successful': False, 'testcase data': {}}
 
             # retrieve test case
             testcase = TestCases.objects.get(pk=testcase_id)
@@ -72,14 +83,14 @@ class ThanatosTestCase(TestCase):
             # update testcase attributes
             self.name = testcase.name
             self.test_id = testcase.test_id
-            self.case_results_id = testcase.case_results_id
+            self.case_results_id = testcase.testrail_id
 
             log.trace("... done %s." % operation.replace('_', ' '))
             result['successful'] = True
         except BaseException, e:
             self.handle_exception(e, operation=operation)
 
-        return
+        return result
 
     def get_procedure_step_data_from_database(self, step_id):
         """
@@ -97,25 +108,37 @@ class ThanatosTestCase(TestCase):
         try:
             self.log.trace("%s ..." % operation.replace('_', ' '))
 
-            data = self.database.return_procedure_step_data(step_id)
-            result['step data'] = data['step data']
-            result['function data'] = data['function data']
-            result['submodule data'] = data['submodule data']
+            # retrieve step data
+            step = ProcedureSteps.objects.get(pk=step_id)
 
-            # retrieve test case
-            testcase = TestCases.objects.get(pk=testcase_id)
+            # build step data packet
+            result['step data'] = OrderedDict([
+                ('id', step.id),
+                ('name', step.name),
+                ('function', step.function_id),
+                ('arguments', step.arguments),
+                ('verification', str(step.verification)),
+            ])
 
-            # determine test data
-            result['testcase data'] = OrderedDict([
-                ('id', testcase.id),
-                ('name', testcase.name),
-                ('test', testcase.test_id),
-                ('procedure', testcase.procedure),
-                ('minimum version', testcase.min_version),
-                ('class', testcase.level),
-                ('active', testcase.active),
-                ('type', testcase.type),
-                ('results id', testcase.testrail_id),
+            # retrieve function data
+            funct = Functions.objects.get(pk=step.function_id)
+
+            # build function data packet
+            result['function data'] = OrderedDict([
+                ('id', funct.id),
+                ('function', funct.name),
+                ('submodule id', funct.product_id),
+            ])
+
+            # retrieve product data
+            product = Products.objects.get(pk=funct.product_id)
+
+            # build product data packet
+            result['submodule data'] = OrderedDict([
+                ('id', product.id),
+                ('name', product.name),
+                ('code', product.code),
+                ('results id', product.testrail_id),
             ])
 
             self.log.trace("... done %s." % operation.replace('_', ' '))
@@ -125,6 +148,9 @@ class ThanatosTestCase(TestCase):
 
         # return
         return result
+
+    def setup_for_product(self):
+        self.debug_product = DebugProduct()
 
 ####################################################################################################
 # Views ############################################################################################
@@ -138,8 +164,12 @@ def index(request):
 
     # define the raw response object expected data
     response_data = {
+        'servers':          None,
         'products':         None,
     }
+
+    # determine servers for "Remote Servers" SELECT field
+    response_data['servers'] = RemoteServers.objects.all()
 
     # determine products for "Product" SELECT field
     response_data['products'] = Products.objects.all()
@@ -219,7 +249,6 @@ def process_test_run_form(request):
             for testcase in testcases:
                 testcase = ThanatosTestCase(log, database, testcase.id)
                 testcase.run()
-                break
 
         log.trace("... done %s." % operation.replace('_', ' '))
     except BaseException, e:
