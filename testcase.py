@@ -16,6 +16,7 @@ from mapping import TARTAROS
 from utility import return_execution_error
 from Orpheus import Orpheus
 import inspect
+from collections import OrderedDict
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -28,6 +29,16 @@ TEST_STATUSES = TARTAROS['test statuses']
 # TestCase #########################################################################################
 ####################################################################################################
 ####################################################################################################
+
+
+class DebugProduct():
+
+    def debug_function(self, debug_argument=True, testcase=None):
+        result = {'successful': debug_argument, 'verified': debug_argument}
+        if testcase is not None:
+            testcase.processing = debug_argument
+        return result
+
 
 class TestCase():
     """ The root test case object class. Includes all root functions and parameters. """
@@ -483,6 +494,130 @@ class TestCase():
     def setup_for_product(self): pass
 
     def setup_test_environment(self, build, test_name): pass
+
+
+class ThanatosTestCase(TestCase):
+
+    def get_testcase_data_from_database(self, testcase_id):
+        """
+        :return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'testcase data' - a dictionary packet containing the testcase data.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'testcase data': {}}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # retrieve test case
+            testcase = self.database.query_database_table(
+                self.database.db_handle, 'test_cases', addendum='WHERE id = %d' % testcase_id
+            )['response'][0]
+            #self.log.trace(testcase)
+
+            # determine test data
+            result['testcase data'] = OrderedDict([
+                ('id', testcase[0]),
+                ('name', testcase[1]),
+                ('test', testcase[2]),
+                ('procedure', testcase[3]),
+                ('minimum version', testcase[4]),
+                ('class', testcase[5]),
+                ('active', testcase[6]),
+                ('type', 'regression'),
+                ('results id', testcase[7]),
+            ])
+
+            # update testcase attributes
+            self.name = testcase[1]
+            self.test_id = testcase[2]
+            self.case_results_id = testcase[7]
+
+            self.log.trace("... done %s." % operation.replace('_', ' '))
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        return result
+
+    def get_procedure_step_data_from_database(self, step_id):
+        """
+        @param step_id: the id of the procedure step.
+        :return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'step data' - a dictionary packet containing the step data.
+            'function data' - a dictionary packet containing the function data.
+            'submodule data' - a dictionary packet containing the submodule data.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'step data': {}, 'function data': {}, 'submodule data': {}}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # retrieve step data
+            step = self.database.query_database_table(
+                self.database.db_handle, 'procedure_steps', addendum='WHERE id = %d' % step_id
+            )['response'][0]
+            #self.log.trace(step)
+
+            # build step data packet
+            result['step data'] = OrderedDict([
+                ('id', step[0]),
+                ('name', step[1]),
+                ('function', step[2]),
+                ('arguments', step[3]),
+                ('verification', step[4]),
+            ])
+            # translate verification
+            if str(step[4]) == '1':
+                result['step data']['verification'] = 'True'
+            else:
+                result['step data']['verification'] = 'False'
+
+            # retrieve function data
+            funct = self.database.query_database_table(
+                self.database.db_handle, 'functions',
+                addendum='WHERE id = %d' % result['step data']['function']
+            )['response'][0]
+            #self.log.trace(funct)
+
+            # build function data packet
+            result['function data'] = OrderedDict([
+                ('id', funct[0]),
+                ('function', funct[1]),
+                ('submodule id', funct[2]),
+            ])
+
+            # retrieve product data
+            product = self.database.query_database_table(
+                self.database.db_handle, 'products',
+                addendum='WHERE id = %d' % result['function data']['submodule id']
+            )['response'][0]
+            #self.log.trace(product)
+
+            # build product data packet
+            result['submodule data'] = OrderedDict([
+                ('id', product[0]),
+                ('name', product[1]),
+                ('code', product[2]),
+                ('results id', product[3]),
+            ])
+
+            self.log.trace("... done %s." % operation.replace('_', ' '))
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        return result
+
+    def setup_for_product(self):
+        self.debug_product = DebugProduct()
+
 
 class HestiaTestCase(TestCase):
 

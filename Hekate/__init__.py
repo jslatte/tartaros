@@ -21,6 +21,7 @@ from select import select
 from Database import Database
 from logger import Logger
 from testrun import TestRun
+from testcase import TestCase, ThanatosTestCase
 from mapping import TARTAROS_DB_PATH
 
 ####################################################################################################
@@ -406,7 +407,8 @@ class Hekate():
         return result
 
     def run_test(self, build, test_name, results_plan_id, module=None, feature=None, story=None,
-                 test=None, case=None, case_class=None, case_type=None, int_dvr_ip=None):
+                 test=None, case=None, case_class=None, case_type=None, int_dvr_ip=None,
+                 mode=None):
         """ Run test with given parameters.
         """
 
@@ -417,49 +419,55 @@ class Hekate():
             self.log.trace("%s ..." % operation.replace('_', ' '))
 
             # instance database for TeamCity testing
-            database = Database(Logger(logging_level='info'))
+            if str(mode).lower() == 'thanatos':
+                database = Database(Logger(logging_level='info'), path=getcwdu()+"\\tartaros.sqlite")
+                testcase = ThanatosTestCase(self.log, database, case)
+                testcase.run()
 
-            # initialize test run object
-            testrun = TestRun(self.log, database, name=test_name, submodule_id=2,
-                              results_plan_id=results_plan_id, int_dvr_ip=int_dvr_ip)
-
-            # build testcase list for test run
-            testcases = testrun.build_testcase_list_for_run(module_id=module,
-                feature_id=feature, story_id=story, test_id=test,
-                case_id=case, case_class=case_class)['testcases']
-
-            # filter by class
-            if case_class is not None:
-                testrun.filter_testcases_by_class(testcases, case_class)
-
-            # filter by type
-            if case_type is not None:
-                testrun.filter_testcases_by_type(testcases, case_type)
-
-                if case_type.lower() != 'dvr integration' and str(module) != '9'\
-                        and str(module).lower() != 'dvr integration':
-                    testrun.filter_testcases_by_type(testcases, 'dvr integration', inclusive=False)
-
-            # set testcase list for test run
-            testrun.testcases = testcases
-
-            if str(build).lower() != 'none':
-                # setup test environment
-                testrun.setup_test_environment(build, test_name)
             else:
-                testrun.setup_test_environment(build, test_name, installing=False)
+                database = Database(Logger(logging_level='info'))
 
-            # execute test run
-            testrun.run()
+                # initialize test run object
+                testrun = TestRun(self.log, database, name=test_name, submodule_id=2,
+                                  results_plan_id=results_plan_id, int_dvr_ip=int_dvr_ip)
 
-            # teardown test environment
-            testrun.teardown_test_environment()
+                # build testcase list for test run
+                testcases = testrun.build_testcase_list_for_run(module_id=module,
+                    feature_id=feature, story_id=story, test_id=test,
+                    case_id=case, case_class=case_class)['testcases']
 
-            #else:
-            #    self.log.error("Failed to setup test environment. %s is not a valid build." % build)
+                # filter by class
+                if case_class is not None:
+                    testrun.filter_testcases_by_class(testcases, case_class)
 
-            # compile results
-            result = None
+                # filter by type
+                if case_type is not None:
+                    testrun.filter_testcases_by_type(testcases, case_type)
+
+                    if case_type.lower() != 'dvr integration' and str(module) != '9'\
+                            and str(module).lower() != 'dvr integration':
+                        testrun.filter_testcases_by_type(testcases, 'dvr integration', inclusive=False)
+
+                # set testcase list for test run
+                testrun.testcases = testcases
+
+                if str(build).lower() != 'none':
+                    # setup test environment
+                    testrun.setup_test_environment(build, test_name)
+                else:
+                    testrun.setup_test_environment(build, test_name, installing=False)
+
+                # execute test run
+                testrun.run()
+
+                # teardown test environment
+                testrun.teardown_test_environment()
+
+                #else:
+                #    self.log.error("Failed to setup test environment. %s is not a valid build." % build)
+
+                # compile results
+                result = None
 
         except BaseException, e:
             self.handle_exception(self.log, e, operation)

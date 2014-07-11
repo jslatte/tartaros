@@ -229,6 +229,20 @@ def process_test_run_form(request):
         elif method == METHODS['run full regression test']:
             log.trace("Processing data '%s' method ..." % method['name'])
 
+            # determine built to test
+            build = None
+
+            # determine testrail plan to publish to
+            testrail_plan_id = None
+
+            # determine server to run on
+            if data['server'] == '':
+                log.trace("No remote server selected. Running test(s) locally ...")
+                server = None
+            else:
+                server = RemoteServers.objects.get(pk=data['server'])
+                log.trace("%s remote server selected. Running test(s) remotely ..." % server.name)
+
             # build testcase list
             log.trace("Building list of testcases to run ...")
             testcases = TestCases.objects.all()
@@ -244,10 +258,60 @@ def process_test_run_form(request):
             log.trace("Executing '%s' method ..." % method['name'])
 
             # run each testcase
-            log.trace("Running testcases ...")
-            for testcase in testcases:
-                testcase = ThanatosTestCase(log, None, testcase.id)
-                testcase.run()
+            if server is None:
+                log.trace("Running testcases ...")
+                for testcase in testcases:
+
+                        # run tests locally
+                        testcase = ThanatosTestCase(log, None, testcase.id)
+                        testcase.run()
+            else:
+                # run tests remotely
+                commands = []
+
+                for testcase in testcases:
+                    # build server command for client
+                    cmd_dict = {
+                        'build':    "'%s'" % build,
+                        'test name':"'Remote Test - %s - %s (%s)'"
+                                    % (testcase.test, testcase.name, testcase.id),
+                        'plan id':  testrail_plan_id,
+                        'module':   None,
+                        'feature':  None,
+                        'story':    None,
+                        'test':     None,
+                        'case':     testcase.id,
+                        'class':    None,
+                        'type':     None,
+                        'dvr ip':   None,
+                        'mode':     'thanatos',
+                    }
+                    cmd = "self.run_test(build=%(build)s, test_name=%(test name)s, " \
+                      "results_plan_id=%(plan id)s, module=%(module)s, feature=%(feature)s, " \
+                      "story=%(story)s, test=%(test)s, case=%(case)s, " \
+                      "case_class=%(class)s, case_type=%(type)s, int_dvr_ip=%(dvr ip)s," \
+                      "mode='%(mode)s');;" % cmd_dict
+                    hex_cmd = hexlify(cmd)
+                    commands.append(hex_cmd)
+
+                if len(commands) > 0:
+                    # connect to remote client (Hekate)
+                    client_addr = (server.ip_address, 333)
+
+                    log.trace("Connecting to remote client at %s ..." % str(client_addr))
+
+                    hekate_conn = socket.socket()
+                    hekate_conn.connect(client_addr)
+
+                    log.trace("... connected.")
+
+                    # send commands to client
+                    for command in commands:
+                        log.trace("Sending command:\t'%s'." % unhexlify(command))
+                        hekate_conn.send(command)
+
+                    # close connection to client
+                    hekate_conn.close()
 
         log.trace("... done %s." % operation.replace('_', ' '))
     except BaseException, e:
