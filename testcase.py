@@ -11,13 +11,14 @@
 ####################################################################################################
 ####################################################################################################
 
+import os
 from time import clock
-from mapping import TARTAROS
+from datetime import datetime
+from mapping import TARTAROS, TARTAROS_LOGGING_PATH
 from utility import return_execution_error
 from Orpheus import Orpheus
 import inspect
 from collections import OrderedDict
-#from Thanatos.models import *
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -430,6 +431,52 @@ class TestCase():
         result['test run id'] = testRunID
         return result
 
+    def log_results(self):
+        """ Log testcase results.
+        :return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'verified': False}
+
+        try:
+            self.log.trace("%s ..." % operation.replace('_', ' '))
+
+            # verify logging folder exists
+            if not os.path.exists(TARTAROS_LOGGING_PATH):
+                os.mkdir(TARTAROS_LOGGING_PATH)
+
+            # define data to write
+            data_to_write = [
+                datetime.now(),
+                self.id,
+                self.name,
+                self.test_id,
+                self.test,
+                self.status,
+                self.duration,
+            ]
+            # convert all data items to strings
+            for i in data_to_write:
+                data_to_write[data_to_write.index(i)] = str(i)
+            # build results data amalgamated string
+            results_data_s = '\n' + '\t'.join(data_to_write)
+
+            # write results data
+            results_path = TARTAROS_LOGGING_PATH + '\\results.log'
+            f = open(results_path, 'a')
+            f.write(results_data_s)
+            f.close()
+
+            self.log.trace("... done %s." % operation.replace('_', ' '))
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        return result
+
     def run(self):
         """ Execute the testcase step-by-step according to its procedure and determine result.
         """
@@ -480,6 +527,9 @@ class TestCase():
                 self.reporter.add_result_for_testcase_in_test(run_id, results_id, status,
                     {'comment': comment, 'version': version})
                 self.log.trace("... done.")
+
+            # publish results to results folder
+            self.log_results()
 
             # send testcase end message to build server
             self.log.build_testcase_end(self.build_test_name, self.status, self.duration)

@@ -987,10 +987,12 @@ print
 #hestia.reset_vim_server()
 #connect_to_database()
 #hestia.start_vim_server()
-log_in()
+#log_in()
 #hestia.setup_server_for_manual_testing('full')
-configure_license('full')
+#configure_license('full')
 #hestia.configure_vim_license('streaming server')
 
 #testcase = HestiaTestCase(log, database, 442, debugging=False)
 #testcase.run()
+
+#cmd = 'C:\\Utilities\\nmap\\nmap.exe -p 333 172.200.1.113'

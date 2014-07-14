@@ -450,6 +450,7 @@ class Thanatos():
             result['successful'] = True
         except BaseException, e:
             self.handle_exception(e, operation=operation)
+            result['response'] = 'Error occurred.'
 
         # return
         return result
