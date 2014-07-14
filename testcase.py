@@ -17,6 +17,7 @@ from utility import return_execution_error
 from Orpheus import Orpheus
 import inspect
 from collections import OrderedDict
+#from Thanatos.models import *
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -617,7 +618,6 @@ class ThanatosTestCase(TestCase):
 
     def setup_for_product(self):
         self.debug_product = DebugProduct()
-
 
 class HestiaTestCase(TestCase):
 

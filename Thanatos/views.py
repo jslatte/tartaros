@@ -17,14 +17,16 @@ from binascii import hexlify, unhexlify
 from django.shortcuts import render
 from models import *
 from logger import Logger
-from exceptionhandler import ExceptionHandler as handle_exception
+from exceptionhandler import ExceptionHandler
 import inspect
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template import Context, loader
 from django import forms
 from Database import Database
-from testcase import TestCase
+from testcase import ThanatosTestCase
 from collections import OrderedDict
+from thanatos import Thanatos
+from mapping import METHODS
 
 ####################################################################################################
 # Globals ##########################################################################################
@@ -32,10 +34,8 @@ from collections import OrderedDict
 ####################################################################################################
 
 log = Logger()
-METHODS = {
-    'run full regression test': {'id': 1, 'name': 'Run Full Regression Test',
-                                 'widget': 'runfregtest_btn'}
-}
+exception_handler = ExceptionHandler(log)
+thanatos = Thanatos(log, exception_handler)
 
 ####################################################################################################
 # Objects ##########################################################################################
@@ -43,16 +43,7 @@ METHODS = {
 ####################################################################################################
 
 
-class DebugProduct():
-
-    def debug_function(self, debug_argument=True, testcase=None):
-        result = {'successful': debug_argument, 'verified': debug_argument}
-        if testcase is not None:
-            testcase.processing = debug_argument
-        return result
-
-
-class ThanatosTestCase(TestCase):
+class ThanatosLocalTestCase(ThanatosTestCase):
 
     def get_testcase_data_from_database(self, testcase_id):
         """
@@ -65,7 +56,7 @@ class ThanatosTestCase(TestCase):
         result = {'successful': False, 'testcase data': {}}
 
         try:
-            log.trace("%s ..." % operation.replace('_', ' '))
+            self.log.trace("%s ..." % operation.replace('_', ' '))
 
             # retrieve test case
             testcase = TestCases.objects.get(pk=testcase_id)
@@ -88,7 +79,7 @@ class ThanatosTestCase(TestCase):
             self.test_id = testcase.test_id
             self.case_results_id = testcase.testrail_id
 
-            log.trace("... done %s." % operation.replace('_', ' '))
+            self.log.trace("... done %s." % operation.replace('_', ' '))
             result['successful'] = True
         except BaseException, e:
             self.handle_exception(e, operation=operation)
@@ -152,9 +143,6 @@ class ThanatosTestCase(TestCase):
         # return
         return result
 
-    def setup_for_product(self):
-        self.debug_product = DebugProduct()
-
 ####################################################################################################
 # Views ############################################################################################
 ####################################################################################################
@@ -187,6 +175,11 @@ def index(request):
 
 
 def process_test_run_form(request):
+    thanatos.process_test_run_form(request)
+    return HttpResponse('Ok')
+
+
+def something_else(request):
     """ Process the test run form submission.
     """
 
@@ -263,7 +256,7 @@ def process_test_run_form(request):
                 for testcase in testcases:
 
                         # run tests locally
-                        testcase = ThanatosTestCase(log, None, testcase.id)
+                        testcase = ThanatosLocalTestCase(log, None, testcase.id)
                         testcase.run()
             else:
                 # run tests remotely
@@ -315,6 +308,6 @@ def process_test_run_form(request):
 
         log.trace("... done %s." % operation.replace('_', ' '))
     except BaseException, e:
-        handle_exception(log, e, operation=operation)
+        exception_handler.handle_exception(e, operation=operation)
 
     return HttpResponse(response)

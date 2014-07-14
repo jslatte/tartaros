@@ -30,7 +30,7 @@ from sys import exc_info
 class ExceptionHandler():
     """ Object for exception handling. """
 
-    def __init__(self, log, e, operation=None):
+    def __init__(self, log, e=None, operation=None):
         """ Initialize the exception handler object.
         @param log: an initialized logger object.
         @param e: the exception (from BaseException, e).
@@ -40,11 +40,10 @@ class ExceptionHandler():
 
         # define class attributes
         self.log = log
-        self.e = e
-        self.operation = operation
 
         # handle the exception
-        self.handle_exception()
+        if e is not None or operation is not None:
+            self.handle_exception(e, operation)
 
         # return
         return
@@ -66,16 +65,17 @@ class ExceptionHandler():
         # return
         return result
 
-    def handle_exception(self):
+    def handle_exception(self, e=None, operation=None):
         """ Handle an exception.
         @return: None.
         """
 
-        if self.operation is not None:
-            self.log.error("Failed to %s." % self.operation)
-        self.log.error(str(self.e))
-        for error in self.e:
-            self.log.error(str(error))
+        if operation is not None:
+            self.log.error("Failed to %s." % operation)
+        self.log.error(str(e))
+        if e is not None:
+            for error in e:
+                self.log.error(str(error))
         exception = self.return_execution_error()['error']
         self.log.error("Error: %s." % exception)
 
