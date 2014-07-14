@@ -268,8 +268,8 @@ class Thanatos():
             elif method is None:
                 raise AssertionError("No method identified.")
 
-            elif method == METHODS['run full regression test']:
-                self.log.trace("Processing data '%s' method ..." % method['name'])
+            elif method in METHODS.values():
+                self.log.trace("Processing data for '%s' method ..." % method['name'])
 
                 # determine build to test
 
@@ -286,14 +286,24 @@ class Thanatos():
 
                 # build testcase list
                 self.log.trace("Building list of testcases to run ...")
-                testcases = TestCases.objects.all()
-                self.log.trace("Testcases to Run:")
-                for testcase in testcases:
-                    self.log.trace_in_line("\n%s:%s" % (testcase.id, testcase.name))
-                result['parameters']['testcases'] = testcases
+
+                if method == METHODS['run full regression test']:
+                    testcases = TestCases.objects.all()
+                    self.log.trace("Testcases to Run:")
+                    for testcase in testcases:
+                        self.log.trace_in_line("\n%s:%s" % (testcase.id, testcase.name))
+                    result['parameters']['testcases'] = testcases
+
+                #elif method == METHODS['run custom test']:
+                    # determine product being tested
+                    #if data['product'] == '':
+
+                else:
+                    self.log.warn("Failed to build test case list. Invalid method '%s'."
+                                  % method['name'])
 
             else:
-                raise AssertionError("Unknown method '%s'." % method)
+                raise AssertionError("Unknown method '%s'." % method['name'])
 
             self.log.trace("... done %s." % operation.replace('_', ' '))
             result['successful'] = True

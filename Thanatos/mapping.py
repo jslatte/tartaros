@@ -16,5 +16,6 @@
 
 METHODS = {
     'run full regression test': {'id': 1, 'name': 'Run Full Regression Test',
-                                 'widget': 'runfregtest_btn'}
+                                 'widget': 'runfregtest_btn'},
+    'run custom test': {'id': 2, 'name': 'Run Custom Test', 'widget': 'runcusttest_btn'},
 }
