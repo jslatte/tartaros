@@ -1930,9 +1930,9 @@ class TestManager():
                         % {'function': 'run_remote_test',
                            'values': "['%s', 'module_selection', 'feature_selection', "
                                      "'user_story_selection', 'test_selection', "
-                                     "'test_case_selection', '%s', '%s', '%s']"
+                                     "'test_case_selection', '%s', '%s', '%s', '%s']"
                                      % (inp_plan_id_addr, inp_remote_server_addr, inp_build_addr,
-                                        inp_test_run_type_addr),
+                                        inp_test_run_type_addr, inp_int_dvr_addr),
                            'target': '',
                            'remove': ''}
             db_script = "ajax('%(function)s', %(values)s, '%(target)s');" \
@@ -2732,7 +2732,7 @@ def run_remote_test():
             cmd = "self.run_test(build=%(build)s, test_name=%(test name)s, " \
                   "results_plan_id=%(plan id)s, module=%(module)s, feature=%(feature)s, " \
                   "story=%(story)s, test=%(test)s, case=%(case)s, " \
-                  "case_class=%(class)s, case_type=%(type)s, int_dvr_ip=%(dvr ip)s)" % cmd_dict
+                  "case_class=%(class)s, case_type=%(type)s, int_dvr_ip='%(dvr ip)s')" % cmd_dict
             hex_cmd = hexlify(cmd)
             commands.append(hex_cmd)
 
@@ -2774,7 +2774,7 @@ def run_remote_test():
                 cmd = "self.run_test(build=%(build)s, test_name=%(test name)s, " \
                       "results_plan_id=%(plan id)s, module=%(module)s, feature=%(feature)s, " \
                       "story=%(story)s, test=%(test)s, case=%(case)s, " \
-                      "case_class=%(class)s, case_type=%(type)s, int_dvr_ip=%(dvr ip)s);;" % cmd_dict
+                      "case_class=%(class)s, case_type=%(type)s, int_dvr_ip='%(dvr ip)s');;" % cmd_dict
                 hex_cmd = hexlify(cmd)
                 commands.append(hex_cmd)
 
@@ -2799,6 +2799,7 @@ def run_remote_test():
 
         # close connection to client
         server.close()
+
 
 def add_story_to_testrail():
     tmanager.add_story_to_testrail(request.vars.user_story_selection)
