@@ -199,7 +199,7 @@ class Hestia(ClipClassification, Clips, DriveStatus, EmailNotification, Events, 
         """
         @param testcase: a testcase object supplied when executing function as part of
             a testcase step.
-        @return: a data dict containing:
+        :return: a data dict containing:
             'successful' - whether the function executed successfully or not.
             'verified' - whether the operation was verified or not.
         """

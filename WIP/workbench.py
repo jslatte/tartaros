@@ -987,12 +987,28 @@ print
 #hestia.reset_vim_server()
 #connect_to_database()
 #hestia.start_vim_server()
-#log_in()
+log_in()
 #hestia.setup_server_for_manual_testing('full')
-#configure_license('full')
+#configure_license('full 3.2')
 #hestia.configure_vim_license('streaming server')
 
 #testcase = HestiaTestCase(log, database, 442, debugging=False)
 #testcase.run()
 
 #cmd = 'C:\\Utilities\\nmap\\nmap.exe -p 333 172.200.1.113'
+clips = [
+    [1, 'HQ Request Succeeded'],
+    [2, 'LT Request Succeeded'],
+    [4, 'Standard Request Succeeded'],
+    [3, 'HQ Request Failed, LT Request Succeeded'],
+    [6, 'HQ Request Failed, LT Request Failed'],
+    [7, 'LT Request Failed'],
+    [8, 'Standard Request Failed']
+]
+
+for clip in clips:
+    verified = hestia.verify_custody_sequence_for_clip(1, 'hq request succeeded')['verified']
+    clip.append(verified)
+
+for clip in clips:
+    log.trace("Clip %d - %s - %s" % (clip[0], clip[1], clip[2]))

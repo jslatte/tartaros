@@ -77,6 +77,287 @@ class Clips():
     """ Sub-library for ViM server clip requests and download functionality.
     """
 
+    def verify_custody_sequence_for_clip(self, clip_id, sequence, testcase=None):
+        """ Verify a specific sequence of actions were recorded in the specified clip's
+        chain of custody.
+        @param clip_id: the id of the clip.
+        @param sequence: the sequence to verify in the custody of the clip (str).
+            Sequences: 'hq request succeeded', 'lt request succeeded', 'standard request succeded',
+                'hq request failed, lt request succeeded', 'hq request failed, lt request failed',
+                'lt request failed', 'standard request failed'.
+        @param testcase: a testcase object supplied when executing function as part of
+            a testcase step.
+        :return: a data dict containing:
+            'successful' - whether the function executed successfully or not.
+            'verified' - whether the operation was verified or not.
+        """
+
+        operation = self.inspect.stack()[0][3]
+        result = {'successful': False, 'verified': False}
+
+        try:
+            self.log.trace("%s:\t%s ..." % (operation.replace('_', ' '), sequence))
+            # track verification step failures
+            failures = 0
+
+            # return clip custody info
+            entries = self.query_custody_for_clip(clip_id)['entries']
+
+            # remove spaces from entry action texts
+            for entry in entries:
+                entry['text'] = entry['text'].replace('%20', ' ')
+
+            # verify the first entry is a request
+            if int(entries[0]['value']) == ACTION_TO_ACTION_VAL['request']:
+                self.log.trace("Verified first action was a request.")
+            else:
+                self.log.warn("Failed to verify first action was a request. "
+                              "Action was '%s' instead."
+                               % ACTION_VAL_TO_CLIP_STATUS[entries[0]['value']])
+                failures += 1
+
+            sequence = sequence.lower()
+            # verify clip custody sequence matches expected sequence
+            if sequence == 'hq request succeeded':
+                # verify second entry is a download
+                if int(entries[1]['value']) == ACTION_TO_ACTION_VAL['download']:
+                    self.log.trace("Verified second action was a download.")
+                else:
+                    self.log.warn("Failed to verify second action was a download. "
+                                  "Action was '%s' instead."
+                                   % ACTION_VAL_TO_CLIP_STATUS[entries[1]['value']])
+                    failures += 1
+
+                # verify second entry includes correct action text
+                expected = ':HQ request succeeded'.lower()
+                if expected in entries[1]['text'].lower():
+                    self.log.trace("Verified second action included correct action text '%s'."
+                                   % expected)
+                else:
+                    self.log.warn("Failed to verify second action included correct action text "
+                                  "'%s'. Action text was '%s' instead."
+                                  % (expected, entries[1]['text']))
+                    failures += 1
+
+            elif sequence == 'lt request succeeded':
+                # verify second entry is a download
+                if int(entries[1]['value']) == ACTION_TO_ACTION_VAL['download']:
+                    self.log.trace("Verified second action was a download.")
+                else:
+                    self.log.warn("Failed to verify second action was a download. "
+                                  "Action was '%s' instead."
+                                   % ACTION_VAL_TO_CLIP_STATUS[entries[1]['value']])
+                    failures += 1
+
+                # verify second entry includes correct action text
+                expected = ':LT request succeeded'.lower()
+                if expected in entries[1]['text'].lower():
+                    self.log.trace("Verified second action included correct action text '%s'."
+                                   % expected)
+                else:
+                    self.log.warn("Failed to verify second action included correct action text "
+                                  "'%s'. Action text was '%s' instead."
+                                  % (expected, entries[1]['text']))
+                    failures += 1
+
+            elif sequence == 'standard request succeeded':
+                # verify second entry is a download
+                if int(entries[1]['value']) == ACTION_TO_ACTION_VAL['download']:
+                    self.log.trace("Verified second action was a download.")
+                else:
+                    self.log.warn("Failed to verify second action was a download. "
+                                  "Action was '%s' instead."
+                                   % ACTION_VAL_TO_CLIP_STATUS[entries[1]['value']])
+                    failures += 1
+
+                # verify second entry includes correct action text
+                expected_hq = ':HQ'.lower()
+                expected_lt = ':LT'.lower()
+                if expected_hq not in entries[1]['text'].lower()\
+                    or expected_lt not in entries[1]['text'].lower():
+                    self.log.trace("Verified second action did not include '%s' or '%s' in "
+                                   "action text '%s'."
+                                   % (expected_hq, expected_lt, entries[1]['text']))
+                else:
+                    self.log.warn("Failed to verify second action did not include '%s' or '%s'."
+                                  "Action text was '%s' instead."
+                                  % (expected_hq, expected_lt, entries[1]['text']))
+                    failures += 1
+
+            elif sequence == 'hq request failed, lt request succeeded':
+                # verify second entry is a download failure
+                if int(entries[1]['value']) == ACTION_TO_ACTION_VAL['fail to download']:
+                    self.log.trace("Verified second action was a download failure.")
+                else:
+                    self.log.warn("Failed to verify second action was a download failure. "
+                                  "Action was '%s' instead."
+                                   % ACTION_VAL_TO_CLIP_STATUS[entries[1]['value']])
+                    failures += 1
+
+                # verify second entry includes correct action text
+                expected = ':HQ request failed'.lower()
+                if expected in entries[1]['text'].lower():
+                    self.log.trace("Verified second action included correct action text '%s'."
+                                   % expected)
+                else:
+                    self.log.warn("Failed to verify second action included correct action text "
+                                  "'%s'. Action text was '%s' instead."
+                                  % (expected, entries[1]['text']))
+                    failures += 1
+
+                # verify third entry is a download
+                if int(entries[2]['value']) == ACTION_TO_ACTION_VAL['download']:
+                    self.log.trace("Verified third action was a download.")
+                else:
+                    self.log.warn("Failed to verify third action was a download. "
+                                  "Action was '%s' instead."
+                                   % ACTION_VAL_TO_CLIP_STATUS[entries[2]['value']])
+                    failures += 1
+
+                # verify third entry includes correct action text
+                expected = ':LT request succeeded'.lower()
+                if expected in entries[2]['text'].lower():
+                    self.log.trace("Verified third action included correct action text '%s'."
+                                   % expected)
+                else:
+                    self.log.warn("Failed to verify third action included correct action text "
+                                  "'%s'. Action text was '%s' instead."
+                                  % (expected, entries[2]['text']))
+                    failures += 1
+
+            elif sequence == 'hq request failed, lt request failed':
+                # verify second entry is a download failure
+                if int(entries[1]['value']) == ACTION_TO_ACTION_VAL['fail to download']:
+                    self.log.trace("Verified second action was a download failure.")
+                else:
+                    self.log.warn("Failed to verify second action was a download failure. "
+                                  "Action was '%s' instead."
+                                   % ACTION_VAL_TO_CLIP_STATUS[entries[1]['value']])
+                    failures += 1
+
+                # verify second entry includes correct action text
+                expected = ':HQ request failed'.lower()
+                if expected in entries[1]['text'].lower():
+                    self.log.trace("Verified second action included correct action text '%s'."
+                                   % expected)
+                else:
+                    self.log.warn("Failed to verify second action included correct action text "
+                                  "'%s'. Action text was '%s' instead."
+                                  % (expected, entries[1]['text']))
+                    failures += 1
+
+                # verify third entry is a download failure
+                if int(entries[2]['value']) == ACTION_TO_ACTION_VAL['fail to download']:
+                    self.log.trace("Verified third action was a download failure.")
+                else:
+                    self.log.warn("Failed to verify third action was a download failure. "
+                                  "Action was '%s' instead."
+                                   % ACTION_VAL_TO_CLIP_STATUS[entries[2]['value']])
+                    failures += 1
+
+                # verify third entry includes correct action text
+                expected = ':LT request failed'.lower()
+                if expected in entries[2]['text'].lower():
+                    self.log.trace("Verified third action included correct action text '%s'."
+                                   % expected)
+                else:
+                    self.log.warn("Failed to verify third action included correct action text "
+                                  "'%s'. Action text was '%s' instead."
+                                  % (expected, entries[2]['text']))
+                    failures += 1
+
+                # verify there are no additional entries after the failure
+                expected = 3
+                if len(entries) == expected:
+                    self.log.trace("Verified no additional actions after download failure.")
+                else:
+                    self.log.warn("Failed to verify no additional actions after download failure."
+                                  "There were %d additional entries." % (len(entries)-expected))
+                    failures += 1
+
+            elif sequence == 'lt request failed':
+                # verify second entry is a download failure
+                if int(entries[1]['value']) == ACTION_TO_ACTION_VAL['fail to download']:
+                    self.log.trace("Verified second action was a download failure.")
+                else:
+                    self.log.warn("Failed to verify second action was a download failure. "
+                                  "Action was '%s' instead."
+                                   % ACTION_VAL_TO_CLIP_STATUS[entries[1]['value']])
+                    failures += 1
+
+                # verify second entry includes correct action text
+                expected = ':LT request failed'.lower()
+                if expected in entries[1]['text'].lower():
+                    self.log.trace("Verified second action included correct action text '%s'."
+                                   % expected)
+                else:
+                    self.log.warn("Failed to verify second action included correct action text "
+                                  "'%s'. Action text was '%s' instead."
+                                  % (expected, entries[1]['text']))
+                    failures += 1
+
+                # verify there are no additional entries after the failure
+                expected = 2
+                if len(entries) == expected:
+                    self.log.trace("Verified no additional actions after download failure.")
+                else:
+                    self.log.warn("Failed to verify no additional actions after download failure."
+                                  "There were %d additional entries." % (len(entries)-expected))
+                    failures += 1
+
+            elif sequence == 'standard request failed':
+                # verify second entry is a download failure
+                if int(entries[1]['value']) == ACTION_TO_ACTION_VAL['fail to download']:
+                    self.log.trace("Verified second action was a download failure.")
+                else:
+                    self.log.warn("Failed to verify second action was a download failure. "
+                                  "Action was '%s' instead."
+                                   % ACTION_VAL_TO_CLIP_STATUS[entries[1]['value']])
+                    failures += 1
+
+                # verify second entry includes correct action text
+                expected_hq = ':HQ'.lower()
+                expected_lt = ':LT'.lower()
+                if expected_hq not in entries[1]['text'].lower()\
+                    or expected_lt not in entries[1]['text'].lower():
+                    self.log.trace("Verified second action did not include '%s' or '%s' in "
+                                   "action text '%s'."
+                                   % (expected_hq, expected_lt, entries[1]['text']))
+                else:
+                    self.log.warn("Failed to verify second action did not include '%s' or '%s'."
+                                  "Action text was '%s' instead."
+                                  % (expected_hq, expected_lt, entries[1]['text']))
+                    failures += 1
+
+                # verify there are no additional entries after the failure
+                expected = 2
+                if len(entries) == expected:
+                    self.log.trace("Verified no additional actions after download failure.")
+                else:
+                    self.log.warn("Failed to verify no additional actions after download failure."
+                                  "There were %d additional entries." % (len(entries)-expected))
+                    failures += 1
+
+            else:
+                self.log.warn("Failed to verify custody sequence. "
+                              "Unknown sequence '%s'." % sequence)
+                failures += 1
+
+            if failures > 0:
+                self.log.warn("Failed to verify sequence '%s'." % sequence)
+            else:
+                self.log.trace("Verified sequence '%s'." % sequence)
+                result['verified'] = True
+
+            self.log.trace("... done %s." % operation.replace('_', ' '))
+            result['successful'] = True
+        except BaseException, e:
+            self.handle_exception(e, operation=operation)
+
+        # return
+        if testcase is not None: testcase.processing = result['successful']
+        return result
+
     def verify_downloaded_clip_quality(self, clip_id, quality, testcase=None):
         """ Verify the quality of the downloaded clip.
         @param clip_id: the id of the downloaded clip.

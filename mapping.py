@@ -691,7 +691,7 @@ HESTIA = {
             'query path':               '/custody/%(id)s',
             'parameters':   {},
             'fields': {
-                'unknown':                  None,
+                'type':                     None,
                 'author':                   None,
                 'value':                    None,
                 'text':                     None,
