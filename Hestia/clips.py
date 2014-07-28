@@ -2158,7 +2158,7 @@ class Clips():
         return result
 
     def verify_clip_downloaded(self, clip_id, site_id=None, event_id=None, file_name=None,
-                               testcase=None, wait=100, from_site_id=None):
+                               testcase=None, wait=100, from_site_id=None, ignored_failures=0):
         """ Verify that a clip downloaded successfully.
         INPUT
             clip id: the id of the clip to verify has downloaded.
@@ -2170,6 +2170,7 @@ class Clips():
             testcase: a testcase object supplied when executing function as part of a testcase step.
             wait: the number of times to check for the clip download (x5 secs).
             from site: id of site to verify the clip was downloaded from (e.g. drive status testing).
+            ignored_failures: the number of clip failures to ignore(0 means none).
         OUPUT
             successful: whether the function executed successfully or not.
             verified: whether the operation was verified or not.
@@ -2210,12 +2211,15 @@ class Clips():
                             # don't verify if a check for correct download site is needed
                             if from_site_id is None: result['verified'] = True
                             break
-                        else:
-                            # check if download failed
-                            failed = self.check_if_clip_download_failed(clip_id)['failed']
-                            if failed:
-                                self.log.warn("Clip download failed.")
-                                i = wait
+
+                        # check if download failed
+                        if ignored_failures == 0: num_failures = 'any'
+                        else: num_failures = ignored_failures + 1
+                        failed = self.check_if_clip_download_failed(
+                            clip_id, num=num_failures)['failed']
+                        if failed:
+                            self.log.warn("Clip download failed.")
+                            i = wait
 
                     if i == wait and filePath is None:
                         self.log.warn("File NOT found.")
@@ -2224,6 +2228,26 @@ class Clips():
                                        "Retrying in 5 seconds ..." % i)
                         sleep(5)
                         i += 1
+
+                        # re-determine file name per attempt when ignoring failures
+                        #   for HQ to LT auto-reversion
+                        if ignored_failures > 0:
+                            # determine clip file name
+                            if file_name is None:
+                                handle = self.db.db_handle
+                                table = DB_CLIPLOG_TABLE
+                                return_field = DB_CLIPLOG_FIELDS['file name']
+                                known_field = DB_CLIPLOG_FIELDS['id']
+                                known_val = clip_id
+                                file_name = self.db.query_database_table_for_single_value(
+                                    handle, table, return_field,
+                                    known_field, known_val)['value']
+                                file_name = str(file_name) + ".exe"
+
+                            # determine clip file parent folder
+                            storage_loc = self.return_storage_location_for_clip(
+                                clip_id, site_id=site_id,
+                                event_id=event_id)['storage loc']
 
                 # if testing downloaded from site
                 if from_site_id is not None:
@@ -2261,17 +2285,19 @@ class Clips():
         if testcase is not None: testcase.processing = result['successful']
         return result
 
-    def check_if_clip_download_failed(self, clip_id, testcase=None):
+    def check_if_clip_download_failed(self, clip_id, num='any', testcase=None):
         """ Check if given clip scheduled to download failed.
         INPUT
             clip id: the id of the clip to check for download failure.
+            num: the number of failures to check for ('failed' will only return true if number of
+                failures met). Leave 'any' to check for any failures.
             testcase: a testcase object supplied when executing function as part of a testcase step.
         OUPUT
             successful: whether the function executed successfully or not.
             failed: whether the clip failed to download or not.
         """
 
-        self.log.trace("Checking if clip %d download failed ..." % clip_id)
+        self.log.trace("Checking if clip %d download failed %s times ..." % (clip_id, num))
         result = {'successful': False, 'failed': False, 'reason': None}
 
         try:
@@ -2283,12 +2309,20 @@ class Clips():
             addendum = "WHERE %s = '%s' AND %s = '%s'" % (DB_COC_FIELDS['clip id'], clip_id,
                                                           DB_COC_FIELDS['value'], failedValue)
             entry = self.db.query_database_table(handle, table, return_field, addendum)['response']
-            if entry is not None and entry != []: result['failed'] = True
 
-            self.log.trace("Checked if clip %s download failed." % clip_id)
+            if entry is not None and len(entry) > 0:
+                if str(num).lower() == 'any':
+                    result['failed'] = True
+                elif len(entry) == num:
+                    result['failed'] = True
+                else:
+                    result['failed'] = False
+
+            self.log.trace("Checked if clip %s download failed %s times." % (clip_id, num))
             result['successful'] = True
         except BaseException, e:
-            self.handle_exception(e, operation="check if clip %d download failed" % clip_id)
+            self.handle_exception(e, operation="check if clip %d download failed %s"
+                                               % (clip_id, num))
 
         # return
         if testcase is not None: testcase.processing = result['successful']
