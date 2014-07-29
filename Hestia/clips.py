@@ -2158,7 +2158,8 @@ class Clips():
         return result
 
     def verify_clip_downloaded(self, clip_id, site_id=None, event_id=None, file_name=None,
-                               testcase=None, wait=100, from_site_id=None, ignored_failures=0):
+                               testcase=None, wait=100, from_site_id=None, ignored_failures=0,
+                               expect_failure=False):
         """ Verify that a clip downloaded successfully.
         INPUT
             clip id: the id of the clip to verify has downloaded.
@@ -2171,6 +2172,7 @@ class Clips():
             wait: the number of times to check for the clip download (x5 secs).
             from site: id of site to verify the clip was downloaded from (e.g. drive status testing).
             ignored_failures: the number of clip failures to ignore(0 means none).
+            expect_failure: whether the clip is expected to fail or not.
         OUPUT
             successful: whether the function executed successfully or not.
             verified: whether the operation was verified or not.
@@ -2217,8 +2219,11 @@ class Clips():
                         else: num_failures = ignored_failures + 1
                         failed = self.check_if_clip_download_failed(
                             clip_id, num=num_failures)['failed']
-                        if failed:
+                        if failed and not expect_failure:
                             self.log.warn("Clip download failed.")
+                            i = wait
+                        elif failed and expect_failure:
+                            self.log.trace("Clip download failed as expected.")
                             i = wait
 
                     if i == wait and filePath is None:
